@@ -1,0 +1,3 @@
+= Cassandra Client for Vert.x
+
+A Vert.x client allowing applications to interact with a Cassandra service
