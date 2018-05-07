@@ -1,0 +1,18 @@
+= Cheatsheets
+
+[[CassandraClientOptions]]
+== CassandraClientOptions
+
+++++
+ Eclipse Vert.x Cassandra client options.
+++++
+'''
+
+[cols=">25%,^25%,50%"]
+[frame="topbot"]
+|===
+^|Name | Type ^| Description
+|[[contactPoints]]`contactPoints`|`Array of String`|-
+|[[port]]`port`|`Number (int)`|-
+|===
+

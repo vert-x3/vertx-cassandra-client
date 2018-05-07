@@ -15,7 +15,10 @@
  */
 package io.vertx.cassandra;
 
+import io.vertx.cassandra.impl.CassandraClientImpl;
+import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
+import io.vertx.core.Vertx;
 
 /**
  * Eclipse Vert.x Cassandra client.
@@ -23,4 +26,14 @@ import io.vertx.codegen.annotations.VertxGen;
 @VertxGen
 public interface CassandraClient {
 
+  static CassandraClient create(Vertx vertx) {
+    return create(vertx, new CassandraClientOptions());
+  }
+
+  static CassandraClient create(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
+    return new CassandraClientImpl(vertx, cassandraClientOptions);
+  }
+
+  @Fluent
+  CassandraClient connect();
 }

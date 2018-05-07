@@ -16,10 +16,51 @@
 package io.vertx.cassandra;
 
 import io.vertx.codegen.annotations.DataObject;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Eclipse Vert.x Cassandra client options.
  */
 @DataObject(generateConverter = true)
 public class CassandraClientOptions {
+
+  public static final List<String> DEFAULT_CONTACT_POINTS = new ArrayList<String>(1) {{
+    add("localhost");
+  }};
+
+  public static final int DEFAULT_PORT = 9042;
+
+  private List<String> contactPoints = DEFAULT_CONTACT_POINTS;
+
+  private int port = DEFAULT_PORT;
+
+  public CassandraClientOptions() {
+  }
+
+  public CassandraClientOptions(JsonObject json) {
+    this();
+    CassandraClientOptionsConverter.fromJson(json, this);
+  }
+
+  public CassandraClientOptions setContactPoints(List<String> contactPoints) {
+    this.contactPoints = contactPoints;
+    return this;
+  }
+
+  public CassandraClientOptions setPort(int port) {
+    this.port = port;
+    return this;
+  }
+
+  public List<String> contactPoints() {
+    return contactPoints;
+  }
+
+  public int port() {
+    return port;
+  }
 }

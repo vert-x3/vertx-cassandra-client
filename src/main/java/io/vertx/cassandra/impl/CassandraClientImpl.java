@@ -16,6 +16,16 @@
 package io.vertx.cassandra.impl;
 
 import io.vertx.cassandra.CassandraClient;
+import io.vertx.cassandra.CassandraClientOptions;
+import io.vertx.core.Vertx;
 
 public class CassandraClientImpl implements CassandraClient {
+  public CassandraClientImpl(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
+
+  }
+
+  @Override
+  public CassandraClient connect() {
+    return this;
+  }
 }
