@@ -15,12 +15,11 @@
  */
 package io.vertx.cassandra;
 
-import io.vertx.codegen.annotations.VertxGen;
+import io.vertx.codegen.annotations.DataObject;
 
 /**
- * Eclipse Vert.x Cassandra client.
+ * Eclipse Vert.x Cassandra client options.
  */
-@VertxGen
-public interface CassandraClient {
-
+@DataObject(generateConverter = true)
+public class CassandraClientOptions {
 }
