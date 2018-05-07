@@ -16,6 +16,8 @@
     <properties>
         <stack.version>3.6.0-SNAPSHOT</stack.version>
         <datastax-driver.version>3.5.0</datastax-driver.version>
+        <junit.version>4.12</junit.version>
+        <testcontainers.version>1.7.2</testcontainers.version>
     </properties>
 
     <dependencyManagement>
@@ -46,6 +48,32 @@
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
             <version>${datastax-driver.version}</version>
+        </dependency>
+
+        <!-- Testing purposes -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${testcontainers.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-unit</artifactId>
+            <version>${stack.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.25</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

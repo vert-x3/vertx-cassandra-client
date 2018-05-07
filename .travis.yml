@@ -1,0 +1,18 @@
+sudo: required
+language: java
+jdk:
+  - oraclejdk8
+
+cache:
+  directories:
+  - $HOME/.m2
+
+before_install:
+  - cp .travis.maven.settings.xml $HOME/.m2/settings.xml
+
+script:
+  - set -e
+  - mvn clean verify -Pcoverage
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
