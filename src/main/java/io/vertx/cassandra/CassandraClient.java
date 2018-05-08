@@ -18,6 +18,8 @@ package io.vertx.cassandra;
 import io.vertx.cassandra.impl.CassandraClientImpl;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 /**
@@ -34,6 +36,53 @@ public interface CassandraClient {
     return new CassandraClientImpl(vertx, cassandraClientOptions);
   }
 
+  /**
+   * Connect to a Cassandra service.
+   *
+   * @return current Cassandra client instance
+   */
   @Fluent
-  CassandraClient connect();
+  default CassandraClient connect() {
+    return connect(null);
+  }
+
+  /**
+   * Connect to a Cassandra service.
+   *
+   * @param connectHandler handler called when asynchronous connect call ends
+   * @return current Cassandra client instance
+   */
+  @Fluent
+  default CassandraClient connect(Handler<AsyncResult<Void>> connectHandler) {
+    return connect(null, connectHandler);
+  }
+
+  /**
+   * Connect to a Cassandra service.
+   *
+   * @param keyspace       The name of the keyspace to use for the created connection.
+   * @param connectHandler handler called when asynchronous connect call ends
+   * @return current Cassandra client instance
+   */
+  @Fluent
+  CassandraClient connect(String keyspace, Handler<AsyncResult<Void>> connectHandler);
+
+  /**
+   * Disconnects from the Cassandra service.
+   *
+   * @return current Cassandra client instance
+   */
+  @Fluent
+  default CassandraClient disconnect() {
+    return connect(null);
+  }
+
+  /**
+   * Disconnects from the Cassandra service.
+   *
+   * @param disconnectHandler handler called when asynchronous disconnect call ends
+   * @return current Cassandra client instance
+   */
+  @Fluent
+  CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler);
 }

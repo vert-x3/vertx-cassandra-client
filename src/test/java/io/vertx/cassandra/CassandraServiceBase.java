@@ -15,6 +15,7 @@
  */
 package io.vertx.cassandra;
 
+import io.vertx.core.Vertx;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.After;
@@ -27,12 +28,14 @@ import java.io.IOException;
  */
 public class CassandraServiceBase {
 
+  Vertx vertx = Vertx.vertx();
   static final String HOST = "localhost";
   static final int NATIVE_TRANSPORT_PORT = 9142;
 
   @Before
   public void before() throws InterruptedException, IOException, TTransportException {
     EmbeddedCassandraServerHelper.startEmbeddedCassandra();
+
   }
 
   @After

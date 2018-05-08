@@ -16,7 +16,6 @@
 package io.vertx.cassandra;
 
 import io.vertx.codegen.annotations.DataObject;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 
 import java.util.ArrayList;
