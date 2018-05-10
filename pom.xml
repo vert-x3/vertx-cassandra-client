@@ -54,6 +54,11 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
 
     <!-- Vert.x dependencies -->
     <dependency>
@@ -69,11 +74,6 @@
       <groupId>io.vertx</groupId>
       <artifactId>vertx-docgen</artifactId>
       <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
     </dependency>
 
     <!-- Testing purposes -->

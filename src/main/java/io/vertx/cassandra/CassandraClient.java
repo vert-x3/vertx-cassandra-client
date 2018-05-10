@@ -67,6 +67,17 @@ public interface CassandraClient {
   @Fluent
   CassandraClient connect(String keyspace, Handler<AsyncResult<Void>> connectHandler);
 
+
+  /**
+   * Execute the query and provide a handler for consuming results
+   *
+   * @param resultHandler handler called when result of execution is present
+   * @param query         the query to execute
+   * @return current Cassandra client instance
+   */
+  @Fluent
+  CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler);
+
   /**
    * Disconnects from the Cassandra service.
    *

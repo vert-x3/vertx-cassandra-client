@@ -10,11 +10,11 @@ import io.vertx.core.impl.VertxInternal;
 public class Util {
 
   /**
+   * Transfrom the guave future to a Vert.x future.
    *
-   *
-   * @param future the guava future
+   * @param future        the guava future
    * @param vertxInternal the Vert.x instance
-   * @param <T> the future type
+   * @param <T>           the future type
    * @return the Vert.x future
    */
   static <T> Future<T> toVertxFuture(ListenableFuture<T> future, VertxInternal vertxInternal) {
@@ -32,5 +32,4 @@ public class Util {
     }, vertxInternal.getEventLoopGroup());
     return vertxFuture;
   }
-
 }
