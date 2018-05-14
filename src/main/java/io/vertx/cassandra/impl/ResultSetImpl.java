@@ -37,6 +37,16 @@ public class ResultSetImpl implements ResultSet {
   }
 
   @Override
+  public Row one() {
+    CassandraIterator<Row> iterator = iterator();
+    if (iterator.hasNext()) {
+      return iterator.next();
+    } else {
+      return null;
+    }
+  }
+
+  @Override
   public int size() {
     return rows.size();
   }

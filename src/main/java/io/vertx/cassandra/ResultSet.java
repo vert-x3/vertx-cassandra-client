@@ -23,6 +23,8 @@ import io.vertx.codegen.annotations.VertxGen;
 @VertxGen
 public interface ResultSet extends Iterable<Row> {
 
+  Row one();
+
   int size();
 
   CassandraIterator<Row> iterator();
