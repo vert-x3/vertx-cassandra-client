@@ -27,11 +27,11 @@ import java.util.List;
 @DataObject(generateConverter = true)
 public class CassandraClientOptions {
 
-  public static final List<String> DEFAULT_CONTACT_POINTS = new ArrayList<String>(1) {{
-    add("localhost");
-  }};
+  public static final List<String> DEFAULT_CONTACT_POINTS = new ArrayList<>(0);
 
   public static final int DEFAULT_PORT = 9042;
+
+  public static final String DEFAULT_HOST = "localhost";
 
   private List<String> contactPoints = DEFAULT_CONTACT_POINTS;
 
@@ -52,6 +52,11 @@ public class CassandraClientOptions {
 
   public CassandraClientOptions setPort(int port) {
     this.port = port;
+    return this;
+  }
+
+  public CassandraClientOptions addContactPoint(String address) {
+    contactPoints().add(address);
     return this;
   }
 
