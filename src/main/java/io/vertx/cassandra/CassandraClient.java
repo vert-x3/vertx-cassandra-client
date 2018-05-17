@@ -85,7 +85,7 @@ public interface CassandraClient {
    */
   @Fluent
   default CassandraClient disconnect() {
-    return connect(null);
+    return disconnect(null);
   }
 
   /**
