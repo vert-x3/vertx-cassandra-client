@@ -10,7 +10,7 @@ import io.vertx.core.impl.VertxInternal;
 public class Util {
 
   /**
-   * Transfrom the guave future to a Vert.x future.
+   * Transform the guava future to a Vert.x future.
    *
    * @param future        the guava future
    * @param vertxInternal the Vert.x instance
