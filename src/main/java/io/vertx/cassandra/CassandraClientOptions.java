@@ -59,6 +59,9 @@ public class CassandraClientOptions {
   }
 
   public List<String> contactPoints() {
+    if (contactPoints == null) {
+      contactPoints = new ArrayList<>();
+    }
     return contactPoints;
   }
 
