@@ -3,9 +3,9 @@ package io.vertx.cassandra.impl;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
-import io.vertx.core.impl.VertxInternal;
-
+import io.vertx.core.Vertx;
 
 public class Util {
 
@@ -13,11 +13,12 @@ public class Util {
    * Transform the guava future to a Vert.x future.
    *
    * @param future        the guava future
-   * @param vertxInternal the Vert.x instance
+   * @param vertx the Vert.x instance
    * @param <T>           the future type
    * @return the Vert.x future
    */
-  static <T> Future<T> toVertxFuture(ListenableFuture<T> future, VertxInternal vertxInternal) {
+  static <T> Future<T> toVertxFuture(ListenableFuture<T> future, Vertx vertx) {
+    Context context = vertx.getOrCreateContext();
     Future<T> vertxFuture = Future.future();
     Futures.addCallback(future, new FutureCallback<T>() {
       @Override
@@ -29,7 +30,7 @@ public class Util {
       public void onFailure(Throwable t) {
         vertxFuture.fail(t);
       }
-    }, vertxInternal.getEventLoopGroup());
+    }, command -> context.runOnContext(v -> command.run()));
     return vertxFuture;
   }
 }
