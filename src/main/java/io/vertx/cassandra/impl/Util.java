@@ -3,6 +3,7 @@ package io.vertx.cassandra.impl;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 
@@ -17,6 +18,7 @@ public class Util {
    * @return the Vert.x future
    */
   static <T> Future<T> toVertxFuture(ListenableFuture<T> future, Vertx vertx) {
+    Context context = vertx.getOrCreateContext();
     Future<T> vertxFuture = Future.future();
     Futures.addCallback(future, new FutureCallback<T>() {
       @Override
@@ -28,7 +30,7 @@ public class Util {
       public void onFailure(Throwable t) {
         vertxFuture.fail(t);
       }
-    }, command -> vertx.getOrCreateContext().runOnContext(v -> command.run()));
+    }, command -> context.runOnContext(v -> command.run()));
     return vertxFuture;
   }
 }
