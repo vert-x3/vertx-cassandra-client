@@ -7,7 +7,6 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.streams.ReadStream;
 
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,13 +35,13 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   }
 
   @Override
-  public ReadStream<Row> exceptionHandler(Handler<Throwable> handler) {
+  public CassandraRowStream exceptionHandler(Handler<Throwable> handler) {
     exceptionHandler = handler;
     return this;
   }
 
   @Override
-  public ReadStream<Row> handler(Handler<Row> handler) {
+  public CassandraRowStream handler(Handler<Row> handler) {
     rowHandler = handler;
     if (handler != null) {
       fireStream();
@@ -51,20 +50,20 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   }
 
   @Override
-  public ReadStream<Row> pause() {
+  public CassandraRowStream pause() {
     paused.set(true);
     return this;
   }
 
   @Override
-  public ReadStream<Row> resume() {
+  public CassandraRowStream resume() {
     paused.set(false);
     fireStream();
     return this;
   }
 
   @Override
-  public ReadStream<Row> endHandler(Handler<Void> handler) {
+  public CassandraRowStream endHandler(Handler<Void> handler) {
     endHandler = handler;
     return this;
   }

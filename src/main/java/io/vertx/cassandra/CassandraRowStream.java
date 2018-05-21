@@ -11,18 +11,18 @@ import io.vertx.core.streams.ReadStream;
 public interface CassandraRowStream extends ReadStream<Row> {
 
   @Override
-  ReadStream<Row> exceptionHandler(Handler<Throwable> handler);
+  CassandraRowStream exceptionHandler(Handler<Throwable> handler);
 
   @Override
-  ReadStream<Row> handler(Handler<Row> handler);
+  CassandraRowStream handler(Handler<Row> handler);
 
   @Override
-  ReadStream<Row> pause();
+  CassandraRowStream pause();
 
   @Override
-  ReadStream<Row> resume();
+  CassandraRowStream resume();
 
   @Override
-  ReadStream<Row> endHandler(Handler<Void> handler);
+  CassandraRowStream endHandler(Handler<Void> handler);
 
 }
