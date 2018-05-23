@@ -36,6 +36,30 @@ public class ExecutionTest extends CassandraServiceBase {
   private static final Logger log = LoggerFactory.getLogger(ExecutionTest.class);
 
   @Test
+  public void tableHaveSomeRows(TestContext context) {
+    CassandraClient cassandraClient = CassandraClient.create(
+      vertx,
+      new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
+    );
+    Async async = context.async();
+    Future<Void> future = Future.future();
+    cassandraClient.connect(future);
+    future.compose(connected -> {
+      Future<ResultSet> queryResult = Future.future();
+      cassandraClient.execute("select count(*) as cnt from playlist.track_by_id", queryResult);
+      return queryResult;
+    }).compose((ResultSet resultSet) -> {
+      Assert.assertTrue(resultSet.one().getLong("cnt") > 0);
+      return Future.succeededFuture();
+    }).setHandler(event -> {
+      if (event.failed()) {
+        context.fail(event.cause());
+      }
+      async.countDown();
+    });
+  }
+
+  @Test
   public void simpleReleaseVersionSelect(TestContext context) {
     CassandraClient cassandraClient = CassandraClient.create(
       vertx,
