@@ -50,8 +50,12 @@ public class CassandraClientImpl implements CassandraClient {
     session.set(null);
     Cluster.Builder builder = Cluster.builder();
 
-    for (String contactPoint : options.contactPoints()) {
-      builder.addContactPoint(contactPoint);
+    if (options.contactPoints().isEmpty()) {
+      builder.addContactPoint(CassandraClientOptions.DEFAULT_HOST);
+    } else {
+      for (String contactPoint : options.contactPoints()) {
+        builder.addContactPoint(contactPoint);
+      }
     }
 
     Cluster build = builder.withPort(options.port()).build();
