@@ -9,23 +9,19 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class CassandraRowStreamImpl implements CassandraRowStream {
 
   private final ResultSet datastaxResultSet;
   private final Vertx vertx;
   private final Iterator<com.datastax.driver.core.Row> resultSetIterator;
-  private final Lock iteratorAccessLock = new ReentrantLock();
   private final Context context;
 
-  private volatile Handler<Throwable> exceptionHandler;
-  private volatile Handler<Row> rowHandler;
-  private volatile Handler<Void> endHandler;
+  private Handler<Throwable> exceptionHandler;
+  private Handler<Row> rowHandler;
+  private Handler<Void> endHandler;
 
-  private AtomicBoolean paused = new AtomicBoolean(false);
+  private boolean paused = false;
 
   public CassandraRowStreamImpl(ResultSet result, Vertx vertx) {
     this.vertx = vertx;
@@ -35,13 +31,13 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   }
 
   @Override
-  public CassandraRowStream exceptionHandler(Handler<Throwable> handler) {
+  public synchronized CassandraRowStream exceptionHandler(Handler<Throwable> handler) {
     exceptionHandler = handler;
     return this;
   }
 
   @Override
-  public CassandraRowStream handler(Handler<Row> handler) {
+  public synchronized CassandraRowStream handler(Handler<Row> handler) {
     rowHandler = handler;
     if (handler != null) {
       fireStream();
@@ -50,32 +46,30 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   }
 
   @Override
-  public CassandraRowStream pause() {
-    paused.set(true);
+  public synchronized CassandraRowStream pause() {
+    paused = true;
     return this;
   }
 
   @Override
-  public CassandraRowStream resume() {
-    paused.set(false);
+  public synchronized CassandraRowStream resume() {
+    paused = false;
     fireStream();
     return this;
   }
 
   @Override
-  public CassandraRowStream endHandler(Handler<Void> handler) {
+  public synchronized CassandraRowStream endHandler(Handler<Void> handler) {
     endHandler = handler;
     return this;
   }
 
   private void fireStream() {
-    if (!paused.get() && rowHandler != null) {
+    if (!paused && rowHandler != null) {
       int availableWithoutFetching = datastaxResultSet.getAvailableWithoutFetching();
       for (int i = 0; i < availableWithoutFetching; i++) {
 
-        iteratorAccessLock.lock();
         Row row = new RowImpl(resultSetIterator.next());
-        iteratorAccessLock.unlock();
 
         context.runOnContext(v -> rowHandler.handle(row));
         if (i == availableWithoutFetching - 1) {
@@ -103,10 +97,8 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   }
 
   private void tryToTriggerEndOfTheStream() {
-    iteratorAccessLock.lock();
     if (endHandler != null && datastaxResultSet.isFullyFetched() && !resultSetIterator.hasNext()) {
       endHandler.handle(null);
     }
-    iteratorAccessLock.unlock();
   }
 }
