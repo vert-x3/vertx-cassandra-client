@@ -19,41 +19,55 @@ import io.vertx.core.Future;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 @RunWith(VertxUnitRunner.class)
 public class StreamingTest extends CassandraServiceBase {
 
   @Test
-  public void simpleStreamingReleaseVersionSelect(TestContext context) {
+  public void testReadStream(TestContext context) {
     CassandraClient cassandraClient = CassandraClient.create(
       vertx,
       new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
     );
-    Async async = context.async(2);
+    Async async = context.async();
     Future<Void> future = Future.future();
     cassandraClient.connect(future);
     future.compose(connected -> {
       Future<CassandraRowStream> queryResult = Future.future();
-      cassandraClient.queryStream("select release_version from system.local", queryResult);
-      async.countDown();
+      cassandraClient.queryStream("select artist from playlist.artists_by_first_letter where first_letter = 'A'", queryResult);
       return queryResult;
     }).compose(stream -> {
-      stream.handler(row -> {
-        String release_version = row.getString("release_version");
-        Assert.assertTrue(Pattern.compile("[0-9\\.]+").matcher(release_version).find());
+      List<Row> items = new ArrayList<>();
+      AtomicInteger idx = new AtomicInteger();
+      long pause = 500;
+      long start = System.nanoTime();
+      stream.endHandler(end -> {
+        long duration = NANOSECONDS.toMillis(System.nanoTime() - start);
+        context.assertTrue(duration >= 3 * pause);
         async.countDown();
-      });
+      }).exceptionHandler(context::fail)
+        .handler(item -> {
+          items.add(item);
+          int j = idx.getAndIncrement();
+          if (j == 3 || j == 16 || j == 38) {
+            stream.pause();
+            int emitted = items.size();
+            vertx.setTimer(pause, tid -> {
+              context.assertTrue(emitted == items.size());
+              stream.resume();
+            });
+          }
+        });
+
       return Future.succeededFuture();
-    }).setHandler(event -> {
-      if (event.failed()) {
-        context.fail(event.cause());
-      }
     });
   }
-
 }

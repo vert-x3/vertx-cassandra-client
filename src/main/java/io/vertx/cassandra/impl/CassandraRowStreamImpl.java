@@ -84,28 +84,38 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
       int availableWithoutFetching = datastaxResultSet.getAvailableWithoutFetching();
       for (int i = 0; i < availableWithoutFetching; i++) {
 
-        Row row = new RowImpl(resultSetIterator.next());
-
-        context.runOnContext(v -> rowHandler.handle(row));
+        CassandraRowStreamImpl thisStream = this;
         if (i == availableWithoutFetching - 1) {
           context.runOnContext(v -> {
-            rowHandler.handle(row);
-            tryToTriggerEndOfTheStream();
-            if (!datastaxResultSet.isFullyFetched()) {
-              Future<ResultSet> fetched = Util.toVertxFuture(datastaxResultSet.fetchMoreResults(), vertx);
-              fetched.setHandler(whenFetched -> {
-                if (whenFetched.succeeded()) {
-                  fireStream();
-                } else {
-                  if (exceptionHandler != null) {
-                    exceptionHandler.handle(whenFetched.cause());
-                  }
+
+            synchronized (thisStream) {
+              if (!paused) {
+                rowHandler.handle(new RowImpl(resultSetIterator.next()));
+                tryToTriggerEndOfTheStream();
+                if (!datastaxResultSet.isFullyFetched()) {
+                  Future<ResultSet> fetched = Util.toVertxFuture(datastaxResultSet.fetchMoreResults(), vertx);
+                  fetched.setHandler(whenFetched -> {
+                    if (whenFetched.succeeded()) {
+                      fireStream();
+                    } else {
+                      if (exceptionHandler != null) {
+                        exceptionHandler.handle(whenFetched.cause());
+                      }
+                    }
+                  });
                 }
-              });
+              }
             }
+
           });
         } else {
-          context.runOnContext(v -> rowHandler.handle(row));
+          context.runOnContext(v -> {
+            synchronized (thisStream) {
+              if (!paused) {
+                rowHandler.handle(new RowImpl(resultSetIterator.next()));
+              }
+            }
+          });
         }
       }
     }
