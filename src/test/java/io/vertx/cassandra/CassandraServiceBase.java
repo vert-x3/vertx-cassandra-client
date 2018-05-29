@@ -15,6 +15,7 @@
  */
 package io.vertx.cassandra;
 
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
@@ -36,6 +37,24 @@ public class CassandraServiceBase {
   public void before() throws InterruptedException, IOException, TTransportException {
     EmbeddedCassandraServerHelper.startEmbeddedCassandra();
 
+    CassandraClient cassandraClient = CassandraClient.create(
+      vertx,
+      new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
+    );
+    Future<Void> future = Future.future();
+    cassandraClient.connect(future);
+    Future<ResultSet> result = future.compose(connected -> {
+      Future<ResultSet> createKeySpace = Future.future();
+      cassandraClient.execute("CREATE KEYSPACE IF NOT EXISTS names WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1 };", createKeySpace);
+      return createKeySpace;
+    }).compose(keySpaceCreated -> {
+      Future<ResultSet> createTable = Future.future();
+      cassandraClient.execute("create table names.names_by_first_letter (first_letter text, name text, primary key (first_letter, name));", createTable);
+      return createTable;
+    });
+
+    //block
+    result.result();
   }
 
   @After

@@ -16,17 +16,19 @@
 package io.vertx.cassandra.impl;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
+import io.vertx.cassandra.ExecutableQuery;
+import io.vertx.cassandra.PreparedQuery;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.FailedFuture;
 import io.vertx.core.impl.VertxInternal;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -85,10 +87,10 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
-  public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler) {
+  public CassandraClient execute(ExecutableQuery query, Handler<AsyncResult<ResultSet>> resultHandler) {
     Session session = this.session.get();
     if (session != null) {
-      ResultSetFuture resultSetFuture = session.executeAsync(query);
+      ResultSetFuture resultSetFuture = session.executeAsync(((ExecutableQueryImpl) query).dataStaxBoundStatement);
       Future<com.datastax.driver.core.ResultSet> vertxExecuteFuture = Util.toVertxFuture(resultSetFuture, vertx);
       vertxExecuteFuture.setHandler(executionResult -> {
         if (executionResult.succeeded()) {
@@ -109,6 +111,30 @@ public class CassandraClientImpl implements CassandraClient {
     return this;
   }
 
+  @Override
+  public CassandraClient prepare(String query, Handler<AsyncResult<PreparedQuery>> resultHandler) {
+    Session session = this.session.get();
+    if (session != null) {
+      ListenableFuture<PreparedStatement> preparedFuture = session.prepareAsync(query);
+      Future<PreparedStatement> vertxExecuteFuture = Util.toVertxFuture(preparedFuture, vertx);
+      vertxExecuteFuture.setHandler(executionResult -> {
+        if (executionResult.succeeded()) {
+          if (resultHandler != null) {
+            resultHandler.handle(Future.succeededFuture(new PreparedQueryImpl(executionResult.result())));
+          }
+        } else {
+          if (resultHandler != null) {
+            resultHandler.handle(Future.failedFuture(executionResult.cause()));
+          }
+        }
+      });
+    } else {
+      if (resultHandler != null) {
+        resultHandler.handle(Future.failedFuture("In order to prepare the query, you should be connected"));
+      }
+    }
+    return this;
+  }
 
   @Override
   public CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler) {

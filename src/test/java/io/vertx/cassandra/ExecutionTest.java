@@ -16,6 +16,7 @@
 package io.vertx.cassandra;
 
 import io.vertx.core.Future;
+import io.vertx.core.json.JsonArray;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -52,6 +53,41 @@ public class ExecutionTest extends CassandraServiceBase {
     }).compose(resultSet -> {
       String release_version = resultSet.iterator().next().getString("release_version");
       Assert.assertTrue(Pattern.compile("[0-9\\.]+").matcher(release_version).find());
+      async.countDown();
+      return Future.succeededFuture();
+    }).setHandler(event -> {
+      if (event.failed()) {
+        context.fail(event.cause());
+      }
+    });
+  }
+
+  @Test
+  public void preparedStatementTest(TestContext context) {
+    String name = "Pavel";
+
+    CassandraClient cassandraClient = CassandraClient.create(
+      vertx,
+      new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
+    );
+    Async async = context.async();
+    Future<Void> future = Future.future();
+    cassandraClient.connect(future);
+    future.compose(connected -> {
+      Future<PreparedQuery> queryResult = Future.future();
+      cassandraClient.prepare("INSERT INTO names.names_by_first_letter (first_letter, name) VALUES (?, ?)", queryResult);
+      return queryResult;
+    }).compose(prepared -> {
+      Future<ResultSet> executionQuery = Future.future();
+      ExecutableQuery query = prepared.bind(new JsonArray().add("P").add(name));
+      cassandraClient.execute(query, executionQuery);
+      return executionQuery;
+    }).compose(executed -> {
+      Future<ResultSet> executionQuery = Future.future();
+      cassandraClient.execute("select name as n from names.names_by_first_letter where first_letter = 'P'", executionQuery);
+      return executionQuery;
+    }).compose(executed -> {
+      context.assertTrue(executed.one().getString("n").equals(name));
       async.countDown();
       return Future.succeededFuture();
     }).setHandler(event -> {

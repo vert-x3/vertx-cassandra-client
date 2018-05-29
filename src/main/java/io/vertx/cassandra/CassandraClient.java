@@ -15,7 +15,9 @@
  */
 package io.vertx.cassandra;
 
+import com.datastax.driver.core.SimpleStatement;
 import io.vertx.cassandra.impl.CassandraClientImpl;
+import io.vertx.cassandra.impl.ExecutableQueryImpl;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
@@ -76,7 +78,29 @@ public interface CassandraClient {
    * @return current Cassandra client instance
    */
   @Fluent
-  CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler);
+  default CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler){
+    return execute(ExecutableQuery.fromString(query), resultHandler);
+  }
+
+  /**
+   * Execute the query and provide a handler for consuming results
+   *
+   * @param resultHandler handler called when result of execution is present
+   * @param query         the query to execute
+   * @return current Cassandra client instance
+   */
+  @Fluent
+  CassandraClient execute(ExecutableQuery query, Handler<AsyncResult<ResultSet>> resultHandler);
+
+  /**
+   * Prepares the provided query string
+   *
+   * @param resultHandler handler called when result of query preparation is present
+   * @param query         the query to prepare
+   * @return current Cassandra client instance
+   */
+  @Fluent
+  CassandraClient prepare(String query, Handler<AsyncResult<PreparedQuery>> resultHandler);
 
   /**
    * Disconnects from the Cassandra service.
