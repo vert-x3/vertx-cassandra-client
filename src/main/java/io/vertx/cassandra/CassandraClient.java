@@ -15,9 +15,7 @@
  */
 package io.vertx.cassandra;
 
-import com.datastax.driver.core.SimpleStatement;
 import io.vertx.cassandra.impl.CassandraClientImpl;
-import io.vertx.cassandra.impl.ExecutableQueryImpl;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;

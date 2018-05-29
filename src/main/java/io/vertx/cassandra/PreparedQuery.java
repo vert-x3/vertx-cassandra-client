@@ -16,10 +16,23 @@
 package io.vertx.cassandra;
 
 import io.vertx.codegen.annotations.VertxGen;
+import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 
+/**
+ * Analogy of {@link com.datastax.driver.core.PreparedStatement}
+ *
+ * @see com.datastax.driver.core.PreparedStatement
+ */
 @VertxGen
 public interface PreparedQuery {
 
+  /**
+   * Creates a new {@link ExecutableQuery} object and bind its variables to the  provided values.
+   *
+   * @param params the values to bind
+   * @return instance of {@link ExecutableQuery} which can be executed with {@link CassandraClient#execute(ExecutableQuery, Handler)}
+   * @see com.datastax.driver.core.PreparedStatement#bind(Object...)
+   */
   ExecutableQuery bind(JsonArray params);
 }
