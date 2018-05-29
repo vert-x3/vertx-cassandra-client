@@ -20,9 +20,11 @@ import io.vertx.core.Vertx;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * A base class, which should be used for in all test where Cassandra service is required.
@@ -39,9 +41,12 @@ public class CassandraServiceBase {
 
     CassandraClient cassandraClient = CassandraClient.create(
       vertx,
-      new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
+      new CassandraClientOptions()
+        .addContactPoint(HOST)
+        .setPort(NATIVE_TRANSPORT_PORT)
     );
     Future<Void> future = Future.future();
+    CountDownLatch latch = new CountDownLatch(1);
     cassandraClient.connect(future);
     Future<ResultSet> result = future.compose(connected -> {
       Future<ResultSet> createKeySpace = Future.future();
@@ -51,10 +56,15 @@ public class CassandraServiceBase {
       Future<ResultSet> createTable = Future.future();
       cassandraClient.execute("create table names.names_by_first_letter (first_letter text, name text, primary key (first_letter, name));", createTable);
       return createTable;
+    }).setHandler(handler -> {
+      if (handler.failed()) {
+        Assert.fail();
+      } else {
+        latch.countDown();
+      }
     });
 
-    //block
-    result.result();
+    latch.await();
   }
 
   @After
