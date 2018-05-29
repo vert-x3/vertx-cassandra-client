@@ -48,7 +48,7 @@ public class CassandraServiceBase {
     Future<Void> future = Future.future();
     CountDownLatch latch = new CountDownLatch(1);
     cassandraClient.connect(future);
-    Future<ResultSet> result = future.compose(connected -> {
+    Future<Void> result = future.compose(connected -> {
       Future<ResultSet> createKeySpace = Future.future();
       cassandraClient.execute("CREATE KEYSPACE IF NOT EXISTS names WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1 };", createKeySpace);
       return createKeySpace;
@@ -56,6 +56,10 @@ public class CassandraServiceBase {
       Future<ResultSet> createTable = Future.future();
       cassandraClient.execute("create table names.names_by_first_letter (first_letter text, name text, primary key (first_letter, name));", createTable);
       return createTable;
+    }).compose(tableCreated -> {
+      Future<Void> disconnectFuture = Future.future();
+      cassandraClient.disconnect(disconnectFuture);
+      return disconnectFuture;
     }).setHandler(handler -> {
       if (handler.failed()) {
         Assert.fail();

@@ -88,11 +88,14 @@ public class ExecutionTest extends CassandraServiceBase {
       return executionQuery;
     }).compose(executed -> {
       context.assertTrue(executed.one().getString("n").equals(name));
-      async.countDown();
-      return Future.succeededFuture();
+      Future<Void> disconnectFuture = Future.future();
+      cassandraClient.disconnect(disconnectFuture);
+      return disconnectFuture;
     }).setHandler(event -> {
       if (event.failed()) {
         context.fail(event.cause());
+      } else {
+        async.countDown();
       }
     });
   }
