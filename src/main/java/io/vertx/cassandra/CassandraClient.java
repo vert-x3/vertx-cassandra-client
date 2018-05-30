@@ -76,10 +76,8 @@ public interface CassandraClient {
    * @return current Cassandra client instance
    */
   @Fluent
-  default CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler){
-    return execute(ExecutableQuery.fromString(query), resultHandler);
-  }
-
+  CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler);
+  
   /**
    * Execute the query and provide a handler for consuming results
    *

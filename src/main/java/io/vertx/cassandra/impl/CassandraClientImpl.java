@@ -87,6 +87,11 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
+  public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler){
+    return execute(ExecutableQuery.fromString(query), resultHandler);
+  }
+
+  @Override
   public CassandraClient execute(ExecutableQuery query, Handler<AsyncResult<ResultSet>> resultHandler) {
     Session session = this.session.get();
     if (session != null) {
