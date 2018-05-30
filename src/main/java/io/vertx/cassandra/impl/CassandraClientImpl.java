@@ -90,7 +90,7 @@ public class CassandraClientImpl implements CassandraClient {
   public CassandraClient execute(ExecutableQuery query, Handler<AsyncResult<ResultSet>> resultHandler) {
     Session session = this.session.get();
     if (session != null) {
-      ResultSetFuture resultSetFuture = session.executeAsync(((ExecutableQueryImpl) query).dataStaxBoundStatement);
+      ResultSetFuture resultSetFuture = session.executeAsync(((ExecutableQueryImpl) query).statement);
       Future<com.datastax.driver.core.ResultSet> vertxExecuteFuture = Util.toVertxFuture(resultSetFuture, vertx);
       vertxExecuteFuture.setHandler(executionResult -> {
         if (executionResult.succeeded()) {

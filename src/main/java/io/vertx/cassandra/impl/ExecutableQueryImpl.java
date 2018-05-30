@@ -21,20 +21,20 @@ import io.vertx.cassandra.ExecutableQuery;
 
 public class ExecutableQueryImpl implements ExecutableQuery {
 
-  Statement dataStaxBoundStatement;
+  Statement statement;
 
   public ExecutableQueryImpl(Statement filled) {
-    dataStaxBoundStatement = filled;
+    statement = filled;
   }
 
   @Override
   public ExecutableQuery setConsistencyLevel(ConsistencyLevel consistency) {
-    dataStaxBoundStatement.setConsistencyLevel(consistency);
+    statement.setConsistencyLevel(consistency);
     return this;
   }
 
   @Override
   public ConsistencyLevel getConsistencyLevel() {
-    return dataStaxBoundStatement.getConsistencyLevel();
+    return statement.getConsistencyLevel();
   }
 }
