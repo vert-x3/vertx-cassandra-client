@@ -79,7 +79,7 @@ public interface CassandraClient {
   CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler);
   
   /**
-   * Execute the query and provide a handler for consuming results
+   * Execute the query and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is present
    * @param query         the query to execute
