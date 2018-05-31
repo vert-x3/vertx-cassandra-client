@@ -48,6 +48,16 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
+  public CassandraClient connect() {
+    return connect(null);
+  }
+
+  @Override
+  public CassandraClient connect(Handler<AsyncResult<Void>> connectHandler) {
+    return connect(null, connectHandler);
+  }
+
+  @Override
   public CassandraClient connect(String keyspace, Handler<AsyncResult<Void>> connectHandler) {
     session.set(null);
     Cluster.Builder builder = Cluster.builder();
@@ -116,6 +126,10 @@ public class CassandraClientImpl implements CassandraClient {
     return this;
   }
 
+  @Override
+  public CassandraClient disconnect() {
+    return disconnect(null);
+  }
   @Override
   public CassandraClient prepare(String query, Handler<AsyncResult<PreparedQuery>> resultHandler) {
     Session session = this.session.get();
