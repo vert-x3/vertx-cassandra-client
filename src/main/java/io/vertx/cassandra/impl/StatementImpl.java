@@ -22,8 +22,8 @@ public class StatementImpl implements Statement {
 
   com.datastax.driver.core.Statement statement;
 
-  public StatementImpl(com.datastax.driver.core.Statement filled) {
-    statement = filled;
+  public StatementImpl(com.datastax.driver.core.Statement statement) {
+    this.statement = statement;
   }
 
   @Override
