@@ -79,7 +79,7 @@ public class ExecutionTest extends CassandraServiceBase {
       return queryResult;
     }).compose(prepared -> {
       Future<ResultSet> executionQuery = Future.future();
-      ExecutableQuery query = prepared.bind(new JsonArray().add("P").add(name));
+      ExecutableQuery query = prepared.bind(BindArray.create().add("P").add(name));
       cassandraClient.execute(query, executionQuery);
       return executionQuery;
     }).compose(executed -> {
