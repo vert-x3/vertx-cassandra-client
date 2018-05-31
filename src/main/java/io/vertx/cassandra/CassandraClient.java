@@ -42,9 +42,7 @@ public interface CassandraClient {
    * @return current Cassandra client instance
    */
   @Fluent
-  default CassandraClient connect() {
-    return connect(null);
-  }
+  CassandraClient connect();
 
   /**
    * Connect to a Cassandra service.
@@ -53,9 +51,7 @@ public interface CassandraClient {
    * @return current Cassandra client instance
    */
   @Fluent
-  default CassandraClient connect(Handler<AsyncResult<Void>> connectHandler) {
-    return connect(null, connectHandler);
-  }
+  CassandraClient connect(Handler<AsyncResult<Void>> connectHandler);
 
   /**
    * Connect to a Cassandra service.
@@ -67,9 +63,8 @@ public interface CassandraClient {
   @Fluent
   CassandraClient connect(String keyspace, Handler<AsyncResult<Void>> connectHandler);
 
-
   /**
-   * Execute the query and provide a handler for consuming results
+   * Execute the query and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is present
    * @param query         the query to execute
@@ -84,9 +79,7 @@ public interface CassandraClient {
    * @return current Cassandra client instance
    */
   @Fluent
-  default CassandraClient disconnect() {
-    return disconnect(null);
-  }
+  CassandraClient disconnect();
 
   /**
    * Disconnects from the Cassandra service.

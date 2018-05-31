@@ -26,7 +26,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.FailedFuture;
 import io.vertx.core.impl.VertxInternal;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,6 +42,16 @@ public class CassandraClientImpl implements CassandraClient {
   public CassandraClientImpl(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
     this.vertx = (VertxInternal) vertx;
     this.options = cassandraClientOptions;
+  }
+
+  @Override
+  public CassandraClient connect() {
+    return connect(null);
+  }
+
+  @Override
+  public CassandraClient connect(Handler<AsyncResult<Void>> connectHandler) {
+    return connect(null, connectHandler);
   }
 
   @Override
@@ -109,6 +118,10 @@ public class CassandraClientImpl implements CassandraClient {
     return this;
   }
 
+  @Override
+  public CassandraClient disconnect() {
+    return disconnect(null);
+  }
 
   @Override
   public CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler) {
