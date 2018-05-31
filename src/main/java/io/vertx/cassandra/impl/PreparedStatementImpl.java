@@ -16,23 +16,21 @@
 package io.vertx.cassandra.impl;
 
 import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
 import io.vertx.cassandra.BindArray;
-import io.vertx.cassandra.ExecutableQuery;
-import io.vertx.cassandra.PreparedQuery;
-import io.vertx.core.json.JsonArray;
+import io.vertx.cassandra.Statement;
+import io.vertx.cassandra.PreparedStatement;
 
-public class PreparedQueryImpl implements PreparedQuery {
+public class PreparedStatementImpl implements PreparedStatement {
 
-  private final PreparedStatement datastaxStatement;
+  private final com.datastax.driver.core.PreparedStatement datastaxStatement;
 
-  public PreparedQueryImpl(PreparedStatement datastaxStatement) {
+  public PreparedStatementImpl(com.datastax.driver.core.PreparedStatement datastaxStatement) {
     this.datastaxStatement = datastaxStatement;
   }
 
   @Override
-  public ExecutableQuery bind(BindArray params) {
+  public Statement bind(BindArray params) {
     BoundStatement filled = datastaxStatement.bind(((BindArrayImpl) params).list.toArray());
-    return new ExecutableQueryImpl(filled);
+    return new StatementImpl(filled);
   }
 }

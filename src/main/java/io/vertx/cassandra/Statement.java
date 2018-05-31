@@ -17,7 +17,7 @@ package io.vertx.cassandra;
 
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.SimpleStatement;
-import io.vertx.cassandra.impl.ExecutableQueryImpl;
+import io.vertx.cassandra.impl.StatementImpl;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
@@ -25,36 +25,36 @@ import io.vertx.core.Handler;
 /**
  * Analogy of {@link com.datastax.driver.core.Statement}
  * <p>
- * Represents a query, which is ready to be executed via {@link CassandraClient#execute(ExecutableQuery, Handler)}
+ * Represents a query, which is ready to be executed via {@link CassandraClient#execute(Statement, Handler)}
  */
 @VertxGen
-public interface ExecutableQuery {
+public interface Statement {
 
   /**
-   * Construct a new instance of {@link ExecutableQuery} from the string.
+   * Construct a new instance of {@link Statement} from the string.
    *
    * @param query the string
-   * @return a new instance of {@link ExecutableQuery}
+   * @return a new instance of {@link Statement}
    * @see SimpleStatement
    */
-  static ExecutableQuery fromString(String query) {
-    return new ExecutableQueryImpl(new SimpleStatement(query));
+  static Statement fromString(String query) {
+    return new StatementImpl(new SimpleStatement(query));
   }
 
   /**
    * Sets the consistency level for the query
    *
    * @param consistency the consistency level to set
-   * @return current {@link ExecutableQuery} instance
+   * @return current {@link Statement} instance
    */
   @Fluent
-  ExecutableQuery setConsistencyLevel(ConsistencyLevel consistency);
+  Statement setConsistencyLevel(ConsistencyLevel consistency);
 
   /**
    * The consistency level for this query
    *
    * @return the consistency level for this query, or {@code null} if no
-   * consistency level has been specified (through {@link ExecutableQuery#setConsistencyLevel(ConsistencyLevel)}).
+   * consistency level has been specified (through {@link Statement#setConsistencyLevel(ConsistencyLevel)}).
    * In the latter case, the default consistency level will be used.
    */
   ConsistencyLevel getConsistencyLevel();

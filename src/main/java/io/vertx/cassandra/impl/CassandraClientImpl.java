@@ -16,14 +16,13 @@
 package io.vertx.cassandra.impl;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
-import io.vertx.cassandra.ExecutableQuery;
-import io.vertx.cassandra.PreparedQuery;
+import io.vertx.cassandra.Statement;
+import io.vertx.cassandra.PreparedStatement;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -98,14 +97,14 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler){
-    return execute(ExecutableQuery.fromString(query), resultHandler);
+    return execute(Statement.fromString(query), resultHandler);
   }
 
   @Override
-  public CassandraClient execute(ExecutableQuery query, Handler<AsyncResult<ResultSet>> resultHandler) {
+  public CassandraClient execute(Statement query, Handler<AsyncResult<ResultSet>> resultHandler) {
     Session session = this.session.get();
     if (session != null) {
-      ResultSetFuture resultSetFuture = session.executeAsync(((ExecutableQueryImpl) query).statement);
+      ResultSetFuture resultSetFuture = session.executeAsync(((StatementImpl) query).statement);
       Future<com.datastax.driver.core.ResultSet> vertxExecuteFuture = Util.toVertxFuture(resultSetFuture, vertx);
       vertxExecuteFuture.setHandler(executionResult -> {
         if (executionResult.succeeded()) {
@@ -131,15 +130,15 @@ public class CassandraClientImpl implements CassandraClient {
     return disconnect(null);
   }
   @Override
-  public CassandraClient prepare(String query, Handler<AsyncResult<PreparedQuery>> resultHandler) {
+  public CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler) {
     Session session = this.session.get();
     if (session != null) {
-      ListenableFuture<PreparedStatement> preparedFuture = session.prepareAsync(query);
-      Future<PreparedStatement> vertxExecuteFuture = Util.toVertxFuture(preparedFuture, vertx);
+      ListenableFuture<com.datastax.driver.core.PreparedStatement> preparedFuture = session.prepareAsync(query);
+      Future<com.datastax.driver.core.PreparedStatement> vertxExecuteFuture = Util.toVertxFuture(preparedFuture, vertx);
       vertxExecuteFuture.setHandler(executionResult -> {
         if (executionResult.succeeded()) {
           if (resultHandler != null) {
-            resultHandler.handle(Future.succeededFuture(new PreparedQueryImpl(executionResult.result())));
+            resultHandler.handle(Future.succeededFuture(new PreparedStatementImpl(executionResult.result())));
           }
         } else {
           if (resultHandler != null) {

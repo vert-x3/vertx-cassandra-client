@@ -16,7 +16,6 @@
 package io.vertx.cassandra;
 
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonArray;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -74,12 +73,12 @@ public class ExecutionTest extends CassandraServiceBase {
     Future<Void> future = Future.future();
     cassandraClient.connect(future);
     future.compose(connected -> {
-      Future<PreparedQuery> queryResult = Future.future();
+      Future<PreparedStatement> queryResult = Future.future();
       cassandraClient.prepare("INSERT INTO names.names_by_first_letter (first_letter, name) VALUES (?, ?)", queryResult);
       return queryResult;
     }).compose(prepared -> {
       Future<ResultSet> executionQuery = Future.future();
-      ExecutableQuery query = prepared.bind(BindArray.create().add("P").add(name));
+      Statement query = prepared.bind(BindArray.create().add("P").add(name));
       cassandraClient.execute(query, executionQuery);
       return executionQuery;
     }).compose(executed -> {

@@ -16,19 +16,18 @@
 package io.vertx.cassandra.impl;
 
 import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.Statement;
-import io.vertx.cassandra.ExecutableQuery;
+import io.vertx.cassandra.Statement;
 
-public class ExecutableQueryImpl implements ExecutableQuery {
+public class StatementImpl implements Statement {
 
-  Statement statement;
+  com.datastax.driver.core.Statement statement;
 
-  public ExecutableQueryImpl(Statement filled) {
+  public StatementImpl(com.datastax.driver.core.Statement filled) {
     statement = filled;
   }
 
   @Override
-  public ExecutableQuery setConsistencyLevel(ConsistencyLevel consistency) {
+  public Statement setConsistencyLevel(ConsistencyLevel consistency) {
     statement.setConsistencyLevel(consistency);
     return this;
   }

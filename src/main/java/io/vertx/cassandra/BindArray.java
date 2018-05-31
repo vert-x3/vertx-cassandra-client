@@ -20,7 +20,7 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
 
 /**
- * Array, which can store any {@link Object}, should be used for calling {@link PreparedQuery#bind(BindArray)}
+ * Array, which can store any {@link Object}, should be used for calling {@link PreparedStatement#bind(BindArray)}
  */
 @VertxGen
 public interface BindArray  {

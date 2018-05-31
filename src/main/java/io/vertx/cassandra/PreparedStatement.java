@@ -17,9 +17,6 @@ package io.vertx.cassandra;
 
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
-import io.vertx.core.json.JsonArray;
-
-import java.util.List;
 
 /**
  * Analogy of {@link com.datastax.driver.core.PreparedStatement}
@@ -27,14 +24,14 @@ import java.util.List;
  * @see com.datastax.driver.core.PreparedStatement
  */
 @VertxGen
-public interface PreparedQuery {
+public interface PreparedStatement {
 
   /**
-   * Creates a new {@link ExecutableQuery} object and bind its variables to the  provided values.
+   * Creates a new {@link Statement} object and bind its variables to the  provided values.
    *
    * @param params the values to bind
-   * @return instance of {@link ExecutableQuery} which can be executed with {@link CassandraClient#execute(ExecutableQuery, Handler)}
+   * @return instance of {@link Statement} which can be executed with {@link CassandraClient#execute(Statement, Handler)}
    * @see com.datastax.driver.core.PreparedStatement#bind(Object...)
    */
-  ExecutableQuery bind(BindArray params);
+  Statement bind(BindArray params);
 }

@@ -81,7 +81,7 @@ public interface CassandraClient {
    * @return current Cassandra client instance
    */
   @Fluent
-  CassandraClient execute(ExecutableQuery query, Handler<AsyncResult<ResultSet>> resultHandler);
+  CassandraClient execute(Statement query, Handler<AsyncResult<ResultSet>> resultHandler);
 
   /**
    * Prepares the provided query string
@@ -91,7 +91,7 @@ public interface CassandraClient {
    * @return current Cassandra client instance
    */
   @Fluent
-  CassandraClient prepare(String query, Handler<AsyncResult<PreparedQuery>> resultHandler);
+  CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler);
 
   /**
    * Disconnects from the Cassandra service.
