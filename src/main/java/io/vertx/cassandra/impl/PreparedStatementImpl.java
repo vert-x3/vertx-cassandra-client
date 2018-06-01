@@ -15,9 +15,8 @@
  */
 package io.vertx.cassandra.impl;
 
-import com.datastax.driver.core.BoundStatement;
 import io.vertx.cassandra.BindArray;
-import io.vertx.cassandra.Statement;
+import io.vertx.cassandra.BoundStatement;
 import io.vertx.cassandra.PreparedStatement;
 
 public class PreparedStatementImpl implements PreparedStatement {
@@ -29,8 +28,13 @@ public class PreparedStatementImpl implements PreparedStatement {
   }
 
   @Override
-  public Statement bind(BindArray params) {
-    BoundStatement filled = datastaxStatement.bind(((BindArrayImpl) params).list.toArray());
-    return new StatementImpl(filled);
+  public BoundStatement bind(BindArray params) {
+    com.datastax.driver.core.BoundStatement filled = datastaxStatement.bind(((BindArrayImpl) params).list.toArray());
+    return new BoundStatementImpl(filled);
+  }
+
+  @Override
+  public BoundStatement bind() {
+    return new BoundStatementImpl(datastaxStatement.bind());
   }
 }

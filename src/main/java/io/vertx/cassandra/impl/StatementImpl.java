@@ -26,6 +26,9 @@ public class StatementImpl implements Statement {
     this.statement = statement;
   }
 
+  public StatementImpl() {
+  }
+
   @Override
   public Statement setConsistencyLevel(ConsistencyLevel consistency) {
     statement.setConsistencyLevel(consistency);

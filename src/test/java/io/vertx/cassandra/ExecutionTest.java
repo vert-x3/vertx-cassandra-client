@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -34,6 +35,7 @@ import java.util.regex.Pattern;
 public class ExecutionTest extends CassandraServiceBase {
 
   private static final Logger log = LoggerFactory.getLogger(ExecutionTest.class);
+  private static String NAME = "Pavel";
 
   @Test
   public void simpleReleaseVersionSelect(TestContext context) {
@@ -62,9 +64,21 @@ public class ExecutionTest extends CassandraServiceBase {
   }
 
   @Test
-  public void preparedStatementTest(TestContext context) {
-    String name = "Pavel";
+  public void preparedStatementWithBindArray(TestContext context) {
+    preparedStatementTest(context, prepared -> prepared.bind(BindArray.create().add("P").add(NAME)));
+  }
 
+  @Test
+  public void preparedStatementTestWithNamedParams(TestContext context) {
+    preparedStatementTest(context, prepared -> {
+      BoundStatement query = prepared.bind();
+      query.set("first_letter", "P");
+      query.set(1, NAME);
+      return query;
+    });
+  }
+
+  void preparedStatementTest(TestContext context, Function<PreparedStatement, Statement> wayToBind) {
     CassandraClient cassandraClient = CassandraClient.create(
       vertx,
       new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
@@ -74,19 +88,19 @@ public class ExecutionTest extends CassandraServiceBase {
     cassandraClient.connect(future);
     future.compose(connected -> {
       Future<PreparedStatement> queryResult = Future.future();
-      cassandraClient.prepare("INSERT INTO names.names_by_first_letter (first_letter, name) VALUES (?, ?)", queryResult);
+      cassandraClient.prepare("INSERT INTO names.names_by_first_letter (first_letter, NAME) VALUES (?, ?)", queryResult);
       return queryResult;
     }).compose(prepared -> {
       Future<ResultSet> executionQuery = Future.future();
-      Statement query = prepared.bind(BindArray.create().add("P").add(name));
+      Statement query = wayToBind.apply(prepared);
       cassandraClient.execute(query, executionQuery);
       return executionQuery;
     }).compose(executed -> {
       Future<ResultSet> executionQuery = Future.future();
-      cassandraClient.execute("select name as n from names.names_by_first_letter where first_letter = 'P'", executionQuery);
+      cassandraClient.execute("select NAME as n from names.names_by_first_letter where first_letter = 'P'", executionQuery);
       return executionQuery;
     }).compose(executed -> {
-      context.assertTrue(executed.one().getString("n").equals(name));
+      context.assertTrue(executed.one().getString("n").equals(NAME));
       Future<Void> disconnectFuture = Future.future();
       cassandraClient.disconnect(disconnectFuture);
       return disconnectFuture;

@@ -33,5 +33,16 @@ public interface PreparedStatement {
    * @return instance of {@link Statement} which can be executed with {@link CassandraClient#execute(Statement, Handler)}
    * @see com.datastax.driver.core.PreparedStatement#bind(Object...)
    */
-  Statement bind(BindArray params);
+  BoundStatement bind(BindArray params);
+
+  /**
+   * Creates a new {@link BoundStatement} object for this prepared statement.
+   * <p/>
+   * This method do not bind any values to any of the prepared variables. Said
+   * values need to be bound on the resulting statement using BoundStatement's
+   * setters methods: {@link BoundStatement#set(int, Object)} and {@link BoundStatement#set(String, Object)}.
+   *
+   * @return the newly created {@link BoundStatement}.
+   */
+  BoundStatement bind();
 }
