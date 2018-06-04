@@ -15,6 +15,8 @@
  */
 package io.vertx.cassandra;
 
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.Statement;
 import io.vertx.core.Future;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -64,21 +66,7 @@ public class ExecutionTest extends CassandraServiceBase {
   }
 
   @Test
-  public void preparedStatementWithBindArray(TestContext context) {
-    preparedStatementTest(context, prepared -> prepared.bind(BindArray.create().add("P").add(NAME)));
-  }
-
-  @Test
-  public void preparedStatementTestWithNamedParams(TestContext context) {
-    preparedStatementTest(context, prepared -> {
-      BoundStatement query = prepared.bind();
-      query.set("first_letter", "P");
-      query.set(1, NAME);
-      return query;
-    });
-  }
-
-  void preparedStatementTest(TestContext context, Function<PreparedStatement, Statement> wayToBind) {
+  public void preparedStatementsShouldWork(TestContext context) {
     CassandraClient cassandraClient = CassandraClient.create(
       vertx,
       new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
@@ -88,11 +76,11 @@ public class ExecutionTest extends CassandraServiceBase {
     cassandraClient.connect(future);
     future.compose(connected -> {
       Future<PreparedStatement> queryResult = Future.future();
-      cassandraClient.prepare("INSERT INTO names.names_by_first_letter (first_letter, NAME) VALUES (?, ?)", queryResult);
+      cassandraClient.prepare("INSERT INTO names.names_by_first_letter (first_letter, name) VALUES (?, ?)", queryResult);
       return queryResult;
     }).compose(prepared -> {
       Future<ResultSet> executionQuery = Future.future();
-      Statement query = wayToBind.apply(prepared);
+      Statement query = prepared.bind("P", "Pavel");
       cassandraClient.execute(query, executionQuery);
       return executionQuery;
     }).compose(executed -> {

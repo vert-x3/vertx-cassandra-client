@@ -54,7 +54,7 @@ public class CassandraServiceBase {
       return createKeySpace;
     }).compose(keySpaceCreated -> {
       Future<ResultSet> createTable = Future.future();
-      cassandraClient.execute("create table names.names_by_first_letter (first_letter text, NAME text, primary key (first_letter, NAME));", createTable);
+      cassandraClient.execute("create table names.names_by_first_letter (first_letter text, name text, primary key (first_letter, name));", createTable);
       return createTable;
     }).compose(tableCreated -> {
       Future<Void> disconnectFuture = Future.future();
