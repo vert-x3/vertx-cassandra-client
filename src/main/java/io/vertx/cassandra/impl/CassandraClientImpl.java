@@ -16,8 +16,11 @@
 package io.vertx.cassandra.impl;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.SimpleStatement;
+import com.datastax.driver.core.Statement;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
@@ -94,10 +97,15 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
-  public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler) {
+  public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler){
+    return execute(new SimpleStatement(query), resultHandler);
+  }
+
+  @Override
+  public CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler) {
     Session session = this.session.get();
     if (session != null) {
-      ResultSetFuture resultSetFuture = session.executeAsync(query);
+      ResultSetFuture resultSetFuture = session.executeAsync(statement);
       Future<com.datastax.driver.core.ResultSet> vertxExecuteFuture = Util.toVertxFuture(resultSetFuture, vertx);
       vertxExecuteFuture.setHandler(executionResult -> {
         if (executionResult.succeeded()) {
@@ -112,7 +120,7 @@ public class CassandraClientImpl implements CassandraClient {
       });
     } else {
       if (resultHandler != null) {
-        resultHandler.handle(Future.failedFuture("In order to execute the query, you should be connected"));
+        resultHandler.handle(Future.failedFuture("In order to execute the statement, you should be connected"));
       }
     }
     return this;
@@ -121,6 +129,31 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public CassandraClient disconnect() {
     return disconnect(null);
+  }
+
+  @Override
+  public CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler) {
+    Session session = this.session.get();
+    if (session != null) {
+      ListenableFuture<com.datastax.driver.core.PreparedStatement> preparedFuture = session.prepareAsync(query);
+      Future<com.datastax.driver.core.PreparedStatement> vertxExecuteFuture = Util.toVertxFuture(preparedFuture, vertx);
+      vertxExecuteFuture.setHandler(executionResult -> {
+        if (executionResult.succeeded()) {
+          if (resultHandler != null) {
+            resultHandler.handle(Future.succeededFuture(executionResult.result()));
+          }
+        } else {
+          if (resultHandler != null) {
+            resultHandler.handle(Future.failedFuture(executionResult.cause()));
+          }
+        }
+      });
+    } else {
+      if (resultHandler != null) {
+        resultHandler.handle(Future.failedFuture("In order to prepare the query, you should be connected"));
+      }
+    }
+    return this;
   }
 
   @Override

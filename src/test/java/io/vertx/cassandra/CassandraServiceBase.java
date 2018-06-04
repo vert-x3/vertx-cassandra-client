@@ -15,13 +15,16 @@
  */
 package io.vertx.cassandra;
 
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * A base class, which should be used for in all test where Cassandra service is required.
@@ -36,6 +39,36 @@ public class CassandraServiceBase {
   public void before() throws InterruptedException, IOException, TTransportException {
     EmbeddedCassandraServerHelper.startEmbeddedCassandra();
 
+    CassandraClient cassandraClient = CassandraClient.create(
+      vertx,
+      new CassandraClientOptions()
+        .addContactPoint(HOST)
+        .setPort(NATIVE_TRANSPORT_PORT)
+    );
+    Future<Void> future = Future.future();
+    CountDownLatch latch = new CountDownLatch(1);
+    cassandraClient.connect(future);
+    Future<Void> result = future.compose(connected -> {
+      Future<ResultSet> createKeySpace = Future.future();
+      cassandraClient.execute("CREATE KEYSPACE IF NOT EXISTS names WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1 };", createKeySpace);
+      return createKeySpace;
+    }).compose(keySpaceCreated -> {
+      Future<ResultSet> createTable = Future.future();
+      cassandraClient.execute("create table names.names_by_first_letter (first_letter text, name text, primary key (first_letter, name));", createTable);
+      return createTable;
+    }).compose(tableCreated -> {
+      Future<Void> disconnectFuture = Future.future();
+      cassandraClient.disconnect(disconnectFuture);
+      return disconnectFuture;
+    }).setHandler(handler -> {
+      if (handler.failed()) {
+        Assert.fail();
+      } else {
+        latch.countDown();
+      }
+    });
+
+    latch.await();
   }
 
   @After
