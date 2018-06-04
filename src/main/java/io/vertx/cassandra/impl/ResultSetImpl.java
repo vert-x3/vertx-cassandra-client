@@ -15,13 +15,12 @@
  */
 package io.vertx.cassandra.impl;
 
+import com.datastax.driver.core.Row;
 import io.vertx.cassandra.CassandraIterator;
 import io.vertx.cassandra.ResultSet;
-import io.vertx.cassandra.Row;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ResultSetImpl implements ResultSet {
 
@@ -33,7 +32,7 @@ public class ResultSetImpl implements ResultSet {
 
   ResultSetImpl(com.datastax.driver.core.ResultSet resultSet) {
     this.resultSet = resultSet;
-    rows = resultSet.all().stream().map(RowImpl::new).collect(Collectors.toList());
+    rows = resultSet.all();
   }
 
   @Override
