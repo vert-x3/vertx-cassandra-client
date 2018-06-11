@@ -27,7 +27,6 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -50,7 +49,7 @@ public class ExecutionTest extends CassandraServiceBase {
     cassandraClient.connect(future);
     future.compose(connected -> {
       Future<ResultSet> queryResult = Future.future();
-      cassandraClient.execute("select count(*) as cnt from playlist.track_by_id", queryResult);
+      cassandraClient.execute("select count(*) as cnt from random_strings.random_string_by_first_letter", queryResult);
       return queryResult;
     }).compose((ResultSet resultSet) -> {
       Assert.assertTrue(resultSet.one().getLong("cnt") > 0);
