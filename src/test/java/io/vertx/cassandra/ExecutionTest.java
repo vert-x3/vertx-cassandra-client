@@ -15,6 +15,8 @@
  */
 package io.vertx.cassandra;
 
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.Statement;
 import io.vertx.core.Future;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -25,6 +27,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -34,6 +37,7 @@ import java.util.regex.Pattern;
 public class ExecutionTest extends CassandraServiceBase {
 
   private static final Logger log = LoggerFactory.getLogger(ExecutionTest.class);
+  private static String NAME = "Pavel";
 
   @Test
   public void tableHaveSomeRows(TestContext context) {
@@ -81,6 +85,42 @@ public class ExecutionTest extends CassandraServiceBase {
     }).setHandler(event -> {
       if (event.failed()) {
         context.fail(event.cause());
+      }
+    });
+  }
+
+  @Test
+  public void preparedStatementsShouldWork(TestContext context) {
+    CassandraClient cassandraClient = CassandraClient.create(
+      vertx,
+      new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
+    );
+    Async async = context.async();
+    Future<Void> future = Future.future();
+    cassandraClient.connect(future);
+    future.compose(connected -> {
+      Future<PreparedStatement> queryResult = Future.future();
+      cassandraClient.prepare("INSERT INTO names.names_by_first_letter (first_letter, name) VALUES (?, ?)", queryResult);
+      return queryResult;
+    }).compose(prepared -> {
+      Future<ResultSet> executionQuery = Future.future();
+      Statement query = prepared.bind("P", "Pavel");
+      cassandraClient.execute(query, executionQuery);
+      return executionQuery;
+    }).compose(executed -> {
+      Future<ResultSet> executionQuery = Future.future();
+      cassandraClient.execute("select NAME as n from names.names_by_first_letter where first_letter = 'P'", executionQuery);
+      return executionQuery;
+    }).compose(executed -> {
+      context.assertTrue(executed.one().getString("n").equals(NAME));
+      Future<Void> disconnectFuture = Future.future();
+      cassandraClient.disconnect(disconnectFuture);
+      return disconnectFuture;
+    }).setHandler(event -> {
+      if (event.failed()) {
+        context.fail(event.cause());
+      } else {
+        async.countDown();
       }
     });
   }

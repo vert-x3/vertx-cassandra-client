@@ -24,6 +24,7 @@ import io.vertx.core.Vertx;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
@@ -50,52 +51,36 @@ public class CassandraServiceBase {
       .addContactPoint(HOST)
       .withPort(NATIVE_TRANSPORT_PORT);
 
-    Session connect = builder.build().connect();
-
-    connect.execute("CREATE KEYSPACE IF NOT EXISTS playlist WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1 };");
-    connect.execute("create table playlist.track_by_id (track text, artist text, track_id UUID, track_length_in_seconds int, genre text, music_file text, primary key (track_id));");
-    connect.execute("create table playlist.track_by_artist (track text, artist text, track_id UUID, track_length_in_seconds int, genre text,music_file text, starred boolean, primary key (artist, track, track_id)) WITH caching = {'rows_per_partition':'100'};");
-    connect.execute("create table playlist.track_by_genre (track text, artist text, track_id UUID, track_length_in_seconds int, genre text,music_file text, starred boolean, primary key (genre, artist, track, track_id)) WITH caching = {'rows_per_partition':'100'};");
-    connect.execute("create table playlist.artists_by_first_letter (first_letter text, artist text, primary key (first_letter, artist));");
-
-    PreparedStatement byId = connect.prepare("INSERT INTO playlist.track_by_id (track_id, genre, artist, track, track_length_in_seconds, music_file) VALUES (?, ?, ?, ?, ?, ?)");
-    PreparedStatement byArtist = connect.prepare("INSERT INTO playlist.track_by_artist (track_id, genre, artist, track, track_length_in_seconds, music_file) VALUES (?, ?, ?, ?, ?, ?)");
-    PreparedStatement byGenre = connect.prepare("INSERT INTO playlist.track_by_genre (track_id, genre, artist, track, track_length_in_seconds, music_file) VALUES (?, ?, ?, ?, ?, ?)");
-    PreparedStatement byLetter = connect.prepare("INSERT INTO playlist.artists_by_first_letter (first_letter, artist) VALUES (?, ?)");
-
-    List<String[]> songs = csvLines("songs.csv");
-    List<String[]> artists = csvLines("artists.csv");
-
-    Lists.partition(
-      songs, BATCH_INSERT_SIZE
-    ).forEach(batch -> {
-      insertSongBatch(connect, byId, batch);
-      insertSongBatch(connect, byArtist, batch);
-      insertSongBatch(connect, byGenre, batch);
+    CassandraClient cassandraClient = CassandraClient.create(
+      vertx,
+      new CassandraClientOptions()
+        .addContactPoint(HOST)
+        .setPort(NATIVE_TRANSPORT_PORT)
+    );
+    Future<Void> future = Future.future();
+    CountDownLatch latch = new CountDownLatch(1);
+    cassandraClient.connect(future);
+    Future<Void> result = future.compose(connected -> {
+      Future<ResultSet> createKeySpace = Future.future();
+      cassandraClient.execute("CREATE KEYSPACE IF NOT EXISTS names WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1 };", createKeySpace);
+      return createKeySpace;
+    }).compose(keySpaceCreated -> {
+      Future<ResultSet> createTable = Future.future();
+      cassandraClient.execute("create table names.names_by_first_letter (first_letter text, name text, primary key (first_letter, name));", createTable);
+      return createTable;
+    }).compose(tableCreated -> {
+      Future<Void> disconnectFuture = Future.future();
+      cassandraClient.disconnect(disconnectFuture);
+      return disconnectFuture;
+    }).setHandler(handler -> {
+      if (handler.failed()) {
+        Assert.fail();
+      } else {
+        latch.countDown();
+      }
     });
 
-    Lists.partition(
-      artists, BATCH_INSERT_SIZE
-    ).forEach(batch -> {
-      BatchStatement batchStatement = new BatchStatement();
-      batch.forEach(each -> batchStatement.add(byLetter.bind(each[0], each[1])));
-      connect.execute(batchStatement);
-    });
-
-  }
-
-  private List<String[]> csvLines(String path) {
-    return Arrays.stream(
-      vertx.fileSystem().readFileBlocking(path).toString().split("\n")
-    ).map(line -> line.split("\\|")).collect(Collectors.toList());
-  }
-
-  private void insertSongBatch(Session connect, PreparedStatement byId, List<String[]> batch) {
-    BatchStatement batchStatement = new BatchStatement();
-    batch.forEach(each -> {
-      batchStatement.add(byId.bind(UUID.fromString(each[0]), each[1], each[2], each[3], Integer.parseInt(each[4]), each[5]));
-    });
-    connect.execute(batchStatement);
+    latch.await();
   }
 
   @After
