@@ -16,8 +16,8 @@
 package io.vertx.cassandra.impl;
 
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import io.vertx.cassandra.CassandraRowStream;
-import io.vertx.cassandra.Row;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -90,7 +90,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
 
             synchronized (thisStream) {
               if (!paused) {
-                rowHandler.handle(new RowImpl(resultSetIterator.next()));
+                rowHandler.handle(resultSetIterator.next());
                 tryToTriggerEndOfTheStream();
                 if (!datastaxResultSet.isFullyFetched()) {
                   Future<ResultSet> fetched = Util.toVertxFuture(datastaxResultSet.fetchMoreResults(), vertx);
@@ -112,7 +112,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
           context.runOnContext(v -> {
             synchronized (thisStream) {
               if (!paused) {
-                rowHandler.handle(new RowImpl(resultSetIterator.next()));
+                rowHandler.handle(resultSetIterator.next());
               }
             }
           });

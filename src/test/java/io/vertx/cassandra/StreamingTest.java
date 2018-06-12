@@ -15,6 +15,7 @@
  */
 package io.vertx.cassandra;
 
+import com.datastax.driver.core.Row;
 import io.vertx.core.Future;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -42,7 +43,7 @@ public class StreamingTest extends CassandraServiceBase {
     cassandraClient.connect(future);
     future.compose(connected -> {
       Future<CassandraRowStream> queryResult = Future.future();
-      cassandraClient.queryStream("select artist from playlist.artists_by_first_letter where first_letter = 'A'", queryResult);
+      cassandraClient.queryStream("select random_string from random_strings.random_string_by_first_letter where first_letter = 'A'", queryResult);
       return queryResult;
     }).compose(stream -> {
       List<Row> items = new ArrayList<>();
@@ -68,6 +69,10 @@ public class StreamingTest extends CassandraServiceBase {
         });
 
       return Future.succeededFuture();
+    }).setHandler(h -> {
+      if (h.failed()) {
+        context.fail(h.cause());
+      }
     });
   }
 }

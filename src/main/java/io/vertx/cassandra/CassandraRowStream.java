@@ -15,6 +15,8 @@
  */
 package io.vertx.cassandra;
 
+import com.datastax.driver.core.Row;
+import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.ReadStream;
@@ -28,6 +30,7 @@ public interface CassandraRowStream extends ReadStream<Row> {
   @Override
   CassandraRowStream exceptionHandler(Handler<Throwable> handler);
 
+  @GenIgnore
   @Override
   CassandraRowStream handler(Handler<Row> handler);
 
