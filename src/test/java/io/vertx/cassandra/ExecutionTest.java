@@ -27,7 +27,6 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -38,6 +37,30 @@ public class ExecutionTest extends CassandraServiceBase {
 
   private static final Logger log = LoggerFactory.getLogger(ExecutionTest.class);
   private static String NAME = "Pavel";
+
+  @Test
+  public void tableHaveSomeRows(TestContext context) {
+    CassandraClient cassandraClient = CassandraClient.create(
+      vertx,
+      new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
+    );
+    Async async = context.async();
+    Future<Void> future = Future.future();
+    cassandraClient.connect(future);
+    future.compose(connected -> {
+      Future<ResultSet> queryResult = Future.future();
+      cassandraClient.execute("select count(*) as cnt from random_strings.random_string_by_first_letter", queryResult);
+      return queryResult;
+    }).compose((ResultSet resultSet) -> {
+      Assert.assertTrue(resultSet.one().getLong("cnt") > 0);
+      return Future.succeededFuture();
+    }).setHandler(event -> {
+      if (event.failed()) {
+        context.fail(event.cause());
+      }
+      async.countDown();
+    });
+  }
 
   @Test
   public void simpleReleaseVersionSelect(TestContext context) {

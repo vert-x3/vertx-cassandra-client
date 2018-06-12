@@ -96,6 +96,17 @@ public interface CassandraClient {
   @GenIgnore
   CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler);
 
+
+  /**
+   * Executes the given SQL <code>SELECT</code> statement which returns the results of the query as a read stream.
+   *
+   * @param sql              the SQL to execute. For example <code>SELECT * FROM table ...</code>.
+   * @param rowStreamHandler the handler which is called once the operation completes. It will return an instance of {@link CassandraRowStream}.
+   * @return current Cassandra client instance
+   */
+  @Fluent
+  CassandraClient queryStream(String sql, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler);
+
   /**
    * Disconnects from the Cassandra service.
    *

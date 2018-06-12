@@ -26,6 +26,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import io.netty.channel.EventLoopGroup;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
+import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -35,6 +36,7 @@ import io.vertx.core.impl.VertxInternal;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 public class CassandraClientImpl implements CassandraClient {
 
@@ -104,14 +106,13 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
-  public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler){
+  public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler) {
     return execute(new SimpleStatement(query), resultHandler);
   }
 
   @Override
   public CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler) {
-    Session session = this.session.get();
-    if (session != null) {
+    executeWithSession(session -> {
       ResultSetFuture resultSetFuture = session.executeAsync(statement);
       Future<com.datastax.driver.core.ResultSet> vertxExecuteFuture = Util.toVertxFuture(resultSetFuture, vertx);
       vertxExecuteFuture.setHandler(executionResult -> {
@@ -125,11 +126,8 @@ public class CassandraClientImpl implements CassandraClient {
           }
         }
       });
-    } else {
-      if (resultHandler != null) {
-        resultHandler.handle(Future.failedFuture("In order to execute the statement, you should be connected"));
-      }
-    }
+      return null;
+    }, resultHandler);
     return this;
   }
 
@@ -140,8 +138,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler) {
-    Session session = this.session.get();
-    if (session != null) {
+    executeWithSession(session -> {
       ListenableFuture<com.datastax.driver.core.PreparedStatement> preparedFuture = session.prepareAsync(query);
       Future<com.datastax.driver.core.PreparedStatement> vertxExecuteFuture = Util.toVertxFuture(preparedFuture, vertx);
       vertxExecuteFuture.setHandler(executionResult -> {
@@ -155,18 +152,35 @@ public class CassandraClientImpl implements CassandraClient {
           }
         }
       });
-    } else {
-      if (resultHandler != null) {
-        resultHandler.handle(Future.failedFuture("In order to prepare the query, you should be connected"));
-      }
-    }
+      return null;
+    }, resultHandler);
+    return this;
+  }
+
+  @Override
+  public CassandraClient queryStream(String sql, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler) {
+    executeWithSession(session -> {
+      ResultSetFuture resultSetFuture = session.executeAsync(sql);
+      Future<com.datastax.driver.core.ResultSet> vertxExecuteFuture = Util.toVertxFuture(resultSetFuture, vertx);
+      vertxExecuteFuture.setHandler(executionResult -> {
+        if (executionResult.succeeded()) {
+          if (rowStreamHandler != null) {
+            rowStreamHandler.handle(Future.succeededFuture(new CassandraRowStreamImpl(executionResult.result(), vertx)));
+          }
+        } else {
+          if (rowStreamHandler != null) {
+            rowStreamHandler.handle(Future.failedFuture(executionResult.cause()));
+          }
+        }
+      });
+      return null;
+    }, rowStreamHandler);
     return this;
   }
 
   @Override
   public CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler) {
-    Session session = this.session.get();
-    if (session != null) {
+    executeWithSession(session -> {
       Future<Void> vertxFuture = Util.toVertxFuture(session.closeAsync(), vertx);
       vertxFuture.setHandler(event -> {
         if (event.succeeded()) {
@@ -179,8 +193,20 @@ public class CassandraClientImpl implements CassandraClient {
           }
         }
       });
-    }
+      return null;
+    }, disconnectHandler);
     return this;
+  }
+
+  private <T> void executeWithSession(Function<Session, Void> functionToExecute, Handler<AsyncResult<T>> handlerToFailIfNoSessionPresent) {
+    Session session = this.session.get();
+    if (session != null) {
+      functionToExecute.apply(session);
+    } else {
+      if (handlerToFailIfNoSessionPresent != null) {
+        handlerToFailIfNoSessionPresent.handle(Future.failedFuture("In order to do this, you should be connected"));
+      }
+    }
   }
 
   private static class VertxNettyOptions extends NettyOptions {
