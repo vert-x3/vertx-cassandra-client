@@ -24,7 +24,6 @@ import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.netty.channel.EventLoopGroup;
-import io.netty.util.Timer;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
 import io.vertx.cassandra.ResultSet;
@@ -74,35 +73,11 @@ public class CassandraClientImpl implements CassandraClient {
       }
     }
 
-    Cluster build = builder.withNettyOptions(
-      new NettyOptions() {
-        @Override
-        public EventLoopGroup eventLoopGroup(ThreadFactory threadFactory) {
-          return vertx.getEventLoopGroup();
-        }
-
-        @Override
-        public void onClusterClose(EventLoopGroup eventLoopGroup) {
-          // it is important to not do anything here
-          // because the default behaviour is to shutdown the Vert.x event loop group
-        }
-
-        @Override
-        public Timer timer(ThreadFactory threadFactory) {
-          // we don't wan't to use the Vert.x event loop group here
-          // since the timer thread is got blocked between events(via sleep call)
-          return super.timer(threadFactory);
-        }
-
-        @Override
-        public void onClusterClose(Timer timer) {
-          // it is also fine did not do anything here
-          // since Vert.x threads is not related to the timer
-          super.onClusterClose(timer);
-        }
-      })
+    Cluster build = builder
+      .withNettyOptions(new VertxNettyOptions(vertx))
       .withPort(options.port())
       .build();
+
     ListenableFuture<Session> connectGuavaFuture;
     if (keyspace == null) {
       connectGuavaFuture = build.connectAsync();
@@ -206,5 +181,25 @@ public class CassandraClientImpl implements CassandraClient {
       });
     }
     return this;
+  }
+
+  private static class VertxNettyOptions extends NettyOptions {
+
+    VertxInternal vertx;
+
+    public VertxNettyOptions(VertxInternal vertx) {
+      this.vertx = vertx;
+    }
+
+    @Override
+    public EventLoopGroup eventLoopGroup(ThreadFactory threadFactory) {
+      return vertx.getEventLoopGroup();
+    }
+
+    @Override
+    public void onClusterClose(EventLoopGroup eventLoopGroup) {
+      // it is important to not do anything here
+      // because the default behaviour is to shutdown the Vert.x event loop group
+    }
   }
 }
