@@ -20,11 +20,15 @@ import com.datastax.driver.core.PreparedStatement;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +42,7 @@ import static io.vertx.test.core.TestUtils.randomAlphaString;
 /**
  * A base class, which should be used for in all test where Cassandra service is required.
  */
+@RunWith(VertxUnitRunner.class)
 public class CassandraServiceBase {
 
   private static final Logger log = LoggerFactory.getLogger(CassandraServiceBase.class);
@@ -50,24 +55,22 @@ public class CassandraServiceBase {
   private static final int TIMES_TO_INSERT_BATCH = 100;
 
   @Before
-  public void before() throws IOException, TTransportException, InterruptedException {
+  public void before(TestContext context) throws IOException, TTransportException, InterruptedException {
     EmbeddedCassandraServerHelper.startEmbeddedCassandra();
 
     Future<Void> namesKeyspaceInitialized = initializeNamesKeyspace();
-    Future<Void> booksKeyspace = initializeRandomStringKeyspace();
+    Future<Void> randomStringKeyspaceInitialized = initializeRandomStringKeyspace();
 
-    CountDownLatch latch = new CountDownLatch(1);
-    CompositeFuture all = CompositeFuture.all(namesKeyspaceInitialized, booksKeyspace);
+    Async async = context.async();
+    CompositeFuture all = CompositeFuture.all(namesKeyspaceInitialized, randomStringKeyspaceInitialized);
     all.setHandler(h -> {
       if (h.failed()) {
-        h.cause().printStackTrace();
         log.error("Unable to initialize keyspaces", h.cause());
-        Assert.fail();
+        context.fail();
       } else {
-        latch.countDown();
+        async.countDown();
       }
     });
-    latch.await();
   }
 
   private Future<Void> initializeRandomStringKeyspace() {
