@@ -15,8 +15,11 @@
  */
 package io.vertx.cassandra;
 
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.Statement;
 import io.vertx.cassandra.impl.CassandraClientImpl;
 import io.vertx.codegen.annotations.Fluent;
+import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -42,9 +45,7 @@ public interface CassandraClient {
    * @return current Cassandra client instance
    */
   @Fluent
-  default CassandraClient connect() {
-    return connect(null);
-  }
+  CassandraClient connect();
 
   /**
    * Connect to a Cassandra service.
@@ -53,9 +54,7 @@ public interface CassandraClient {
    * @return current Cassandra client instance
    */
   @Fluent
-  default CassandraClient connect(Handler<AsyncResult<Void>> connectHandler) {
-    return connect(null, connectHandler);
-  }
+  CassandraClient connect(Handler<AsyncResult<Void>> connectHandler);
 
   /**
    * Connect to a Cassandra service.
@@ -67,9 +66,8 @@ public interface CassandraClient {
   @Fluent
   CassandraClient connect(String keyspace, Handler<AsyncResult<Void>> connectHandler);
 
-
   /**
-   * Execute the query and provide a handler for consuming results
+   * Execute the query and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is present
    * @param query         the query to execute
@@ -77,6 +75,26 @@ public interface CassandraClient {
    */
   @Fluent
   CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler);
+  
+  /**
+   * Execute the statement and provide a handler for consuming results.
+   *
+   * @param resultHandler handler called when result of execution is present
+   * @param statement         the statement to execute
+   * @return current Cassandra client instance
+   */
+  @GenIgnore
+  CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler);
+
+  /**
+   * Prepares the provided query string.
+   *
+   * @param resultHandler handler called when result of query preparation is present
+   * @param query         the query to prepare
+   * @return current Cassandra client instance
+   */
+  @GenIgnore
+  CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler);
 
 
   /**
@@ -95,9 +113,7 @@ public interface CassandraClient {
    * @return current Cassandra client instance
    */
   @Fluent
-  default CassandraClient disconnect() {
-    return disconnect(null);
-  }
+  CassandraClient disconnect();
 
   /**
    * Disconnects from the Cassandra service.

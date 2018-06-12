@@ -15,6 +15,8 @@
  */
 package io.vertx.cassandra;
 
+import com.datastax.driver.core.Row;
+import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
 
 /**
@@ -23,9 +25,11 @@ import io.vertx.codegen.annotations.VertxGen;
 @VertxGen
 public interface ResultSet extends Iterable<Row> {
 
+  @GenIgnore
   Row one();
 
   int size();
 
+  @GenIgnore
   CassandraIterator<Row> iterator();
 }

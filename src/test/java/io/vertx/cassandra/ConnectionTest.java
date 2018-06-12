@@ -30,9 +30,23 @@ public class ConnectionTest extends CassandraServiceBase {
 
   @Test
   public void connectDisconnectTest(TestContext context) {
+    CassandraClientOptions options = new CassandraClientOptions()
+      .addContactPoint(HOST)
+      .setPort(NATIVE_TRANSPORT_PORT);
+    connectAndDisconnect(context, options);
+  }
+
+  @Test
+  public void defaultContactPointShouldWorks(TestContext context) {
+    CassandraClientOptions options = new CassandraClientOptions()
+      .setPort(NATIVE_TRANSPORT_PORT);
+    connectAndDisconnect(context, options);
+  }
+
+  private void connectAndDisconnect(TestContext context, CassandraClientOptions options) {
     CassandraClient cassandraClient = CassandraClient.create(
       vertx,
-      new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
+      options
     );
     Async async = context.async(2);
     cassandraClient.connect("system", connectEvent -> {

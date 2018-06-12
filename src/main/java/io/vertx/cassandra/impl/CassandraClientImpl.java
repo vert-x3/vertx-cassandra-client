@@ -16,8 +16,11 @@
 package io.vertx.cassandra.impl;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.SimpleStatement;
+import com.datastax.driver.core.Statement;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
@@ -27,7 +30,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.FailedFuture;
 import io.vertx.core.impl.VertxInternal;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -48,12 +50,26 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
+  public CassandraClient connect() {
+    return connect(null);
+  }
+
+  @Override
+  public CassandraClient connect(Handler<AsyncResult<Void>> connectHandler) {
+    return connect(null, connectHandler);
+  }
+
+  @Override
   public CassandraClient connect(String keyspace, Handler<AsyncResult<Void>> connectHandler) {
     session.set(null);
     Cluster.Builder builder = Cluster.builder();
 
-    for (String contactPoint : options.contactPoints()) {
-      builder.addContactPoint(contactPoint);
+    if (options.contactPoints().isEmpty()) {
+      builder.addContactPoint(CassandraClientOptions.DEFAULT_HOST);
+    } else {
+      for (String contactPoint : options.contactPoints()) {
+        builder.addContactPoint(contactPoint);
+      }
     }
 
     Cluster build = builder.withPort(options.port()).build();
@@ -83,9 +99,15 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
-  public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler) {
-    executeWithSession(session -> {
-      ResultSetFuture resultSetFuture = session.executeAsync(query);
+  public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler){
+    return execute(new SimpleStatement(query), resultHandler);
+  }
+
+  @Override
+  public CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler) {
+    Session session = this.session.get();
+    if (session != null) {
+      ResultSetFuture resultSetFuture = session.executeAsync(statement);
       Future<com.datastax.driver.core.ResultSet> vertxExecuteFuture = Util.toVertxFuture(resultSetFuture, vertx);
       vertxExecuteFuture.setHandler(executionResult -> {
         if (executionResult.succeeded()) {
@@ -98,8 +120,41 @@ public class CassandraClientImpl implements CassandraClient {
           }
         }
       });
-      return null;
-    }, resultHandler);
+    } else {
+      if (resultHandler != null) {
+        resultHandler.handle(Future.failedFuture("In order to execute the statement, you should be connected"));
+      }
+    }
+    return this;
+  }
+
+  @Override
+  public CassandraClient disconnect() {
+    return disconnect(null);
+  }
+
+  @Override
+  public CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler) {
+    Session session = this.session.get();
+    if (session != null) {
+      ListenableFuture<com.datastax.driver.core.PreparedStatement> preparedFuture = session.prepareAsync(query);
+      Future<com.datastax.driver.core.PreparedStatement> vertxExecuteFuture = Util.toVertxFuture(preparedFuture, vertx);
+      vertxExecuteFuture.setHandler(executionResult -> {
+        if (executionResult.succeeded()) {
+          if (resultHandler != null) {
+            resultHandler.handle(Future.succeededFuture(executionResult.result()));
+          }
+        } else {
+          if (resultHandler != null) {
+            resultHandler.handle(Future.failedFuture(executionResult.cause()));
+          }
+        }
+      });
+    } else {
+      if (resultHandler != null) {
+        resultHandler.handle(Future.failedFuture("In order to prepare the query, you should be connected"));
+      }
+    }
     return this;
   }
 
@@ -123,7 +178,6 @@ public class CassandraClientImpl implements CassandraClient {
     }, rowStreamHandler);
     return this;
   }
-
 
   @Override
   public CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler) {
