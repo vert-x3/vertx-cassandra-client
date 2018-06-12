@@ -65,8 +65,7 @@ public class CassandraServiceBase {
     CompositeFuture all = CompositeFuture.all(namesKeyspaceInitialized, randomStringKeyspaceInitialized);
     all.setHandler(h -> {
       if (h.failed()) {
-        log.error("Unable to initialize keyspaces", h.cause());
-        context.fail();
+        context.fail(h.cause());
       } else {
         async.countDown();
       }
