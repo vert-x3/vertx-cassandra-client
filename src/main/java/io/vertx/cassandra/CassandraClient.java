@@ -114,6 +114,7 @@ public interface CassandraClient {
    * @param rowStreamHandler the handler which is called once the operation completes. It will return an instance of {@link CassandraRowStream}.
    * @return current Cassandra client instance
    */
+  @GenIgnore
   @Fluent
   CassandraClient queryStream(Statement statement, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler);
 
