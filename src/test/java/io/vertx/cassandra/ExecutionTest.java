@@ -53,7 +53,9 @@ public class ExecutionTest extends CassandraServiceBase {
       return queryResult;
     }).compose((ResultSet resultSet) -> {
       Assert.assertTrue(resultSet.one().getLong("cnt") > 0);
-      return Future.succeededFuture();
+      Future<Void> disconnectFuture = Future.future();
+      cassandraClient.disconnect(disconnectFuture);
+      return disconnectFuture;
     }).setHandler(event -> {
       if (event.failed()) {
         context.fail(event.cause());
@@ -80,7 +82,9 @@ public class ExecutionTest extends CassandraServiceBase {
       String release_version = resultSet.iterator().next().getString("release_version");
       Assert.assertTrue(Pattern.compile("[0-9\\.]+").matcher(release_version).find());
       async.countDown();
-      return Future.succeededFuture();
+      Future<Void> disconnectFuture = Future.future();
+      cassandraClient.disconnect(disconnectFuture);
+      return disconnectFuture;
     }).setHandler(event -> {
       if (event.failed()) {
         context.fail(event.cause());

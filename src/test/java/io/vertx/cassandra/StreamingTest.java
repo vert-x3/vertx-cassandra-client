@@ -53,7 +53,7 @@ public class StreamingTest extends CassandraServiceBase {
       stream.endHandler(end -> {
         long duration = NANOSECONDS.toMillis(System.nanoTime() - start);
         context.assertTrue(duration >= 3 * pause);
-        async.countDown();
+        cassandraClient.disconnect(disconnected -> async.countDown());
       }).exceptionHandler(context::fail)
         .handler(item -> {
           items.add(item);
