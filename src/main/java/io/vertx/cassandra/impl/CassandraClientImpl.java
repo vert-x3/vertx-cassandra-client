@@ -152,8 +152,13 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient queryStream(String sql, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler) {
+    return queryStream(new SimpleStatement(sql), rowStreamHandler);
+  }
+
+  @Override
+  public CassandraClient queryStream(Statement statement, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler) {
     executeWithSession(session -> {
-      ResultSetFuture resultSetFuture = session.executeAsync(sql);
+      ResultSetFuture resultSetFuture = session.executeAsync(statement);
       Future<com.datastax.driver.core.ResultSet> vertxExecuteFuture = Util.toVertxFuture(resultSetFuture, vertx);
       vertxExecuteFuture.setHandler(executionResult -> {
         if (executionResult.succeeded()) {

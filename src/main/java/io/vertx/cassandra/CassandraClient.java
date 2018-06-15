@@ -108,6 +108,16 @@ public interface CassandraClient {
   CassandraClient queryStream(String sql, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler);
 
   /**
+   * Executes the given SQL statement which returns the results of the query as a read stream.
+   *
+   * @param statement        the statement to execute.
+   * @param rowStreamHandler the handler which is called once the operation completes. It will return an instance of {@link CassandraRowStream}.
+   * @return current Cassandra client instance
+   */
+  @Fluent
+  CassandraClient queryStream(Statement statement, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler);
+
+  /**
    * Disconnects from the Cassandra service.
    *
    * @return current Cassandra client instance
