@@ -16,6 +16,8 @@
 package io.vertx.cassandra;
 
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
 import io.vertx.core.Future;
 import io.vertx.ext.unit.Async;
@@ -54,6 +56,37 @@ public class ExecutionTest extends CassandraServiceBase {
     }).compose((ResultSet resultSet) -> {
       Assert.assertTrue(resultSet.one().getLong("cnt") > 0);
       return Future.succeededFuture();
+    }).setHandler(event -> {
+      if (event.failed()) {
+        context.fail(event.cause());
+      }
+      async.countDown();
+    });
+  }
+
+  @Test
+  public void simpleExecuteWithBigAmountOfFetches(TestContext context) {
+    CassandraClient cassandraClient = CassandraClient.create(
+      vertx,
+      new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
+    );
+    Async async = context.async();
+    Future<Void> future = Future.future();
+    cassandraClient.connect(future);
+    future.compose(connected -> {
+      Future<ResultSet> queryResult = Future.future();
+      SimpleStatement statement = new SimpleStatement("select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'");
+      statement.setFetchSize(1);
+      cassandraClient.execute(statement, queryResult);
+      return queryResult;
+    }).compose((ResultSet resultSet) -> {
+      for (Row row: resultSet) {
+        String selectedString = row.getString(0);
+        context.assertNotNull(selectedString);
+      }
+      Future<Void> disconnectFuture = Future.future();
+      cassandraClient.disconnect(disconnectFuture);
+      return disconnectFuture;
     }).setHandler(event -> {
       if (event.failed()) {
         context.fail(event.cause());

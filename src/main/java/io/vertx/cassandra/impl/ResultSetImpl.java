@@ -30,9 +30,8 @@ public class ResultSetImpl implements ResultSet {
   public ResultSetImpl() {
   }
 
-  ResultSetImpl(com.datastax.driver.core.ResultSet resultSet) {
-    this.resultSet = resultSet;
-    rows = resultSet.all();
+  ResultSetImpl(List<Row> rows) {
+    this.rows = rows;
   }
 
   @Override

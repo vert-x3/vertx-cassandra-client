@@ -18,6 +18,7 @@ package io.vertx.cassandra.impl;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
@@ -32,6 +33,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.VertxInternal;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -106,22 +109,69 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler) {
     executeWithSession(session -> {
-      ResultSetFuture resultSetFuture = session.executeAsync(statement);
-      Future<com.datastax.driver.core.ResultSet> vertxExecuteFuture = Util.toVertxFuture(resultSetFuture, vertx);
-      vertxExecuteFuture.setHandler(executionResult -> {
-        if (executionResult.succeeded()) {
+      Future<com.datastax.driver.core.ResultSet> future = Util.toVertxFuture(session.executeAsync(statement), vertx);
+      List<Row> resultRows = new LinkedList<>();
+      future.setHandler(executed -> {
+        if (executed.succeeded()) {
           if (resultHandler != null) {
-            resultHandler.handle(Future.succeededFuture(new ResultSetImpl(executionResult.result())));
+            new Fetcher(executed.result(), resultRows).
+              fetched()
+              .setHandler(grabbed -> {
+                if (grabbed.succeeded()) {
+                  resultHandler.handle(Future.succeededFuture(new ResultSetImpl(resultRows)));
+                } else {
+                  resultHandler.handle(Future.failedFuture(grabbed.cause()));
+                }
+              });
           }
         } else {
           if (resultHandler != null) {
-            resultHandler.handle(Future.failedFuture(executionResult.cause()));
+            resultHandler.handle(Future.failedFuture(executed.cause()));
           }
         }
       });
       return null;
     }, resultHandler);
     return this;
+  }
+
+  /**
+   * Helper class used for fetching results and filling a provided list.
+   */
+  private class Fetcher {
+
+    private com.datastax.driver.core.ResultSet resultSet;
+    private List<Row> listToFill;
+    private Future<Void> doneFuture = Future.future();
+
+    private Fetcher(com.datastax.driver.core.ResultSet resultSet, List<Row> listToFill) {
+      this.resultSet = resultSet;
+      this.listToFill = listToFill;
+      fetch();
+    }
+
+    private void fetch() {
+      for (int i = 0; i < resultSet.getAvailableWithoutFetching(); i++) {
+        listToFill.add(resultSet.one());
+      }
+
+      if (!resultSet.isFullyFetched()) {
+        Util.toVertxFuture(resultSet.fetchMoreResults(), vertx)
+          .setHandler(h -> {
+            if (h.succeeded()) {
+              fetch();
+            } else {
+              doneFuture.handle(Future.failedFuture(h.cause()));
+            }
+          });
+      } else {
+        doneFuture.handle(Future.succeededFuture());
+      }
+    }
+
+    private Future<Void> fetched() {
+      return doneFuture;
+    }
   }
 
   @Override
