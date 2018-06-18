@@ -33,6 +33,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.VertxInternal;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -110,7 +111,7 @@ public class CassandraClientImpl implements CassandraClient {
   public CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler) {
     executeWithSession(session -> {
       Future<com.datastax.driver.core.ResultSet> future = Util.toVertxFuture(session.executeAsync(statement), vertx);
-      List<Row> resultRows = new LinkedList<>();
+      List<Row> resultRows = new ArrayList<>();
       future.setHandler(executed -> {
         if (executed.succeeded()) {
           if (resultHandler != null) {
