@@ -15,56 +15,129 @@
  */
 package io.vertx.cassandra.impl;
 
+import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.Row;
-import io.vertx.cassandra.CassandraIterator;
 import io.vertx.cassandra.ResultSet;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ResultSetImpl implements ResultSet {
 
-  com.datastax.driver.core.ResultSet resultSet;
-  List<Row> rows;
+  private com.datastax.driver.core.ResultSet resultSet;
+  private Vertx vertx;
 
-  public ResultSetImpl() {
-  }
-
-  ResultSetImpl(List<Row> rows) {
-    this.rows = rows;
+  public ResultSetImpl(com.datastax.driver.core.ResultSet resultSet, Vertx vertx) {
+    this.resultSet = resultSet;
+    this.vertx = vertx;
   }
 
   @Override
-  public Row one() {
-    CassandraIterator<Row> iterator = iterator();
-    if (iterator.hasNext()) {
-      return iterator.next();
+  public boolean isExhausted() {
+    return resultSet.isExhausted();
+  }
+
+  @Override
+  public boolean isFullyFetched() {
+    return resultSet.isFullyFetched();
+  }
+
+  @Override
+  public int getAvailableWithoutFetching() {
+    return resultSet.getAvailableWithoutFetching();
+  }
+
+  @Override
+  public ResultSet fetchMoreResults(Handler<AsyncResult<Void>> handler) {
+    Util.completeHandlerWithVoidWhenDone(resultSet.fetchMoreResults(), handler, vertx);
+    return this;
+  }
+
+  @Override
+  public ResultSet one(Handler<AsyncResult<Row>> handler) {
+    if (getAvailableWithoutFetching() >= 1) {
+      handler.handle(Future.succeededFuture(resultSet.one()));
     } else {
-      return null;
+      Util.toVertxFuture(resultSet.fetchMoreResults(), vertx).setHandler(done -> {
+        if (done.succeeded()) {
+          if (handler != null) {
+            handler.handle(Future.succeededFuture(resultSet.one()));
+          }
+        } else {
+          if (handler != null) {
+            handler.handle(Future.failedFuture(done.cause()));
+          }
+        }
+      });
+    }
+    return this;
+  }
+
+  @Override
+  public ResultSet all(Handler<AsyncResult<List<Row>>> handler) {
+    ArrayList<Row> rows = new ArrayList<>();
+    new Fetcher(resultSet, rows)
+      .fetched()
+      .setHandler(grabbed -> {
+        if (grabbed.succeeded()) {
+          handler.handle(Future.succeededFuture(rows));
+        } else {
+          handler.handle(Future.failedFuture(grabbed.cause()));
+        }
+      });
+    return this;
+  }
+
+  @Override
+  public ColumnDefinitions getColumnDefinitions() {
+    return resultSet.getColumnDefinitions();
+  }
+
+  @Override
+  public boolean wasApplied() {
+    return resultSet.wasApplied();
+  }
+
+  /**
+   * Helper class used for fetching results and filling a provided list.
+   */
+  private class Fetcher {
+
+    private com.datastax.driver.core.ResultSet resultSet;
+    private List<Row> listToFill;
+    private Future<Void> doneFuture = Future.future();
+
+    private Fetcher(com.datastax.driver.core.ResultSet resultSet, List<Row> listToFill) {
+      this.resultSet = resultSet;
+      this.listToFill = listToFill;
+      fetch();
+    }
+
+    private void fetch() {
+      for (int i = 0; i < resultSet.getAvailableWithoutFetching(); i++) {
+        listToFill.add(resultSet.one());
+      }
+
+      if (!resultSet.isFullyFetched()) {
+        Util.toVertxFuture(resultSet.fetchMoreResults(), vertx)
+          .setHandler(h -> {
+            if (h.succeeded()) {
+              fetch();
+            } else {
+              doneFuture.handle(Future.failedFuture(h.cause()));
+            }
+          });
+      } else {
+        doneFuture.handle(Future.succeededFuture());
+      }
+    }
+
+    private Future<Void> fetched() {
+      return doneFuture;
     }
   }
-
-  @Override
-  public int size() {
-    return rows.size();
-  }
-
-  @Override
-  public CassandraIterator<Row> iterator() {
-    return new CassandraIterator<Row>() {
-      Iterator<Row> iterator = rows.iterator();
-
-      @Override
-      public boolean hasNext() {
-        return iterator.hasNext();
-      }
-
-      @Override
-      public Row next() {
-        return iterator.next();
-      }
-    };
-  }
-
-
 }

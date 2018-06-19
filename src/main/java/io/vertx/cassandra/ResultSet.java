@@ -15,21 +15,68 @@
  */
 package io.vertx.cassandra;
 
+import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.Row;
+import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
+
+import java.util.List;
 
 /**
  * It is like {@link com.datastax.driver.core.ResultSet}, but adopted for Vert.x.
  */
 @VertxGen
-public interface ResultSet extends Iterable<Row> {
+public interface ResultSet {
 
+  /**
+   * @see com.datastax.driver.core.ResultSet#isExhausted()
+   */
+  boolean isExhausted();
+
+  /**
+   * @see com.datastax.driver.core.ResultSet#isFullyFetched()
+   */
+  boolean isFullyFetched();
+
+  /**
+   * @see com.datastax.driver.core.ResultSet#getAvailableWithoutFetching()
+   */
+  int getAvailableWithoutFetching();
+
+  /**
+   * @param handler handler called when result is fetched
+   * @see com.datastax.driver.core.ResultSet#fetchMoreResults()
+   */
+  @Fluent
+  ResultSet fetchMoreResults(Handler<AsyncResult<Void>> handler);
+
+  /**
+   * @param handler handler called when one row is fetched
+   * @see com.datastax.driver.core.ResultSet#one
+   */
   @GenIgnore
-  Row one();
+  @Fluent
+  ResultSet one(Handler<AsyncResult<Row>> handler);
 
-  int size();
-
+  /**
+   * @param handler handler called when all the rows is fetched
+   * @see com.datastax.driver.core.ResultSet#all
+   */
   @GenIgnore
-  CassandraIterator<Row> iterator();
+  @Fluent
+  ResultSet all(Handler<AsyncResult<List<Row>>> handler);
+
+  /**
+   * @see com.datastax.driver.core.ResultSet#getColumnDefinitions
+   */
+  @GenIgnore
+  ColumnDefinitions getColumnDefinitions();
+
+  /**
+   * @see com.datastax.driver.core.ResultSet#wasApplied
+   */
+  boolean wasApplied();
 }

@@ -18,8 +18,10 @@ package io.vertx.cassandra.impl;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 public class Util {
@@ -47,5 +49,27 @@ public class Util {
       }
     }, command -> context.runOnContext(v -> command.run()));
     return vertxFuture;
+  }
+
+  /**
+   * Complete a {@code Handler<AsyncResult<Void>>} handler, when the provided guava future will be completed.
+   *
+   * @param future  the guava future
+   * @param handler the handler to call when provided guava future will be completed
+   * @param vertx   the Vert.x instance
+   * @param <T>     the guava future type
+   */
+  static <T> void completeHandlerWithVoidWhenDone(ListenableFuture<T> future, Handler<AsyncResult<Void>> handler, Vertx vertx) {
+    toVertxFuture(future, vertx).setHandler(done -> {
+      if (done.succeeded()) {
+        if (handler != null) {
+          handler.handle(Future.succeededFuture());
+        }
+      } else {
+        if (handler != null) {
+          handler.handle(Future.failedFuture(done.cause()));
+        }
+      }
+    });
   }
 }

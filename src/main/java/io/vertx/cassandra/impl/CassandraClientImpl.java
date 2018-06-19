@@ -33,8 +33,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.VertxInternal;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -103,6 +101,25 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
+  public CassandraClient executeWithFullFetch(String query, Handler<AsyncResult<List<Row>>> resultHandler) {
+    return executeWithFullFetch(new SimpleStatement(query), resultHandler);
+  }
+
+  @Override
+  public CassandraClient executeWithFullFetch(Statement statement, Handler<AsyncResult<List<Row>>> resultHandler) {
+    execute(statement, done -> {
+      if (done.succeeded()) {
+        done.result().all(resultHandler);
+      } else {
+        if (resultHandler != null) {
+          resultHandler.handle(Future.failedFuture(done.cause()));
+        }
+      }
+    });
+    return this;
+  }
+
+  @Override
   public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler) {
     return execute(new SimpleStatement(query), resultHandler);
   }
@@ -111,19 +128,10 @@ public class CassandraClientImpl implements CassandraClient {
   public CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler) {
     executeWithSession(session -> {
       Future<com.datastax.driver.core.ResultSet> future = Util.toVertxFuture(session.executeAsync(statement), vertx);
-      List<Row> resultRows = new ArrayList<>();
       future.setHandler(executed -> {
         if (executed.succeeded()) {
           if (resultHandler != null) {
-            new Fetcher(executed.result(), resultRows).
-              fetched()
-              .setHandler(grabbed -> {
-                if (grabbed.succeeded()) {
-                  resultHandler.handle(Future.succeededFuture(new ResultSetImpl(resultRows)));
-                } else {
-                  resultHandler.handle(Future.failedFuture(grabbed.cause()));
-                }
-              });
+            resultHandler.handle(Future.succeededFuture(new ResultSetImpl(executed.result(), vertx)));
           }
         } else {
           if (resultHandler != null) {
@@ -134,45 +142,6 @@ public class CassandraClientImpl implements CassandraClient {
       return null;
     }, resultHandler);
     return this;
-  }
-
-  /**
-   * Helper class used for fetching results and filling a provided list.
-   */
-  private class Fetcher {
-
-    private com.datastax.driver.core.ResultSet resultSet;
-    private List<Row> listToFill;
-    private Future<Void> doneFuture = Future.future();
-
-    private Fetcher(com.datastax.driver.core.ResultSet resultSet, List<Row> listToFill) {
-      this.resultSet = resultSet;
-      this.listToFill = listToFill;
-      fetch();
-    }
-
-    private void fetch() {
-      for (int i = 0; i < resultSet.getAvailableWithoutFetching(); i++) {
-        listToFill.add(resultSet.one());
-      }
-
-      if (!resultSet.isFullyFetched()) {
-        Util.toVertxFuture(resultSet.fetchMoreResults(), vertx)
-          .setHandler(h -> {
-            if (h.succeeded()) {
-              fetch();
-            } else {
-              doneFuture.handle(Future.failedFuture(h.cause()));
-            }
-          });
-      } else {
-        doneFuture.handle(Future.succeededFuture());
-      }
-    }
-
-    private Future<Void> fetched() {
-      return doneFuture;
-    }
   }
 
   @Override
@@ -230,18 +199,7 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler) {
     executeWithSession(session -> {
-      Future<Void> vertxFuture = Util.toVertxFuture(session.closeAsync(), vertx);
-      vertxFuture.setHandler(event -> {
-        if (event.succeeded()) {
-          if (disconnectHandler != null) {
-            disconnectHandler.handle(Future.succeededFuture());
-          }
-        } else {
-          if (disconnectHandler != null) {
-            disconnectHandler.handle(Future.failedFuture(event.cause()));
-          }
-        }
-      });
+      Util.completeHandlerWithVoidWhenDone(session.closeAsync(), disconnectHandler, vertx);
       return null;
     }, disconnectHandler);
     return this;
