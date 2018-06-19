@@ -60,7 +60,9 @@ public class ExecutionTest extends CassandraServiceBase {
       return oneRowFuture;
     }).compose(one -> {
       context.assertTrue(one.getLong("cnt") > 0);
-      return Future.succeededFuture();
+      Future<Void> disconnectFuture = Future.future();
+      cassandraClient.disconnect(disconnectFuture);
+      return disconnectFuture;
     }).setHandler(event -> {
       if (event.failed()) {
         context.fail(event.cause());
@@ -108,23 +110,24 @@ public class ExecutionTest extends CassandraServiceBase {
       vertx,
       new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
     );
-    Async async = context.async(2);
+    Async async = context.async();
     Future<Void> future = Future.future();
     cassandraClient.connect(future);
     future.compose(connected -> {
       Future<List<Row>> queryResult = Future.future();
       cassandraClient.executeWithFullFetch("select release_version from system.local", queryResult);
-      async.countDown();
       return queryResult;
     }).compose(resultSet -> {
       String release_version = resultSet.iterator().next().getString("release_version");
       Assert.assertTrue(Pattern.compile("[0-9\\.]+").matcher(release_version).find());
-      async.countDown();
-      return Future.succeededFuture();
+      Future<Void> disconnectFuture = Future.future();
+      cassandraClient.disconnect(disconnectFuture);
+      return disconnectFuture;
     }).setHandler(event -> {
       if (event.failed()) {
         context.fail(event.cause());
       }
+      async.countDown();
     });
   }
 
