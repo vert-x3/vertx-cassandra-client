@@ -16,6 +16,7 @@
 package io.vertx.cassandra;
 
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Statement;
 import io.vertx.cassandra.impl.CassandraClientImpl;
 import io.vertx.codegen.annotations.Fluent;
@@ -24,6 +25,8 @@ import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+
+import java.util.List;
 
 /**
  * Eclipse Vert.x Cassandra client.
@@ -69,7 +72,29 @@ public interface CassandraClient {
   /**
    * Execute the query and provide a handler for consuming results.
    *
-   * @param resultHandler handler called when result of execution is present
+   * @param resultHandler handler called when result of execution is fully fetched.
+   * @param query         the query to execute
+   * @return current Cassandra client instance
+   */
+  @GenIgnore
+  @Fluent
+  CassandraClient executeWithFullFetch(String query, Handler<AsyncResult<List<Row>>> resultHandler);
+
+  /**
+   * Execute the query and provide a handler for consuming results.
+   *
+   * @param resultHandler handler called when result of execution is fully fetched.
+   * @param statement     the statement to execute
+   * @return current Cassandra client instance
+   */
+  @GenIgnore
+  @Fluent
+  CassandraClient executeWithFullFetch(Statement statement, Handler<AsyncResult<List<Row>>> resultHandler);
+
+  /**
+   * Execute the query and provide a handler for consuming results.
+   *
+   * @param resultHandler handler called when result of execution is present, but can be not fully feched
    * @param query         the query to execute
    * @return current Cassandra client instance
    */
