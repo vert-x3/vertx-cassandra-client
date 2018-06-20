@@ -107,15 +107,13 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient executeWithFullFetch(Statement statement, Handler<AsyncResult<List<Row>>> resultHandler) {
-    execute(statement, done -> {
-      if (done.succeeded()) {
-        done.result().all(resultHandler);
-      } else {
-        if (resultHandler != null) {
-          resultHandler.handle(Future.failedFuture(done.cause()));
-        }
-      }
-    });
+    Future<ResultSet> resultSetFuture = Future.future();
+    execute(statement, resultSetFuture);
+    resultSetFuture.compose(resultSet-> {
+      Future<List<Row>> rowsFuture = Future.future();
+      resultSet.all(rowsFuture);
+      return rowsFuture;
+    }).setHandler(resultHandler);
     return this;
   }
 
