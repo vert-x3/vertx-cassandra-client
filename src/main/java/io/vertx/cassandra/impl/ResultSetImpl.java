@@ -59,9 +59,7 @@ public class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSet one(Handler<AsyncResult<Row>> handler) {
-    if (getAvailableWithoutFetching() >= 1) {
-      handler.handle(Future.succeededFuture(resultSet.one()));
-    } else {
+    if (getAvailableWithoutFetching() == 0 && !resultSet.isFullyFetched()) {
       Util.toVertxFuture(resultSet.fetchMoreResults(), vertx).setHandler(done -> {
         if (done.succeeded()) {
           if (handler != null) {
@@ -73,6 +71,8 @@ public class ResultSetImpl implements ResultSet {
           }
         }
       });
+    } else {
+      handler.handle(Future.succeededFuture(resultSet.one()));
     }
     return this;
   }
