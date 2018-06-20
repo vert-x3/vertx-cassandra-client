@@ -199,7 +199,7 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler) {
     executeWithSession(session -> {
-      Util.completeHandlerWithVoidWhenDone(session.closeAsync(), disconnectHandler, vertx);
+      Util.toVertxFuture(session.closeAsync(), vertx).<Void>mapEmpty().setHandler(disconnectHandler);
       return null;
     }, disconnectHandler);
     return this;

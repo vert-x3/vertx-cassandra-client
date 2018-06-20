@@ -53,7 +53,7 @@ public class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSet fetchMoreResults(Handler<AsyncResult<Void>> handler) {
-    Util.completeHandlerWithVoidWhenDone(resultSet.fetchMoreResults(), handler, vertx);
+    Util.toVertxFuture(resultSet.fetchMoreResults(), vertx).<Void>mapEmpty().setHandler(handler);
     return this;
   }
 
