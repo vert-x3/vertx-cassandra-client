@@ -118,7 +118,8 @@ public class ResultSetImpl implements ResultSet {
     }
 
     private void fetch() {
-      for (int i = 0; i < resultSet.getAvailableWithoutFetching(); i++) {
+      int availableWithoutFetching = resultSet.getAvailableWithoutFetching();
+      for (int i = 0; i < availableWithoutFetching; i++) {
         listToFill.add(resultSet.one());
       }
 
