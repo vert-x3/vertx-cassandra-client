@@ -76,6 +76,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   @Override
   public synchronized CassandraRowStream endHandler(Handler<Void> handler) {
     endHandler = handler;
+    tryToTriggerEndOfTheStream();
     return this;
   }
 
@@ -119,6 +120,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
         }
       }
     }
+    tryToTriggerEndOfTheStream();
   }
 
   private void tryToTriggerEndOfTheStream() {

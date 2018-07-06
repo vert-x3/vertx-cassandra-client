@@ -19,6 +19,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.NettyOptions;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
@@ -35,6 +36,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.impl.VertxInternal;
 
 import java.util.concurrent.ThreadFactory;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -106,6 +108,23 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
+  public CassandraClient executeWithFullFetch(String query, Handler<AsyncResult<List<Row>>> resultHandler) {
+    return executeWithFullFetch(new SimpleStatement(query), resultHandler);
+  }
+
+  @Override
+  public CassandraClient executeWithFullFetch(Statement statement, Handler<AsyncResult<List<Row>>> resultHandler) {
+    Future<ResultSet> resultSetFuture = Future.future();
+    execute(statement, resultSetFuture);
+    resultSetFuture.compose(resultSet-> {
+      Future<List<Row>> rowsFuture = Future.future();
+      resultSet.all(rowsFuture);
+      return rowsFuture;
+    }).setHandler(resultHandler);
+    return this;
+  }
+
+  @Override
   public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler) {
     return execute(new SimpleStatement(query), resultHandler);
   }
@@ -113,16 +132,15 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler) {
     executeWithSession(session -> {
-      ResultSetFuture resultSetFuture = session.executeAsync(statement);
-      Future<com.datastax.driver.core.ResultSet> vertxExecuteFuture = Util.toVertxFuture(resultSetFuture, vertx);
-      vertxExecuteFuture.setHandler(executionResult -> {
-        if (executionResult.succeeded()) {
+      Future<com.datastax.driver.core.ResultSet> future = Util.toVertxFuture(session.executeAsync(statement), vertx);
+      future.setHandler(executed -> {
+        if (executed.succeeded()) {
           if (resultHandler != null) {
-            resultHandler.handle(Future.succeededFuture(new ResultSetImpl(executionResult.result())));
+            resultHandler.handle(Future.succeededFuture(new ResultSetImpl(executed.result(), vertx)));
           }
         } else {
           if (resultHandler != null) {
-            resultHandler.handle(Future.failedFuture(executionResult.cause()));
+            resultHandler.handle(Future.failedFuture(executed.cause()));
           }
         }
       });
@@ -159,8 +177,13 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient queryStream(String sql, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler) {
+    return queryStream(new SimpleStatement(sql), rowStreamHandler);
+  }
+
+  @Override
+  public CassandraClient queryStream(Statement statement, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler) {
     executeWithSession(session -> {
-      ResultSetFuture resultSetFuture = session.executeAsync(sql);
+      ResultSetFuture resultSetFuture = session.executeAsync(statement);
       Future<com.datastax.driver.core.ResultSet> vertxExecuteFuture = Util.toVertxFuture(resultSetFuture, vertx);
       vertxExecuteFuture.setHandler(executionResult -> {
         if (executionResult.succeeded()) {
@@ -181,18 +204,7 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler) {
     executeWithSession(session -> {
-      Future<Void> vertxFuture = Util.toVertxFuture(session.closeAsync(), vertx);
-      vertxFuture.setHandler(event -> {
-        if (event.succeeded()) {
-          if (disconnectHandler != null) {
-            disconnectHandler.handle(Future.succeededFuture());
-          }
-        } else {
-          if (disconnectHandler != null) {
-            disconnectHandler.handle(Future.failedFuture(event.cause()));
-          }
-        }
-      });
+      Util.toVertxFuture(session.closeAsync(), vertx).<Void>mapEmpty().setHandler(disconnectHandler);
       return null;
     }, disconnectHandler);
     return this;
