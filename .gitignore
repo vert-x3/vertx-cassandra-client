@@ -225,3 +225,6 @@ buildNumber.properties
 
 # End of https://www.gitignore.io/api/maven,vertx,eclipse,intellij,intellij+all,intellij+iml
 .vscode/
+src/main/generated/
+src/main/kotlin
+src/main/scala
