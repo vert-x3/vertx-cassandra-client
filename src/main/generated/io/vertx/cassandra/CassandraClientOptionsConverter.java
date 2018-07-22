@@ -2,10 +2,11 @@ package io.vertx.cassandra;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
+import java.util.Objects;
 
 /**
  * Converter for {@link io.vertx.cassandra.CassandraClientOptions}.
- * NOTE: This class has been automatically generated from the {@link io.vertx.cassandra.CassandraClientOptions} original class using Vert.x codegen.
+ * NOTE: This class has been automatically generated from the {@link "io.vertx.cassandra.CassandraClientOptions} original class using Vert.x codegen.
  */
 public class CassandraClientOptionsConverter {
 
@@ -37,4 +38,5 @@ public class CassandraClientOptionsConverter {
 
   public static void toJson(CassandraClientOptions obj, java.util.Map<String, Object> json) {
   }
+
 }
