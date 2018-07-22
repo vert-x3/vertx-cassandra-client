@@ -76,6 +76,47 @@
       <optional>true</optional>
     </dependency>
 
+    <!-- Kotlin -->
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-lang-kotlin-codegen</artifactId>
+      <version>3.6.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-lang-kotlin-coroutines</artifactId>
+      <version>3.6.0-SNAPSHOT</version>
+    </dependency>
+
+    <!-- Rx Java -->
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-rx-java-codegen</artifactId>
+      <version>3.6.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-rx-java</artifactId>
+    </dependency>
+
+    <!-- Rx Java 2 -->
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-rx-java2-codegen</artifactId>
+      <version>3.6.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-rx-java2</artifactId>
+    </dependency>
+
+    <!-- Scala -->
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-lang-scala_2.12</artifactId>
+      <version>3.6.0-SNAPSHOT</version>
+    </dependency>
+
     <!-- Testing purposes -->
     <dependency>
       <groupId>org.cassandraunit</groupId>
