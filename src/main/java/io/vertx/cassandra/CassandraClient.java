@@ -27,6 +27,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Eclipse Vert.x Cassandra client.
@@ -39,7 +40,15 @@ public interface CassandraClient {
   }
 
   static CassandraClient create(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
-    return new CassandraClientImpl(vertx, cassandraClientOptions);
+    return new CassandraClientImpl(vertx, UUID.randomUUID().toString(), cassandraClientOptions);
+  }
+
+  static CassandraClient createShared(Vertx vertx, String datasourceName) {
+    return createShared(vertx, datasourceName, new CassandraClientOptions());
+  }
+
+  static CassandraClient createShared(Vertx vertx, String datasourceName, CassandraClientOptions cassandraClientOptions) {
+    return new CassandraClientImpl(vertx, datasourceName, cassandraClientOptions);
   }
 
   /**
@@ -100,7 +109,7 @@ public interface CassandraClient {
    */
   @Fluent
   CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler);
-  
+
   /**
    * Execute the statement and provide a handler for consuming results.
    *
