@@ -34,6 +34,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.shareddata.LocalMap;
+import io.vertx.core.shareddata.Shareable;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -53,7 +54,7 @@ public class CassandraClientImpl implements CassandraClient {
     this.cassandraHolder = lookupHolder(dataSourceName, cassandraClientOptions);
   }
 
-  class CassandraHolder implements Closeable {
+  class CassandraHolder implements Closeable, Shareable {
     int refCount = 1;
     AtomicReference<Session> session = new AtomicReference<>(null);
     CassandraClientOptions options;
@@ -162,7 +163,7 @@ public class CassandraClientImpl implements CassandraClient {
   public CassandraClient executeWithFullFetch(Statement statement, Handler<AsyncResult<List<Row>>> resultHandler) {
     Future<ResultSet> resultSetFuture = Future.future();
     execute(statement, resultSetFuture);
-    resultSetFuture.compose(resultSet-> {
+    resultSetFuture.compose(resultSet -> {
       Future<List<Row>> rowsFuture = Future.future();
       resultSet.all(rowsFuture);
       return rowsFuture;
