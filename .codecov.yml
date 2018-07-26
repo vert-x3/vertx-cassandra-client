@@ -8,9 +8,8 @@ coverage:
   range: "0...100"
 
   status:
-    project: yes
-    patch: no
-    changes: no
+    project: off
+    patch: off
 
 comment:
   layout: "header, diff"
