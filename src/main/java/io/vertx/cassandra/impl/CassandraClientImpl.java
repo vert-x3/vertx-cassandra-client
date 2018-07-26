@@ -37,6 +37,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+/**
+ * @author Pavel Drankou
+ * @author Thomas Segismont
+ */
 public class CassandraClientImpl implements CassandraClient {
 
   VertxInternal vertx;

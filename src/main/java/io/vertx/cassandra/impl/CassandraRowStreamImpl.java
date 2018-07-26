@@ -25,6 +25,10 @@ import io.vertx.core.Vertx;
 
 import java.util.Iterator;
 
+/**
+ * @author Pavel Drankou
+ * @author Thomas Segismont
+ */
 public class CassandraRowStreamImpl implements CassandraRowStream {
 
   private final ResultSet datastaxResultSet;
