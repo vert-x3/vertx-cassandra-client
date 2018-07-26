@@ -35,18 +35,60 @@ import java.util.UUID;
 @VertxGen
 public interface CassandraClient {
 
+  /**
+   * The name of the default pool
+   */
+  String DEFAULT_POOL_NAME = "DEFAULT_POOL";
+
+
+  /**
+   * Like {@link CassandraClient#create(Vertx, CassandraClientOptions)}  but with default client options
+   */
   static CassandraClient create(Vertx vertx) {
     return create(vertx, new CassandraClientOptions());
   }
 
+  /**
+   * Create a Cassandra client which maintains its own data source.
+   *
+   * @param vertx                  the Vert.x instance
+   * @param cassandraClientOptions the options
+   * @return the client
+   */
   static CassandraClient create(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
     return new CassandraClientImpl(vertx, UUID.randomUUID().toString(), cassandraClientOptions);
   }
 
+  /**
+   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with default client options and datasource
+   */
+  static CassandraClient createShared(Vertx vertx) {
+    return createShared(vertx, DEFAULT_POOL_NAME);
+  }
+
+  /**
+   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with default client options
+   */
   static CassandraClient createShared(Vertx vertx, String datasourceName) {
     return createShared(vertx, datasourceName, new CassandraClientOptions());
   }
 
+  /**
+   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with datasource name
+   */
+  static CassandraClient createShared(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
+    return createShared(vertx, DEFAULT_POOL_NAME, cassandraClientOptions);
+  }
+
+  /**
+   * Create a Cassandra client which shares its data source with any other Cassandra clients created with the same
+   * data source name
+   *
+   * @param vertx                  the Vert.x instance
+   * @param cassandraClientOptions the options
+   * @param datasourceName         the data source name
+   * @return the client
+   */
   static CassandraClient createShared(Vertx vertx, String datasourceName, CassandraClientOptions cassandraClientOptions) {
     return new CassandraClientImpl(vertx, datasourceName, cassandraClientOptions);
   }
