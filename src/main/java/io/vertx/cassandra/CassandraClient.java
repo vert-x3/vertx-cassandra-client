@@ -30,6 +30,9 @@ import java.util.List;
 
 /**
  * Eclipse Vert.x Cassandra client.
+ *
+ * @author Pavel Drankou
+ * @author Thomas Segismont
  */
 @VertxGen
 public interface CassandraClient {

@@ -23,6 +23,9 @@ import io.vertx.core.streams.ReadStream;
 
 /**
  * A {@link ReadStream} for {@link Row} consumption.
+ *
+ * @author Pavel Drankou
+ * @author Thomas Segismont
  */
 @VertxGen
 public interface CassandraRowStream extends ReadStream<Row> {
