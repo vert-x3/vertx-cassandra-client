@@ -124,7 +124,7 @@ public class CassandraServiceBase {
   }
 
   private CassandraClient client() {
-    return CassandraClient.create(
+    return CassandraClient.createNonShared(
       vertx,
       new CassandraClientOptions()
         .addContactPoint(HOST)

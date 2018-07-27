@@ -32,7 +32,10 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.VertxInternal;
+import io.vertx.core.shareddata.LocalMap;
+import io.vertx.core.shareddata.Shareable;
 
+import java.io.Closeable;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -43,16 +46,69 @@ import java.util.function.Function;
  */
 public class CassandraClientImpl implements CassandraClient {
 
-  VertxInternal vertx;
-  CassandraClientOptions options;
-  AtomicReference<Session> session = new AtomicReference<>(null);
+  private static final String DS_LOCAL_MAP_NAME = "__vertx.CassandraClient.datasources";
 
-  public CassandraClientImpl() {
+  VertxInternal vertx;
+  final CassandraHolder cassandraHolder;
+
+  public CassandraClientImpl(Vertx vertx, String dataSourceName, CassandraClientOptions cassandraClientOptions) {
+    this.vertx = (VertxInternal) vertx;
+    this.cassandraHolder = lookupHolder(dataSourceName, cassandraClientOptions);
   }
 
-  public CassandraClientImpl(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
-    this.vertx = (VertxInternal) vertx;
-    this.options = cassandraClientOptions;
+  class CassandraHolder implements Closeable, Shareable {
+    int refCount = 1;
+    AtomicReference<Session> session = new AtomicReference<>(null);
+    CassandraClientOptions options;
+    Runnable closeRunner;
+
+    public CassandraHolder(CassandraClientOptions options, Runnable closeRunner) {
+      this.options = options;
+      this.closeRunner = closeRunner;
+    }
+
+    synchronized void incRefCount() {
+      refCount++;
+    }
+
+    @Override
+    public synchronized void close() {
+      if (--refCount == 0) {
+        if (session.get() != null) {
+          session.get().close();
+        }
+        if (closeRunner != null) {
+          closeRunner.run();
+        }
+      }
+    }
+  }
+
+  private LocalMap<String, CassandraHolder> cassandraHolderLocalMap() {
+    return vertx.sharedData().getLocalMap(DS_LOCAL_MAP_NAME);
+  }
+
+  private CassandraHolder lookupHolder(String dataSourceName, CassandraClientOptions cassandraClientOptions) {
+    LocalMap<String, CassandraHolder> map = cassandraHolderLocalMap();
+    synchronized (map) {
+      CassandraHolder theHolder = map.get(dataSourceName);
+      if (theHolder == null) {
+        theHolder = new CassandraHolder(cassandraClientOptions, () -> removeFromMap(map, dataSourceName));
+        map.put(dataSourceName, theHolder);
+      } else {
+        theHolder.incRefCount();
+      }
+      return theHolder;
+    }
+  }
+
+  private void removeFromMap(LocalMap<String, CassandraHolder> map, String dataSourceName) {
+    synchronized (map) {
+      map.remove(dataSourceName);
+      if (map.isEmpty()) {
+        map.close();
+      }
+    }
   }
 
   @Override
@@ -67,18 +123,18 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient connect(String keyspace, Handler<AsyncResult<Void>> connectHandler) {
-    session.set(null);
+    cassandraHolder.session.set(null);
     Cluster.Builder builder = Cluster.builder();
 
-    if (options.contactPoints().isEmpty()) {
+    if (cassandraHolder.options.contactPoints().isEmpty()) {
       builder.addContactPoint(CassandraClientOptions.DEFAULT_HOST);
     } else {
-      for (String contactPoint : options.contactPoints()) {
+      for (String contactPoint : cassandraHolder.options.contactPoints()) {
         builder.addContactPoint(contactPoint);
       }
     }
 
-    Cluster build = builder.withPort(options.port()).build();
+    Cluster build = builder.withPort(cassandraHolder.options.port()).build();
     ListenableFuture<Session> connectGuavaFuture;
     if (keyspace == null) {
       connectGuavaFuture = build.connectAsync();
@@ -90,7 +146,7 @@ public class CassandraClientImpl implements CassandraClient {
 
     sessionFuture.setHandler(event -> {
       if (event.succeeded()) {
-        session.set(event.result());
+        cassandraHolder.session.set(event.result());
         if (connectHandler != null) {
           connectHandler.handle(Future.succeededFuture());
         }
@@ -113,7 +169,7 @@ public class CassandraClientImpl implements CassandraClient {
   public CassandraClient executeWithFullFetch(Statement statement, Handler<AsyncResult<List<Row>>> resultHandler) {
     Future<ResultSet> resultSetFuture = Future.future();
     execute(statement, resultSetFuture);
-    resultSetFuture.compose(resultSet-> {
+    resultSetFuture.compose(resultSet -> {
       Future<List<Row>> rowsFuture = Future.future();
       resultSet.all(rowsFuture);
       return rowsFuture;
@@ -208,7 +264,7 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   private <T> void executeWithSession(Function<Session, Void> functionToExecute, Handler<AsyncResult<T>> handlerToFailIfNoSessionPresent) {
-    Session session = this.session.get();
+    Session session = this.cassandraHolder.session.get();
     if (session != null) {
       functionToExecute.apply(session);
     } else {
