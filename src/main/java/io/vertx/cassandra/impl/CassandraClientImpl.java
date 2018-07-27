@@ -99,7 +99,7 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   private void removeFromMap(LocalMap<String, CassandraHolder> map, String dataSourceName) {
-    synchronized (cassandraHolderLocalMap()) {
+    synchronized (map) {
       map.remove(dataSourceName);
       if (map.isEmpty()) {
         map.close();
