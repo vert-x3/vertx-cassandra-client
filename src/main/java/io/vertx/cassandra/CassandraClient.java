@@ -50,6 +50,12 @@ public interface CassandraClient {
 
   /**
    * Create a Cassandra client which maintains its own data source.
+   * <p>
+   * It is not recommended to create several non shared clients in an application.
+   * Your application should either use only single non shared client, or use shared client.
+   * This is because {@link CassandraClient} backed by {@link com.datastax.driver.core.Session}.
+   * And Datastax does not recommended to have several {@link com.datastax.driver.core.Session}
+   * instances. Better to have only one, and share it.
    *
    * @param vertx                  the Vert.x instance
    * @param cassandraClientOptions the options
