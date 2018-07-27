@@ -80,7 +80,7 @@ public class CassandraServiceBase {
       return createKeySpace;
     }).compose(keySpaceCreated -> {
       Future<ResultSet> createTable = Future.future();
-      cassandraClient.execute("create table random_strings.random_string_by_first_letter (first_letter text, random_string text, primary key (first_letter, random_string));", createTable);
+      cassandraClient.execute("createNonShared table random_strings.random_string_by_first_letter (first_letter text, random_string text, primary key (first_letter, random_string));", createTable);
       return createTable;
     }).compose(tableCreated -> {
       Future<PreparedStatement> preparedStatement = Future.future();
@@ -114,7 +114,7 @@ public class CassandraServiceBase {
       return createKeySpace;
     }).compose(keySpaceCreated -> {
       Future<ResultSet> createTable = Future.future();
-      cassandraClient.execute("create table names.names_by_first_letter (first_letter text, name text, primary key (first_letter, name));", createTable);
+      cassandraClient.execute("createNonShared table names.names_by_first_letter (first_letter text, name text, primary key (first_letter, name));", createTable);
       return createTable;
     }).compose(tableCreated -> {
       Future<Void> disconnectFuture = Future.future();
@@ -124,7 +124,7 @@ public class CassandraServiceBase {
   }
 
   private CassandraClient client() {
-    return CassandraClient.create(
+    return CassandraClient.createNonShared(
       vertx,
       new CassandraClientOptions()
         .addContactPoint(HOST)

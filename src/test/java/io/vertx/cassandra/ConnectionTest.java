@@ -44,7 +44,7 @@ public class ConnectionTest extends CassandraServiceBase {
   }
 
   private void connectAndDisconnect(TestContext context, CassandraClientOptions options) {
-    CassandraClient cassandraClient = CassandraClient.create(
+    CassandraClient cassandraClient = CassandraClient.createNonShared(
       vertx,
       options
     );

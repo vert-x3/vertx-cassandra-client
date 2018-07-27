@@ -42,10 +42,10 @@ public interface CassandraClient {
 
 
   /**
-   * Like {@link CassandraClient#create(Vertx, CassandraClientOptions)}  but with default client options
+   * Like {@link CassandraClient#createNonShared(Vertx, CassandraClientOptions)}  but with default client options
    */
-  static CassandraClient create(Vertx vertx) {
-    return create(vertx, new CassandraClientOptions());
+  static CassandraClient createNonShared(Vertx vertx) {
+    return createNonShared(vertx, new CassandraClientOptions());
   }
 
   /**
@@ -55,7 +55,7 @@ public interface CassandraClient {
    * @param cassandraClientOptions the options
    * @return the client
    */
-  static CassandraClient create(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
+  static CassandraClient createNonShared(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
     return new CassandraClientImpl(vertx, UUID.randomUUID().toString(), cassandraClientOptions);
   }
 
