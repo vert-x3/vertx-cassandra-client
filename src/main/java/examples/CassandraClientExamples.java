@@ -8,9 +8,7 @@ import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
 import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
-import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerResponse;
 
 import java.util.List;
@@ -23,7 +21,7 @@ public class CassandraClientExamples {
       .addContactPoint("node1.address")
       .addContactPoint("node2.address")
       .addContactPoint("node3.address");
-    CassandraClient client = CassandraClient.create(vertx, options);
+    CassandraClient client = CassandraClient.createShared(vertx, options);
   }
 
   public void connecting(CassandraClient cassandraClient) {
