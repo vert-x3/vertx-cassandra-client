@@ -32,12 +32,10 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.VertxInternal;
-import io.vertx.core.json.JsonObject;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.shareddata.Shareable;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -82,9 +80,14 @@ public class CassandraClientImpl implements CassandraClient {
     }
   }
 
+
+  private LocalMap<String, CassandraHolder> cassandraHolderLocalMap() {
+    return vertx.sharedData().getLocalMap(DS_LOCAL_MAP_NAME);
+  }
+
   private CassandraHolder lookupHolder(String dataSourceName, CassandraClientOptions cassandraClientOptions) {
-    synchronized (vertx) {
-      LocalMap<String, CassandraHolder> map = vertx.sharedData().getLocalMap(DS_LOCAL_MAP_NAME);
+    LocalMap<String, CassandraHolder> map = cassandraHolderLocalMap();
+    synchronized (map) {
       CassandraHolder theHolder = map.get(dataSourceName);
       if (theHolder == null) {
         theHolder = new CassandraHolder(cassandraClientOptions, () -> removeFromMap(map, dataSourceName));
@@ -97,7 +100,7 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   private void removeFromMap(LocalMap<String, CassandraHolder> map, String dataSourceName) {
-    synchronized (vertx) {
+    synchronized (cassandraHolderLocalMap()) {
       map.remove(dataSourceName);
       if (map.isEmpty()) {
         map.close();
