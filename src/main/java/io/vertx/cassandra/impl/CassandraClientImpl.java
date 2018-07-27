@@ -80,7 +80,6 @@ public class CassandraClientImpl implements CassandraClient {
     }
   }
 
-
   private LocalMap<String, CassandraHolder> cassandraHolderLocalMap() {
     return vertx.sharedData().getLocalMap(DS_LOCAL_MAP_NAME);
   }
