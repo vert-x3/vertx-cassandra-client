@@ -42,7 +42,7 @@ public interface CassandraClient {
 
 
   /**
-   * Like {@link CassandraClient#createNonShared(Vertx, CassandraClientOptions)}  but with default client options
+   * Like {@link CassandraClient#createNonShared(Vertx, CassandraClientOptions)}  but with default client options.
    */
   static CassandraClient createNonShared(Vertx vertx) {
     return createNonShared(vertx, new CassandraClientOptions());
@@ -60,21 +60,21 @@ public interface CassandraClient {
   }
 
   /**
-   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with default client options and datasource
+   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with default client options and datasource.
    */
   static CassandraClient createShared(Vertx vertx) {
     return createShared(vertx, DEFAULT_POOL_NAME);
   }
 
   /**
-   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with default client options
+   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with default client options.
    */
   static CassandraClient createShared(Vertx vertx, String datasourceName) {
     return createShared(vertx, datasourceName, new CassandraClientOptions());
   }
 
   /**
-   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with datasource name
+   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with datasource name.
    */
   static CassandraClient createShared(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
     return createShared(vertx, DEFAULT_POOL_NAME, cassandraClientOptions);
@@ -82,7 +82,7 @@ public interface CassandraClient {
 
   /**
    * Create a Cassandra client which shares its data source with any other Cassandra clients created with the same
-   * data source name
+   * data source name.
    *
    * @param vertx                  the Vert.x instance
    * @param cassandraClientOptions the options
