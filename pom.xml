@@ -19,6 +19,7 @@
     <junit.version>4.12</junit.version>
     <slf4j.version>1.7.21</slf4j.version>
     <cassandra-unit.version>3.3.0.2</cassandra-unit.version>
+    <logback.version>1.2.3</logback.version>
   </properties>
 
   <dependencyManagement>
@@ -147,9 +148,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>${slf4j.version}</version>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -1,3 +1,130 @@
 = Cassandra Client for Vert.x
 
 A Vert.x client allowing applications to interact with a Cassandra service
+
+
+== Getting Started
+
+For now, in order to use the client you need to build it locally first:
+
+----
+git clone https://github.com/Sammers21/vertx-cassandra-client
+cd vertx-cassandra-client
+mvn clean install -Dmaven.test.skip=true -s .travis.maven.settings.xml
+----
+
+=== Maven
+
+Add the following dependency to your maven project:
+
+[source,xml,subs="+attributes"]
+----
+<dependency>
+  <groupId>io.vertx</groupId>
+  <artifactId>vertx-cassandra-client</artifactId>
+  <version>${maven.version}</version>
+</dependency>
+----
+
+=== Gradle
+
+Add the following dependency to your gradle project:
+
+[source,groovy,subs="+attributes"]
+----
+dependencies {
+  compile 'io.vertx:vertx-cassandra-client:${maven.version}'
+}
+----
+
+=== Introduction
+
+http://cassandra.apache.org/[Cassandra] is a distributed system, and it can have many nodes.
+To connect to Cassandra you need to specify the addresses of some cluster nodes when creating `CassandraClientOptions` object:
+
+[source,$lang]
+----
+{@link examples.CassandraClientExamples#specifyingNodes}
+----
+
+NOTE: By default, it will connect to the local machine's port `9042`
+
+=== Connect/Disconnect
+
+After the client is created you can connect using specific cluster options:
+
+[source,$lang]
+----
+{@link examples.CassandraClientExamples#connecting}
+----
+
+To disconnect, you can do it in a similar way:
+
+[source,$lang]
+----
+{@link examples.CassandraClientExamples#disconnecting}
+----
+
+=== Querying
+
+You can get query results using three different ways
+
+==== Streaming API
+
+The streaming API is most appropriate when you need to consume results iteratively,
+e.g you want to process each item.
+This is very efficient specially for large amount of rows.
+In order to give you some inspiration and ideas on how you can use the API, we'd like to you to consider this example:
+
+[source,$lang]
+----
+{@link examples.CassandraClientExamples#streamingViaHttp}
+----
+
+In the example, we are executing a query, and stream results via HTTP.
+
+==== Bulk fetching API
+
+This API should be used when you need to process all the rows at the same time,
+it should be used when your application can afford to load the full result in memory.
+
+[source,$lang]
+----
+{@link examples.CassandraClientExamples#fetchAll}
+----
+
+==== Low level fetch API
+
+This API provides the greater control over loading at the expense of being a
+bit lower level than the streaming and bulk fetching APIs.
+
+[source,$lang]
+----
+{@link examples.CassandraClientExamples#lowLevelQuerying}
+----
+
+=== Prepared queries
+
+For security and efficiency reasons, it is a good idea to use prepared statements for all the queries you are using more than once.
+You can prepare a query:
+
+[source,$lang]
+----
+{@link examples.CassandraClientExamples#prepareQuery}
+----
+
+And then use the `PreparedStatement` for all the next queries:
+
+[source,$lang]
+----
+{@link examples.CassandraClientExamples#usingPreparedStatementFuture}
+----
+
+=== Batching
+
+In case you'd like to execute several queries at once, you can use `BatchStatement` for that:
+
+[source,$lang]
+----
+{@link examples.CassandraClientExamples#batching}
+----

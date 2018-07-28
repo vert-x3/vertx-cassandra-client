@@ -26,19 +26,79 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Eclipse Vert.x Cassandra client.
+ *
+ * @author Pavel Drankou
+ * @author Thomas Segismont
  */
 @VertxGen
 public interface CassandraClient {
 
-  static CassandraClient create(Vertx vertx) {
-    return create(vertx, new CassandraClientOptions());
+  /**
+   * The name of the default pool
+   */
+  String DEFAULT_POOL_NAME = "DEFAULT_POOL";
+
+
+  /**
+   * Like {@link CassandraClient#createNonShared(Vertx, CassandraClientOptions)}  but with default client options.
+   */
+  static CassandraClient createNonShared(Vertx vertx) {
+    return createNonShared(vertx, new CassandraClientOptions());
   }
 
-  static CassandraClient create(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
-    return new CassandraClientImpl(vertx, cassandraClientOptions);
+  /**
+   * Create a Cassandra client which maintains its own data source.
+   * <p>
+   * It is not recommended to create several non shared clients in an application.
+   * Your application should either use only single non shared client, or use shared client.
+   * This is because {@link CassandraClient} backed by {@link com.datastax.driver.core.Session}.
+   * And Datastax does not recommended to have several {@link com.datastax.driver.core.Session}
+   * instances. Better to have only one, and share it.
+   *
+   * @param vertx                  the Vert.x instance
+   * @param cassandraClientOptions the options
+   * @return the client
+   */
+  static CassandraClient createNonShared(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
+    return new CassandraClientImpl(vertx, UUID.randomUUID().toString(), cassandraClientOptions);
+  }
+
+  /**
+   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with default client options and datasource.
+   */
+  static CassandraClient createShared(Vertx vertx) {
+    return createShared(vertx, DEFAULT_POOL_NAME);
+  }
+
+  /**
+   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with default client options.
+   */
+  static CassandraClient createShared(Vertx vertx, String datasourceName) {
+    return createShared(vertx, datasourceName, new CassandraClientOptions());
+  }
+
+  /**
+   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with datasource name.
+   */
+  static CassandraClient createShared(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
+    return createShared(vertx, DEFAULT_POOL_NAME, cassandraClientOptions);
+  }
+
+  /**
+   * Create a Cassandra client which shares its data source with any other Cassandra clients created with the same
+   * data source name.
+   *
+   * @param vertx                  the Vert.x instance
+   * @param cassandraClientOptions the options
+   * @param datasourceName         the data source name
+   * @return the client
+   */
+  static CassandraClient createShared(Vertx vertx, String datasourceName, CassandraClientOptions cassandraClientOptions) {
+    return new CassandraClientImpl(vertx, datasourceName, cassandraClientOptions);
   }
 
   /**

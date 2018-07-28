@@ -25,7 +25,10 @@ import io.vertx.core.Handler;
 import java.util.List;
 
 /**
- * It is like {@link com.datastax.driver.core.ResultSet}, but adopted for Vert.x.
+ * It is like {@link com.datastax.driver.core.ResultSet}, but adapted for Vert.x.
+ *
+ * @author Pavel Drankou
+ * @author Thomas Segismont
  */
 @VertxGen
 public interface ResultSet {

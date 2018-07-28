@@ -43,7 +43,7 @@ public class ExecutionTest extends CassandraServiceBase {
 
   @Test
   public void tableHaveSomeRows(TestContext context) {
-    CassandraClient cassandraClient = CassandraClient.create(
+    CassandraClient cassandraClient = CassandraClient.createNonShared(
       vertx,
       new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
     );
@@ -73,7 +73,7 @@ public class ExecutionTest extends CassandraServiceBase {
 
   @Test
   public void simpleExecuteWithBigAmountOfFetches(TestContext context) {
-    CassandraClient cassandraClient = CassandraClient.create(
+    CassandraClient cassandraClient = CassandraClient.createNonShared(
       vertx,
       new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
     );
@@ -106,7 +106,7 @@ public class ExecutionTest extends CassandraServiceBase {
 
   @Test
   public void simpleReleaseVersionSelect(TestContext context) {
-    CassandraClient cassandraClient = CassandraClient.create(
+    CassandraClient cassandraClient = CassandraClient.createNonShared(
       vertx,
       new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
     );
@@ -133,7 +133,7 @@ public class ExecutionTest extends CassandraServiceBase {
 
   @Test
   public void preparedStatementsShouldWork(TestContext context) {
-    CassandraClient cassandraClient = CassandraClient.create(
+    CassandraClient cassandraClient = CassandraClient.createNonShared(
       vertx,
       new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
     );

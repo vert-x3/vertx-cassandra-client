@@ -34,7 +34,7 @@ public class StreamingTest extends CassandraServiceBase {
 
   @Test
   public void testReadStream(TestContext context) {
-    CassandraClient cassandraClient = CassandraClient.create(
+    CassandraClient cassandraClient = CassandraClient.createNonShared(
       vertx,
       new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
     );
@@ -78,7 +78,7 @@ public class StreamingTest extends CassandraServiceBase {
 
   @Test
   public void emptyStream(TestContext context) {
-    CassandraClient cassandraClient = CassandraClient.create(
+    CassandraClient cassandraClient = CassandraClient.createNonShared(
       vertx,
       new CassandraClientOptions().setPort(NATIVE_TRANSPORT_PORT)
     );

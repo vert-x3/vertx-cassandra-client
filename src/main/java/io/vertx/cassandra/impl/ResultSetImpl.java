@@ -26,6 +26,10 @@ import io.vertx.core.Vertx;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @author Pavel Drankou
+ * @author Thomas Segismont
+ */
 public class ResultSetImpl implements ResultSet {
 
   private com.datastax.driver.core.ResultSet resultSet;
