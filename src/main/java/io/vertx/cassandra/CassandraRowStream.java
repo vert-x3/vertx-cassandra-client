@@ -32,6 +32,7 @@ public interface CassandraRowStream extends ReadStream<Row> {
   @Override
   CassandraRowStream exceptionHandler(Handler<Throwable> handler);
 
+  @SuppressWarnings("codegen-allow-any-java-type")
   @Override
   CassandraRowStream handler(Handler<Row> handler);
 
