@@ -111,13 +111,6 @@
       <artifactId>vertx-rx-java2</artifactId>
     </dependency>
 
-    <!-- Scala -->
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-lang-scala_2.12</artifactId>
-      <version>3.6.0-SNAPSHOT</version>
-    </dependency>
-
     <!-- Testing purposes -->
     <dependency>
       <groupId>org.cassandraunit</groupId>
