@@ -34,7 +34,6 @@ import java.util.UUID;
  * @author Pavel Drankou
  * @author Thomas Segismont
  */
-@SuppressWarnings("codegen-enhanced-method")
 @VertxGen
 public interface CassandraClient {
 
