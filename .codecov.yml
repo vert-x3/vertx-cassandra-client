@@ -15,3 +15,8 @@ comment:
   layout: "header, diff"
   behavior: default
   require_changes: yes
+
+ignore:
+  - src/main/generated/.*
+  - src/main/java/examples/.*
+  - src/main/kotlin/.*
