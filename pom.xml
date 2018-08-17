@@ -19,6 +19,7 @@
     <junit.version>4.12</junit.version>
     <slf4j.version>1.7.21</slf4j.version>
     <cassandra-unit.version>3.3.0.2</cassandra-unit.version>
+    <logback.version>1.2.3</logback.version>
   </properties>
 
   <dependencyManagement>
@@ -76,6 +77,40 @@
       <optional>true</optional>
     </dependency>
 
+    <!-- Kotlin -->
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-lang-kotlin-codegen</artifactId>
+      <version>3.6.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-lang-kotlin-coroutines</artifactId>
+      <version>3.6.0-SNAPSHOT</version>
+    </dependency>
+
+    <!-- Rx Java -->
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-rx-java-codegen</artifactId>
+      <version>3.6.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-rx-java</artifactId>
+    </dependency>
+
+    <!-- Rx Java 2 -->
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-rx-java2-codegen</artifactId>
+      <version>3.6.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-rx-java2</artifactId>
+    </dependency>
+
     <!-- Testing purposes -->
     <dependency>
       <groupId>org.cassandraunit</groupId>
@@ -106,9 +141,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>${slf4j.version}</version>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

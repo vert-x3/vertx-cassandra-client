@@ -8,11 +8,15 @@ coverage:
   range: "0...100"
 
   status:
-    project: yes
-    patch: no
-    changes: no
+    project: off
+    patch: off
 
 comment:
   layout: "header, diff"
   behavior: default
   require_changes: yes
+
+ignore:
+  - src/main/generated/.*
+  - src/main/java/examples/.*
+  - src/main/kotlin/.*
