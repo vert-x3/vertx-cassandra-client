@@ -37,9 +37,9 @@ import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.shareddata.Shareable;
 
-import java.util.concurrent.ThreadFactory;
 import java.io.Closeable;
 import java.util.List;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
