@@ -22,7 +22,6 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.streams.ReadStream;
 
 import java.util.Iterator;
 
