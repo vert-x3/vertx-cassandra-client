@@ -22,6 +22,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.streams.ReadStream;
 
 import java.util.Iterator;
 
@@ -30,6 +31,8 @@ import java.util.Iterator;
  * @author Thomas Segismont
  */
 public class CassandraRowStreamImpl implements CassandraRowStream {
+
+  private static final Long STOP_STREAM_FETCH_NUMBER = 0L;
 
   private final ResultSet datastaxResultSet;
   private final Vertx vertx;
@@ -81,6 +84,17 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   public synchronized CassandraRowStream endHandler(Handler<Void> handler) {
     endHandler = handler;
     tryToTriggerEndOfTheStream();
+    return this;
+  }
+
+  @Override
+  public synchronized CassandraRowStream fetch(long l) {
+    if (l == STOP_STREAM_FETCH_NUMBER) {
+      pause();
+    } else {
+      // we can't change amount of fetched items dynamically, that is why we need to just resume
+      resume();
+    }
     return this;
   }
 
