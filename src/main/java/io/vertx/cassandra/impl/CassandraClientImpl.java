@@ -33,6 +33,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.shareddata.Shareable;
@@ -52,11 +53,13 @@ public class CassandraClientImpl implements CassandraClient {
   private static final String DS_LOCAL_MAP_NAME = "__vertx.CassandraClient.datasources";
 
   VertxInternal vertx;
+  ContextInternal context;
   final CassandraHolder cassandraHolder;
 
   public CassandraClientImpl(Vertx vertx, String dataSourceName, CassandraClientOptions cassandraClientOptions) {
     this.vertx = (VertxInternal) vertx;
     this.cassandraHolder = lookupHolder(dataSourceName, cassandraClientOptions);
+    context = (ContextInternal) vertx.getOrCreateContext();
   }
 
   class CassandraHolder implements Closeable, Shareable {
@@ -150,18 +153,19 @@ public class CassandraClientImpl implements CassandraClient {
 
     Future<Session> sessionFuture = Util.toVertxFuture(connectGuavaFuture, vertx);
 
-    sessionFuture.setHandler(event -> {
-      if (event.succeeded()) {
-        cassandraHolder.session.set(event.result());
-        if (connectHandler != null) {
-          connectHandler.handle(Future.succeededFuture());
+    sessionFuture.setHandler(event ->
+      context.executeFromIO(v -> {
+        if (event.succeeded()) {
+          cassandraHolder.session.set(event.result());
+          if (connectHandler != null) {
+            connectHandler.handle(Future.succeededFuture());
+          }
+        } else {
+          if (connectHandler != null) {
+            connectHandler.handle(Future.failedFuture(event.cause()));
+          }
         }
-      } else {
-        if (connectHandler != null) {
-          connectHandler.handle(Future.failedFuture(event.cause()));
-        }
-      }
-    });
+      }));
 
     return this;
   }
@@ -179,7 +183,9 @@ public class CassandraClientImpl implements CassandraClient {
       Future<List<Row>> rowsFuture = Future.future();
       resultSet.all(rowsFuture);
       return rowsFuture;
-    }).setHandler(resultHandler);
+    }).setHandler(result ->
+      context.executeFromIO(v -> resultHandler.handle(result))
+    );
     return this;
   }
 
@@ -192,17 +198,18 @@ public class CassandraClientImpl implements CassandraClient {
   public CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler) {
     executeWithSession(session -> {
       Future<com.datastax.driver.core.ResultSet> future = Util.toVertxFuture(session.executeAsync(statement), vertx);
-      future.setHandler(executed -> {
-        if (executed.succeeded()) {
-          if (resultHandler != null) {
-            resultHandler.handle(Future.succeededFuture(new ResultSetImpl(executed.result(), vertx)));
+      future.setHandler(executed ->
+        context.executeFromIO(v -> {
+          if (executed.succeeded()) {
+            if (resultHandler != null) {
+              resultHandler.handle(Future.succeededFuture(new ResultSetImpl(executed.result(), vertx)));
+            }
+          } else {
+            if (resultHandler != null) {
+              resultHandler.handle(Future.failedFuture(executed.cause()));
+            }
           }
-        } else {
-          if (resultHandler != null) {
-            resultHandler.handle(Future.failedFuture(executed.cause()));
-          }
-        }
-      });
+        }));
       return null;
     }, resultHandler);
     return this;
@@ -218,17 +225,18 @@ public class CassandraClientImpl implements CassandraClient {
     executeWithSession(session -> {
       ListenableFuture<com.datastax.driver.core.PreparedStatement> preparedFuture = session.prepareAsync(query);
       Future<com.datastax.driver.core.PreparedStatement> vertxExecuteFuture = Util.toVertxFuture(preparedFuture, vertx);
-      vertxExecuteFuture.setHandler(executionResult -> {
-        if (executionResult.succeeded()) {
-          if (resultHandler != null) {
-            resultHandler.handle(Future.succeededFuture(executionResult.result()));
+      vertxExecuteFuture.setHandler(executionResult ->
+        context.executeFromIO(v -> {
+          if (executionResult.succeeded()) {
+            if (resultHandler != null) {
+              resultHandler.handle(Future.succeededFuture(executionResult.result()));
+            }
+          } else {
+            if (resultHandler != null) {
+              resultHandler.handle(Future.failedFuture(executionResult.cause()));
+            }
           }
-        } else {
-          if (resultHandler != null) {
-            resultHandler.handle(Future.failedFuture(executionResult.cause()));
-          }
-        }
-      });
+        }));
       return null;
     }, resultHandler);
     return this;
@@ -244,17 +252,18 @@ public class CassandraClientImpl implements CassandraClient {
     executeWithSession(session -> {
       ResultSetFuture resultSetFuture = session.executeAsync(statement);
       Future<com.datastax.driver.core.ResultSet> vertxExecuteFuture = Util.toVertxFuture(resultSetFuture, vertx);
-      vertxExecuteFuture.setHandler(executionResult -> {
-        if (executionResult.succeeded()) {
-          if (rowStreamHandler != null) {
-            rowStreamHandler.handle(Future.succeededFuture(new CassandraRowStreamImpl(executionResult.result(), vertx)));
+      vertxExecuteFuture.setHandler(executionResult ->
+        context.executeFromIO(v -> {
+          if (executionResult.succeeded()) {
+            if (rowStreamHandler != null) {
+              rowStreamHandler.handle(Future.succeededFuture(new CassandraRowStreamImpl(executionResult.result(), vertx)));
+            }
+          } else {
+            if (rowStreamHandler != null) {
+              rowStreamHandler.handle(Future.failedFuture(executionResult.cause()));
+            }
           }
-        } else {
-          if (rowStreamHandler != null) {
-            rowStreamHandler.handle(Future.failedFuture(executionResult.cause()));
-          }
-        }
-      });
+        }));
       return null;
     }, rowStreamHandler);
     return this;
@@ -263,7 +272,8 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler) {
     executeWithSession(session -> {
-      Util.toVertxFuture(session.closeAsync(), vertx).<Void>mapEmpty().setHandler(disconnectHandler);
+      Util.toVertxFuture(session.closeAsync(), vertx).<Void>mapEmpty()
+        .setHandler(result -> context.executeFromIO(v -> disconnectHandler.handle(result)));
       return null;
     }, disconnectHandler);
     return this;
@@ -275,7 +285,9 @@ public class CassandraClientImpl implements CassandraClient {
       functionToExecute.apply(session);
     } else {
       if (handlerToFailIfNoSessionPresent != null) {
-        handlerToFailIfNoSessionPresent.handle(Future.failedFuture("In order to do this, you should be connected"));
+        context.executeFromIO(v ->
+          handlerToFailIfNoSessionPresent.handle(Future.failedFuture("In order to do this, you should be connected"))
+        );
       }
     }
   }
@@ -290,7 +302,7 @@ public class CassandraClientImpl implements CassandraClient {
 
     @Override
     public EventLoopGroup eventLoopGroup(ThreadFactory threadFactory) {
-      return vertx.getEventLoopGroup();
+      return vertx.getAcceptorEventLoopGroup();
     }
 
     @Override
