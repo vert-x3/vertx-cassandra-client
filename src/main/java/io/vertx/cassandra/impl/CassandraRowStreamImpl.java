@@ -22,6 +22,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.queue.Queue;
 
 import java.util.Iterator;
 
@@ -36,6 +37,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   private final ResultSet datastaxResultSet;
   private final Vertx vertx;
   private final Iterator<com.datastax.driver.core.Row> resultSetIterator;
+  private final Queue<Row> internalQueue;
   private final Context context;
 
   private Handler<Throwable> exceptionHandler;
@@ -49,33 +51,34 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
     datastaxResultSet = result;
     resultSetIterator = result.iterator();
     context = vertx.getOrCreateContext();
+    internalQueue = Queue.queue(context);
+    internalQueue.writableHandler(v -> fire());
   }
 
   @Override
-  public synchronized CassandraRowStream exceptionHandler(Handler<Throwable> handler) {
+  public CassandraRowStream exceptionHandler(Handler<Throwable> handler) {
     exceptionHandler = handler;
+    internalQueue.exceptionHandler(handler);
     return this;
   }
 
   @Override
-  public synchronized CassandraRowStream handler(Handler<Row> handler) {
-    rowHandler = handler;
-    if (handler != null) {
-      fireStream();
-    }
+  public CassandraRowStream handler(Handler<Row> handler) {
+    internalQueue.handler(handler);
+    fire();
     return this;
   }
 
   @Override
-  public synchronized CassandraRowStream pause() {
-    paused = true;
+  public CassandraRowStream pause() {
+    internalQueue.pause();
     return this;
   }
 
   @Override
-  public synchronized CassandraRowStream resume() {
-    paused = false;
-    fireStream();
+  public CassandraRowStream resume() {
+    internalQueue.resume();
+    fire();
     return this;
   }
 
@@ -97,47 +100,49 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
     return this;
   }
 
-  private void fireStream() {
-    if (!paused && rowHandler != null) {
-      int availableWithoutFetching = datastaxResultSet.getAvailableWithoutFetching();
-      for (int i = 0; i < availableWithoutFetching; i++) {
+  private synchronized void fire() {
+    int availableWithoutFetching = datastaxResultSet.getAvailableWithoutFetching();
+    boolean isFetched = datastaxResultSet.isFullyFetched();
+    if (availableWithoutFetching == 0 && isFetched) {
+      tryToTriggerEndOfTheStream();
+      return;
+    }
 
-        CassandraRowStreamImpl thisStream = this;
-        if (i == availableWithoutFetching - 1) {
-          context.runOnContext(v -> {
+    if (availableWithoutFetching == 0) {
+      fetchAndCallOneMoreTime();
+      return;
+    }
 
-            synchronized (thisStream) {
-              if (!paused) {
-                rowHandler.handle(resultSetIterator.next());
-                tryToTriggerEndOfTheStream();
-                if (!datastaxResultSet.isFullyFetched()) {
-                  Future<ResultSet> fetched = Util.toVertxFuture(datastaxResultSet.fetchMoreResults(), vertx);
-                  fetched.setHandler(whenFetched -> {
-                    if (whenFetched.succeeded()) {
-                      fireStream();
-                    } else {
-                      if (exceptionHandler != null) {
-                        exceptionHandler.handle(whenFetched.cause());
-                      }
-                    }
-                  });
-                }
-              }
-            }
+    for (int i = 0; i < availableWithoutFetching && internalQueue.isWritable(); i++) {
+      internalQueue.add(resultSetIterator.next());
+    }
 
-          });
-        } else {
-          context.runOnContext(v -> {
-            synchronized (thisStream) {
-              if (!paused) {
-                rowHandler.handle(resultSetIterator.next());
-              }
-            }
-          });
+    if (internalQueue.isWritable()) {
+      fetchAndCallOneMoreTime();
+    }
+  }
+
+  private void fetchAndCallOneMoreTime() {
+    fetch().setHandler(v -> {
+      if (v.succeeded()) {
+        fire();
+      } else {
+        if (exceptionHandler != null) {
+          exceptionHandler.handle(v.cause());
+        }
+        if (endHandler != null) {
+          endHandler.handle(null);
         }
       }
+    });
+  }
+
+  private Future<Void> fetch() {
+    if (datastaxResultSet.isFullyFetched()) {
+      return Future.succeededFuture(null);
+    } else {
+      return Util.toVertxFuture(datastaxResultSet.fetchMoreResults(), vertx).mapEmpty();
     }
-    tryToTriggerEndOfTheStream();
   }
 
   private void tryToTriggerEndOfTheStream() {
