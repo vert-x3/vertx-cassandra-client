@@ -46,5 +46,5 @@ public interface CassandraRowStream extends ReadStream<Row> {
   CassandraRowStream endHandler(Handler<Void> handler);
 
   @Override
-  ReadStream<Row> fetch(long l);
+  CassandraRowStream fetch(long l);
 }
