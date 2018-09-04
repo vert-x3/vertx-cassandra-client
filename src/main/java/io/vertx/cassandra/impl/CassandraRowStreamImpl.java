@@ -78,7 +78,6 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   @Override
   public CassandraRowStream resume() {
     internalQueue.resume();
-    fire();
     return this;
   }
 
@@ -91,12 +90,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
 
   @Override
   public synchronized CassandraRowStream fetch(long l) {
-    if (l == STOP_STREAM_FETCH_NUMBER) {
-      pause();
-    } else {
-      // we can't change amount of fetched items dynamically, that is why we need to just resume
-      resume();
-    }
+    internalQueue.take(l);
     return this;
   }
 
