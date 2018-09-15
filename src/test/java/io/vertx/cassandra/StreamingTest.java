@@ -42,20 +42,27 @@ public class StreamingTest extends CassandraServiceBase {
     Future<Void> future = Future.future();
     cassandraClient.connect(future);
     future.compose(connected -> {
+      checkContext(context);
       Future<CassandraRowStream> queryResult = Future.future();
       cassandraClient.queryStream("select random_string from random_strings.random_string_by_first_letter where first_letter = 'A'", queryResult);
       return queryResult;
     }).compose(stream -> {
+      checkContext(context);
       List<Row> items = new ArrayList<>();
       AtomicInteger idx = new AtomicInteger();
       long pause = 500;
       long start = System.nanoTime();
       stream.endHandler(end -> {
+        checkContext(context);
         long duration = NANOSECONDS.toMillis(System.nanoTime() - start);
         context.assertTrue(duration >= 3 * pause);
-        cassandraClient.disconnect(disconnected -> async.countDown());
+        cassandraClient.disconnect(disconnected -> {
+          checkContext(context);
+          async.countDown();
+        });
       }).exceptionHandler(context::fail)
         .handler(item -> {
+          checkContext(context);
           items.add(item);
           int j = idx.getAndIncrement();
           if (j == 3 || j == 16 || j == 38) {
@@ -70,6 +77,7 @@ public class StreamingTest extends CassandraServiceBase {
 
       return Future.succeededFuture();
     }).setHandler(h -> {
+      checkContext(context);
       if (h.failed()) {
         context.fail(h.cause());
       }
@@ -86,15 +94,20 @@ public class StreamingTest extends CassandraServiceBase {
     Future<Void> future = Future.future();
     cassandraClient.connect(future);
     future.compose(connected -> {
+      checkContext(context);
       Future<CassandraRowStream> queryResult = Future.future();
       cassandraClient.queryStream("select random_string from random_strings.random_string_by_first_letter where first_letter = 'I WANT EMPTY RESULT'", queryResult);
       return queryResult;
     }).compose(stream -> {
-      stream.endHandler(end -> cassandraClient.disconnect(disconnected -> async.countDown()))
+      stream.endHandler(end -> cassandraClient.disconnect(disconnected -> {
+        checkContext(context);
+        async.countDown();
+      }))
         .exceptionHandler(context::fail)
         .handler(item -> context.fail());
       return Future.succeededFuture();
     }).setHandler(h -> {
+      checkContext(context);
       if (h.failed()) {
         context.fail(h.cause());
       }
