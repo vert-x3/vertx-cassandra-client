@@ -32,8 +32,6 @@ import java.util.Iterator;
  */
 public class CassandraRowStreamImpl implements CassandraRowStream {
 
-  private static final Long STOP_STREAM_FETCH_NUMBER = 0L;
-
   private final ResultSet datastaxResultSet;
   private final Vertx vertx;
   private final Iterator<com.datastax.driver.core.Row> resultSetIterator;
@@ -41,10 +39,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   private final Context context;
 
   private Handler<Throwable> exceptionHandler;
-  private Handler<Row> rowHandler;
   private Handler<Void> endHandler;
-
-  private boolean paused = false;
 
   public CassandraRowStreamImpl(ResultSet result, Vertx vertx) {
     this.vertx = vertx;
@@ -97,21 +92,16 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   private synchronized void fire() {
     int availableWithoutFetching = datastaxResultSet.getAvailableWithoutFetching();
     boolean isFetched = datastaxResultSet.isFullyFetched();
-    if (availableWithoutFetching == 0 && isFetched) {
+    if (availableWithoutFetching != 0) {
+      for (int i = 0; i < availableWithoutFetching && internalQueue.isWritable(); i++) {
+        internalQueue.add(resultSetIterator.next());
+      }
+      if (internalQueue.isWritable()) {
+        fetchAndCallOneMoreTime();
+      }
+    } else if (isFetched) {
       tryToTriggerEndOfTheStream();
-      return;
-    }
-
-    if (availableWithoutFetching == 0) {
-      fetchAndCallOneMoreTime();
-      return;
-    }
-
-    for (int i = 0; i < availableWithoutFetching && internalQueue.isWritable(); i++) {
-      internalQueue.add(resultSetIterator.next());
-    }
-
-    if (internalQueue.isWritable()) {
+    } else {
       fetchAndCallOneMoreTime();
     }
   }
