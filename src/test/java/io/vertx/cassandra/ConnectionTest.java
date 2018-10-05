@@ -50,12 +50,10 @@ public class ConnectionTest extends CassandraServiceBase {
     );
     Async async = context.async(2);
     cassandraClient.connect("system", connectEvent -> {
-      checkContext(context);
       if (connectEvent.succeeded()) {
         log.info("successfully connected");
         async.countDown();
         cassandraClient.disconnect(disconnectEvent -> {
-          checkContext(context);
           if (disconnectEvent.succeeded()) {
             log.info("successfully disconnected");
             async.countDown();

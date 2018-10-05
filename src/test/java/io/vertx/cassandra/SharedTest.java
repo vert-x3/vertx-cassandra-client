@@ -38,13 +38,11 @@ public class SharedTest extends CassandraServiceBase {
     Future<Void> future = Future.future();
     cassandraClientInit.connect(future);
     future.compose(connected -> {
-      checkContext(context);
       CassandraClient clientFormLookUp = CassandraClient.createShared(vertx);
       Future<List<Row>> queryResult = Future.future();
       clientFormLookUp.executeWithFullFetch("select release_version from system.local", queryResult);
       return queryResult;
     }).compose(resultSet -> {
-      checkContext(context);
       CassandraClient clientFormLookUp = CassandraClient.createShared(vertx);
       String release_version = resultSet.iterator().next().getString("release_version");
       Assert.assertTrue(Pattern.compile("[0-9\\.]+").matcher(release_version).find());
@@ -52,7 +50,6 @@ public class SharedTest extends CassandraServiceBase {
       clientFormLookUp.disconnect(disconnectFuture);
       return disconnectFuture;
     }).setHandler(event -> {
-      checkContext(context);
       if (event.failed()) {
         context.fail(event.cause());
       }

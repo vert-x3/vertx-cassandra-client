@@ -51,23 +51,19 @@ public class ExecutionTest extends CassandraServiceBase {
     Future<Void> future = Future.future();
     cassandraClient.connect(future);
     future.compose(connected -> {
-      checkContext(context);
       Future<ResultSet> queryResult = Future.future();
       cassandraClient.execute("select count(*) as cnt from random_strings.random_string_by_first_letter", queryResult);
       return queryResult;
     }).compose((ResultSet resultSet) -> {
-      checkContext(context);
       Future<Row> oneRowFuture = Future.future();
       resultSet.one(oneRowFuture);
       return oneRowFuture;
     }).compose(one -> {
-      checkContext(context);
       context.assertTrue(one.getLong("cnt") > 0);
       Future<Void> disconnectFuture = Future.future();
       cassandraClient.disconnect(disconnectFuture);
       return disconnectFuture;
     }).setHandler(event -> {
-      checkContext(context);
       if (event.failed()) {
         context.fail(event.cause());
       }
