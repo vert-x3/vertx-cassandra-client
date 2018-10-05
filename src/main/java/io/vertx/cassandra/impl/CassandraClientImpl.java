@@ -15,14 +15,7 @@
  */
 package io.vertx.cassandra.impl;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.NettyOptions;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSetFuture;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SimpleStatement;
-import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.*;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.netty.channel.EventLoopGroup;
 import io.vertx.cassandra.CassandraClient;
@@ -250,7 +243,7 @@ public class CassandraClientImpl implements CassandraClient {
   public CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler) {
     executeWithSession(session -> {
       Util.toVertxFuture(session.closeAsync(), vertx).<Void>mapEmpty()
-        .setHandler(result -> context.executeFromIO(v -> disconnectHandler.handle(result)));
+        .setHandler(result -> context.executeFromIO(result, disconnectHandler));
       return null;
     }, disconnectHandler);
     return this;
