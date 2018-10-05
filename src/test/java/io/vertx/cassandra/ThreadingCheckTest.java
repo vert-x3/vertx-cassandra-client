@@ -44,7 +44,6 @@ public class ThreadingCheckTest extends CassandraServiceBase {
         .handler(item -> checkContext(testContext));
       return Future.succeededFuture();
     }).setHandler(h -> {
-      checkContext(testContext);
       if (h.failed()) {
         testContext.fail(h.cause());
       }
