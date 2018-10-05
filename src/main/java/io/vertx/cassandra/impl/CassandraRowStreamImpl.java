@@ -18,10 +18,10 @@ package io.vertx.cassandra.impl;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import io.vertx.cassandra.CassandraRowStream;
-import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.queue.Queue;
 
 import java.util.Iterator;
@@ -36,7 +36,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   private final Vertx vertx;
   private final Iterator<com.datastax.driver.core.Row> resultSetIterator;
   private final Queue<Row> internalQueue;
-  private final Context context;
+  private final ContextInternal context;
 
   private Handler<Throwable> exceptionHandler;
   private Handler<Void> endHandler;
@@ -45,7 +45,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
     this.vertx = vertx;
     datastaxResultSet = result;
     resultSetIterator = result.iterator();
-    context = vertx.getOrCreateContext();
+    context = (ContextInternal) vertx.getOrCreateContext();
     internalQueue = Queue.queue(context);
     internalQueue.writableHandler(v -> fire());
   }
@@ -112,10 +112,10 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
         fire();
       } else {
         if (exceptionHandler != null) {
-          exceptionHandler.handle(v.cause());
+          context.executeFromIO(v.cause(), exceptionHandler);
         }
         if (endHandler != null) {
-          endHandler.handle(null);
+          context.executeFromIO(null, endHandler);
         }
       }
     });
@@ -131,7 +131,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
 
   private void tryToTriggerEndOfTheStream() {
     if (endHandler != null && datastaxResultSet.isFullyFetched() && !resultSetIterator.hasNext()) {
-      endHandler.handle(null);
+      context.executeFromIO(null, endHandler);
     }
   }
 }
