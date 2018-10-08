@@ -41,7 +41,7 @@ import static io.vertx.test.core.TestUtils.randomAlphaString;
  * A base class, which should be used for in all test where Cassandra service is required.
  */
 @RunWith(VertxUnitRunner.class)
-public class CassandraServiceBase {
+public abstract class CassandraServiceBase {
 
   private static final Logger log = LoggerFactory.getLogger(CassandraServiceBase.class);
 
