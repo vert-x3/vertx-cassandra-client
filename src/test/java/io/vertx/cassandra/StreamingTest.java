@@ -53,7 +53,9 @@ public class StreamingTest extends CassandraServiceBase {
       stream.endHandler(end -> {
         long duration = NANOSECONDS.toMillis(System.nanoTime() - start);
         context.assertTrue(duration >= 3 * pause);
-        cassandraClient.disconnect(disconnected -> async.countDown());
+        cassandraClient.disconnect(disconnected -> {
+          async.countDown();
+        });
       }).exceptionHandler(context::fail)
         .handler(item -> {
           items.add(item);
@@ -90,7 +92,9 @@ public class StreamingTest extends CassandraServiceBase {
       cassandraClient.queryStream("select random_string from random_strings.random_string_by_first_letter where first_letter = 'I WANT EMPTY RESULT'", queryResult);
       return queryResult;
     }).compose(stream -> {
-      stream.endHandler(end -> cassandraClient.disconnect(disconnected -> async.countDown()))
+      stream.endHandler(end -> cassandraClient.disconnect(disconnected -> {
+        async.countDown();
+      }))
         .exceptionHandler(context::fail)
         .handler(item -> context.fail());
       return Future.succeededFuture();
