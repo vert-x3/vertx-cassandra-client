@@ -21,10 +21,7 @@ import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
 import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.shareddata.LocalMap;
@@ -50,7 +47,11 @@ public class CassandraClientImpl implements CassandraClient {
 
   public CassandraClientImpl(Vertx vertx, String dataSourceName, CassandraClientOptions cassandraClientOptions) {
     this.vertx = (VertxInternal) vertx;
-    this.cassandraHolder = lookupHolder(dataSourceName, cassandraClientOptions);
+    cassandraHolder = lookupHolder(dataSourceName, cassandraClientOptions);
+    Context ctx = Vertx.currentContext();
+    if (ctx != null && ctx.owner() == vertx) {
+      ctx.addCloseHook(v -> cassandraHolder.close());
+    }
   }
 
   class CassandraHolder implements Closeable, Shareable {
