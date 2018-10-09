@@ -31,8 +31,7 @@ import java.util.List;
 public class CassandraClientExamples {
 
   public void specifyingNodes(Vertx vertx) {
-    CassandraClientOptions options = new CassandraClientOptions();
-    options
+    CassandraClientOptions options = new CassandraClientOptions()
       .addContactPoint("node1.address")
       .addContactPoint("node2.address")
       .addContactPoint("node3.address");
@@ -179,10 +178,10 @@ public class CassandraClientExamples {
   }
 
   public void batching(CassandraClient cassandraClient) {
-    BatchStatement batchStatement = new BatchStatement();
-    batchStatement.add(new SimpleStatement("INSERT INTO NAMES (name) VALUES ('Pavel')"));
-    batchStatement.add(new SimpleStatement("INSERT INTO NAMES (name) VALUES ('Thomas')"));
-    batchStatement.add(new SimpleStatement("INSERT INTO NAMES (name) VALUES ('Julien')"));
+    BatchStatement batchStatement = new BatchStatement()
+      .add(new SimpleStatement("INSERT INTO NAMES (name) VALUES ('Pavel')"))
+      .add(new SimpleStatement("INSERT INTO NAMES (name) VALUES ('Thomas')"))
+      .add(new SimpleStatement("INSERT INTO NAMES (name) VALUES ('Julien')"));
 
     cassandraClient.execute(batchStatement, result -> {
       if (result.succeeded()) {
