@@ -18,6 +18,7 @@ package io.vertx.cassandra;
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.PreparedStatement;
 import io.vertx.core.CompositeFuture;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
@@ -52,8 +53,11 @@ public abstract class CassandraServiceBase {
   private static final int BATCH_INSERT_SIZE = 1_000;
   private static final int TIMES_TO_INSERT_BATCH = 100;
 
+  private Context capturedContext = null;
+
   @Before
   public void before(TestContext context) throws IOException, TTransportException, InterruptedException {
+    capturedContext = null;
     EmbeddedCassandraServerHelper.startEmbeddedCassandra();
 
     Future<Void> namesKeyspaceInitialized = initializeNamesKeyspace();
@@ -130,6 +134,16 @@ public abstract class CassandraServiceBase {
         .addContactPoint(HOST)
         .setPort(NATIVE_TRANSPORT_PORT)
     );
+  }
+
+  public synchronized void checkContext(TestContext testContext) {
+    if (capturedContext == null) {
+      capturedContext = vertx.getOrCreateContext();
+    } else if (!capturedContext.equals(vertx.getOrCreateContext())) {
+      testContext.fail("context is not the same");
+    }
+
+    capturedContext.exceptionHandler(testContext::fail);
   }
 
   @After

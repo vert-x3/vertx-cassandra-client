@@ -18,13 +18,13 @@ package io.vertx.cassandra.impl;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.Row;
 import io.vertx.cassandra.ResultSet;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+
+import static io.vertx.cassandra.impl.Util.handleOnContext;
 
 /**
  * @author Pavel Drankou
@@ -57,22 +57,24 @@ public class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSet fetchMoreResults(Handler<AsyncResult<Void>> handler) {
-    Util.toVertxFuture(resultSet.fetchMoreResults(), vertx).<Void>mapEmpty().setHandler(handler);
+    handleOnContext(resultSet.fetchMoreResults(), vertx.getOrCreateContext(), ar -> {
+      if (ar.succeeded()) {
+        handler.handle(Future.succeededFuture());
+      } else {
+        handler.handle(Future.failedFuture(ar.cause()));
+      }
+    });
     return this;
   }
 
   @Override
   public ResultSet one(Handler<AsyncResult<Row>> handler) {
     if (getAvailableWithoutFetching() == 0 && !resultSet.isFullyFetched()) {
-      Util.toVertxFuture(resultSet.fetchMoreResults(), vertx).setHandler(done -> {
-        if (done.succeeded()) {
-          if (handler != null) {
-            handler.handle(Future.succeededFuture(resultSet.one()));
-          }
+      handleOnContext(resultSet.fetchMoreResults(), vertx.getOrCreateContext(), ar -> {
+        if (ar.succeeded()) {
+          handler.handle(Future.succeededFuture(resultSet.one()));
         } else {
-          if (handler != null) {
-            handler.handle(Future.failedFuture(done.cause()));
-          }
+          handler.handle(Future.failedFuture(ar.cause()));
         }
       });
     } else {
@@ -83,17 +85,28 @@ public class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSet all(Handler<AsyncResult<List<Row>>> handler) {
-    ArrayList<Row> rows = new ArrayList<>();
-    new Fetcher(resultSet, rows)
-      .fetched()
-      .setHandler(grabbed -> {
-        if (grabbed.succeeded()) {
-          handler.handle(Future.succeededFuture(rows));
+    loadMore(vertx.getOrCreateContext(), Collections.emptyList(), handler);
+    return this;
+  }
+
+  private void loadMore(Context context, List<Row> loaded, Handler<AsyncResult<List<Row>>> handler) {
+    int availableWithoutFetching = resultSet.getAvailableWithoutFetching();
+    List<Row> rows = new ArrayList<>(loaded.size() + availableWithoutFetching);
+    for (int i = 0; i < availableWithoutFetching; i++) {
+      rows.add(resultSet.one());
+    }
+
+    if (!resultSet.isFullyFetched()) {
+      handleOnContext(resultSet.fetchMoreResults(), context, ar -> {
+        if (ar.succeeded()) {
+          loadMore(context, rows, handler);
         } else {
-          handler.handle(Future.failedFuture(grabbed.cause()));
+          handler.handle(Future.failedFuture(ar.cause()));
         }
       });
-    return this;
+    } else {
+      handler.handle(Future.succeededFuture(rows));
+    }
   }
 
   @Override
@@ -104,45 +117,5 @@ public class ResultSetImpl implements ResultSet {
   @Override
   public boolean wasApplied() {
     return resultSet.wasApplied();
-  }
-
-  /**
-   * Helper class used for fetching results and filling a provided list.
-   */
-  private class Fetcher {
-
-    private com.datastax.driver.core.ResultSet resultSet;
-    private List<Row> listToFill;
-    private Future<Void> doneFuture = Future.future();
-
-    private Fetcher(com.datastax.driver.core.ResultSet resultSet, List<Row> listToFill) {
-      this.resultSet = resultSet;
-      this.listToFill = listToFill;
-      fetch();
-    }
-
-    private void fetch() {
-      int availableWithoutFetching = resultSet.getAvailableWithoutFetching();
-      for (int i = 0; i < availableWithoutFetching; i++) {
-        listToFill.add(resultSet.one());
-      }
-
-      if (!resultSet.isFullyFetched()) {
-        Util.toVertxFuture(resultSet.fetchMoreResults(), vertx)
-          .setHandler(h -> {
-            if (h.succeeded()) {
-              fetch();
-            } else {
-              doneFuture.handle(Future.failedFuture(h.cause()));
-            }
-          });
-      } else {
-        doneFuture.handle(Future.succeededFuture());
-      }
-    }
-
-    private Future<Void> fetched() {
-      return doneFuture;
-    }
   }
 }

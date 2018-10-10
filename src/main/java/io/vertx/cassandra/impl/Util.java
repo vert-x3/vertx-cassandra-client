@@ -22,7 +22,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 
 /**
  * @author Pavel Drankou
@@ -31,27 +30,19 @@ import io.vertx.core.Vertx;
 public class Util {
 
   /**
-   * Transform the guava future to a Vert.x future.
-   *
-   * @param future        the guava future
-   * @param vertx the Vert.x instance
-   * @param <T>           the future type
-   * @return the Vert.x future
+   * Invokes the {@code handler} on a given {@code context} when the {@code listenableFuture} succeeds or fails.
    */
-  static <T> Future<T> toVertxFuture(ListenableFuture<T> future, Vertx vertx) {
-    Context context = vertx.getOrCreateContext();
-    Future<T> vertxFuture = Future.future();
-    Futures.addCallback(future, new FutureCallback<T>() {
+  static <T> void handleOnContext(ListenableFuture<T> listenableFuture, Context context, Handler<AsyncResult<T>> handler) {
+    Futures.addCallback(listenableFuture, new FutureCallback<T>() {
       @Override
       public void onSuccess(T result) {
-        vertxFuture.complete(result);
+        context.runOnContext(v -> handler.handle(Future.succeededFuture(result)));
       }
 
       @Override
       public void onFailure(Throwable t) {
-        vertxFuture.fail(t);
+        context.runOnContext(v -> Future.failedFuture(t));
       }
-    }, command -> context.runOnContext(v -> command.run()));
-    return vertxFuture;
+    });
   }
 }
