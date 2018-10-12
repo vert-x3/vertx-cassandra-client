@@ -27,7 +27,7 @@ import io.vertx.core.Handler;
  * @author Pavel Drankou
  * @author Thomas Segismont
  */
-public class Util {
+class Util {
 
   /**
    * Invokes the {@code handler} on a given {@code context} when the {@code listenableFuture} succeeds or fails.

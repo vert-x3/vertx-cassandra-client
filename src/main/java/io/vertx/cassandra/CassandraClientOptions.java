@@ -60,6 +60,12 @@ public class CassandraClientOptions {
     CassandraClientOptionsConverter.fromJson(json, this);
   }
 
+  public JsonObject toJson() {
+    JsonObject json = new JsonObject();
+    CassandraClientOptionsConverter.toJson(this, json);
+    return json;
+  }
+
   /**
    * Set a list of hosts, where some of cluster nodes is located.
    *
@@ -88,14 +94,14 @@ public class CassandraClientOptions {
    * @return  a reference to this, so the API can be used fluently
    */
   public CassandraClientOptions addContactPoint(String address) {
-    contactPoints().add(address);
+    getContactPoints().add(address);
     return this;
   }
 
   /**
    * @return list of address used by the client for connecting with a cassandra service
    */
-  public List<String> contactPoints() {
+  public List<String> getContactPoints() {
     if (contactPoints == null) {
       contactPoints = new ArrayList<>();
     }
@@ -105,7 +111,7 @@ public class CassandraClientOptions {
   /**
    * @return port, used for connecting with a cassandra service
    */
-  public int port() {
+  public int getPort() {
     return port;
   }
 }

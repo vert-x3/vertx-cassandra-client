@@ -42,8 +42,8 @@ public class CassandraClientImpl implements CassandraClient {
 
   private static final String DS_LOCAL_MAP_NAME = "__vertx.CassandraClient.datasources";
 
-  VertxInternal vertx;
-  final CassandraHolder cassandraHolder;
+  private final VertxInternal vertx;
+  private final CassandraHolder cassandraHolder;
 
   public CassandraClientImpl(Vertx vertx, String dataSourceName, CassandraClientOptions cassandraClientOptions) {
     this.vertx = (VertxInternal) vertx;
@@ -70,14 +70,16 @@ public class CassandraClientImpl implements CassandraClient {
     }
 
     @Override
-    public synchronized void close() {
-      if (--refCount == 0) {
-        if (session.get() != null) {
+    public void close() {
+      synchronized (this) {
+        --refCount;
+        if (refCount == 0 && session.get() != null) {
           session.get().close();
         }
-        if (closeRunner != null) {
-          closeRunner.run();
-        }
+      }
+
+      if (refCount == 0 && closeRunner != null) {
+        closeRunner.run();
       }
     }
   }
@@ -124,15 +126,15 @@ public class CassandraClientImpl implements CassandraClient {
     cassandraHolder.session.set(null);
     Cluster.Builder builder = Cluster.builder();
 
-    if (cassandraHolder.options.contactPoints().isEmpty()) {
+    if (cassandraHolder.options.getContactPoints().isEmpty()) {
       builder.addContactPoint(CassandraClientOptions.DEFAULT_HOST);
     } else {
-      for (String contactPoint : cassandraHolder.options.contactPoints()) {
+      for (String contactPoint : cassandraHolder.options.getContactPoints()) {
         builder.addContactPoint(contactPoint);
       }
     }
 
-    Cluster build = builder.withPort(cassandraHolder.options.port()).build();
+    Cluster build = builder.withPort(cassandraHolder.options.getPort()).build();
     ListenableFuture<Session> connectGuavaFuture;
     if (keyspace == null) {
       connectGuavaFuture = build.connectAsync();
