@@ -22,6 +22,6 @@ jobs:
 notifications:
   email:
     recipients:
-    - vertx3-ci@googlegroups.com
+    - secure: "ZjgM5ywiSeMDAhp/ai42KSKtzbF68D21k3Wy/rzTFvxDHtYxqb2XIbNAeZ0PKQm4uKK1N9FtDcppIwezKEs5eO3HK5T33C7/OllJhUm88ZNN0uobdyT7HCAtj+ObZ5Wq22dbtVmZI9VAeuDr8Ym0P34Dy+4C84as/4p7OpT76HcCd7dEz96skNturXqVwlOpfgp7zjKVDxQ0dyEZQjkigWRJ7q4stjtxVOa5BXFpOtZSUF0/5IctjE61rK17ctNLzRcpU9MpBIJ7qOAbRg8J9gZIqVdtFzk5yzUyqNEsItCQ9oQguPpAzvVxKtKs1M4/SR4UT2iUA4u9RAuPyd7AQkbr5P+qThuh4S6670SFZ/XSoKUsWMBJqiKS9D2yek+qkYr6uSrBDT9SiA/uP7MEU/VBH2wcC+86zNjVDIwQWMOPemdjkHeLL2jcFhpcfpXIU13CzVAFXXFQzRg/qKB2uza56hI97HjtYtme6WUOqk+CSBzC9yDFHsunBdgeFOoCm1e2Qret/GOOUgqvTq2zeId9zEjER4oddWasZC4A3dqW2HpBwk9d4JHQ4tp7pt7PjhB6iztrgp9Xx/nhNeh8Dn7o8Xwv5LSUwGby08bLxKp1bkT4XTKDx86rjdtaTM/Row7fCkBAEIZVSuHXonESX7f+uu0JKMZLwazrWQ7b9Sw="
     on_success: always
     on_failure: always
