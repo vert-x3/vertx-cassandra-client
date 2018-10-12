@@ -42,11 +42,11 @@ public class CassandraClientImpl implements CassandraClient {
 
   private static final String DS_LOCAL_MAP_NAME = "__vertx.CassandraClient.datasources";
 
-  private final VertxInternal vertx;
+  private final Vertx vertx;
   private final CassandraHolder cassandraHolder;
 
   public CassandraClientImpl(Vertx vertx, String dataSourceName, CassandraClientOptions cassandraClientOptions) {
-    this.vertx = (VertxInternal) vertx;
+    this.vertx = vertx;
     cassandraHolder = lookupHolder(dataSourceName, cassandraClientOptions);
     Context ctx = Vertx.currentContext();
     if (ctx != null && ctx.owner() == vertx) {
@@ -182,7 +182,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler) {
-    ContextInternal context = vertx.getOrCreateContext();
+    Context context = vertx.getOrCreateContext();
     executeWithSession(session -> {
       handleOnContext(session.executeAsync(statement), context, ar -> {
         if (ar.succeeded()) {
@@ -202,7 +202,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler) {
-    ContextInternal context = vertx.getOrCreateContext();
+    Context context = vertx.getOrCreateContext();
     executeWithSession(session -> {
       handleOnContext(session.prepareAsync(query), context, ar -> {
         if (ar.succeeded()) {
@@ -222,7 +222,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient queryStream(Statement statement, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler) {
-    ContextInternal context = vertx.getOrCreateContext();
+    Context context = vertx.getOrCreateContext();
     executeWithSession(session -> {
       handleOnContext(session.executeAsync(statement), context, ar -> {
         if (ar.succeeded()) {
@@ -237,7 +237,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler) {
-    ContextInternal context = vertx.getOrCreateContext();
+    Context context = vertx.getOrCreateContext();
     executeWithSession(session -> {
       handleOnContext(session.closeAsync(), context, ar -> {
         if (ar.succeeded()) {
