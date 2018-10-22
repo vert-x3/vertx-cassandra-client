@@ -22,8 +22,6 @@ import io.vertx.cassandra.CassandraClientOptions;
 import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.core.*;
-import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.shareddata.Shareable;
 
@@ -134,17 +132,11 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public CassandraClient connect(String keyspace, Handler<AsyncResult<Void>> connectHandler) {
     cassandraHolder.session.set(null);
-    Cluster.Builder builder = Cluster.builder();
-
-    if (cassandraHolder.options.getContactPoints().isEmpty()) {
+    Cluster.Builder builder = cassandraHolder.options.dataStaxClusterBuilder();
+    if (builder.getContactPoints().isEmpty()) {
       builder.addContactPoint(CassandraClientOptions.DEFAULT_HOST);
-    } else {
-      for (String contactPoint : cassandraHolder.options.getContactPoints()) {
-        builder.addContactPoint(contactPoint);
-      }
     }
-
-    Cluster build = builder.withPort(cassandraHolder.options.getPort()).build();
+    Cluster build = builder.build();
     ListenableFuture<Session> connectGuavaFuture;
     if (keyspace == null) {
       connectGuavaFuture = build.connectAsync();

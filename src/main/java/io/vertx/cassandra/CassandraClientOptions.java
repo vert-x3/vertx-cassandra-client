@@ -15,11 +15,13 @@
  */
 package io.vertx.cassandra;
 
+import com.datastax.driver.core.Cluster;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
 
-import java.util.ArrayList;
+import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Eclipse Vert.x Cassandra client options.
@@ -40,14 +42,21 @@ public class CassandraClientOptions {
    */
   public static final String DEFAULT_HOST = "localhost";
 
-  private List<String> contactPoints = new ArrayList<>();
-
-  private int port = DEFAULT_PORT;
+  private Cluster.Builder builder;
 
   /**
    * Default constructor.
    */
   public CassandraClientOptions() {
+    this(Cluster.builder());
+    setPort(DEFAULT_PORT);
+  }
+
+  /**
+   * Default constructor.
+   */
+  public CassandraClientOptions(Cluster.Builder builder) {
+    this.builder = builder;
   }
 
   /**
@@ -73,7 +82,9 @@ public class CassandraClientOptions {
    * @return a reference to this, so the API can be used fluently
    */
   public CassandraClientOptions setContactPoints(List<String> contactPoints) {
-    this.contactPoints = contactPoints;
+    for (String contactPoint : contactPoints) {
+      builder.addContactPoint(contactPoint);
+    }
     return this;
   }
 
@@ -84,7 +95,7 @@ public class CassandraClientOptions {
    * @return a reference to this, so the API can be used fluently
    */
   public CassandraClientOptions setPort(int port) {
-    this.port = port;
+    builder.withPort(port);
     return this;
   }
 
@@ -94,7 +105,7 @@ public class CassandraClientOptions {
    * @return  a reference to this, so the API can be used fluently
    */
   public CassandraClientOptions addContactPoint(String address) {
-    getContactPoints().add(address);
+    builder.addContactPoint(address);
     return this;
   }
 
@@ -102,16 +113,13 @@ public class CassandraClientOptions {
    * @return list of address used by the client for connecting with a cassandra service
    */
   public List<String> getContactPoints() {
-    if (contactPoints == null) {
-      contactPoints = new ArrayList<>();
-    }
-    return contactPoints;
+    return builder.getContactPoints().stream().map(InetSocketAddress::toString).collect(Collectors.toList());
   }
 
   /**
-   * @return port, used for connecting with a cassandra service
+   * @return a cluster builder, which will be used by the client
    */
-  public int getPort() {
-    return port;
+  public Cluster.Builder dataStaxClusterBuilder() {
+    return builder;
   }
 }
