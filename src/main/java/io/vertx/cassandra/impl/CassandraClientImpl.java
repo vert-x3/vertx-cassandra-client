@@ -117,6 +117,16 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
+  public boolean isConnected() {
+    Session session = this.cassandraHolder.session.get();
+    if (session == null) {
+      return false;
+    } else {
+      return !session.isClosed();
+    }
+  }
+
+  @Override
   public CassandraClient connect(Handler<AsyncResult<Void>> connectHandler) {
     return connect(null, connectHandler);
   }

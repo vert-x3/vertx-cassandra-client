@@ -110,6 +110,11 @@ public interface CassandraClient {
   CassandraClient connect();
 
   /**
+   * @return whether this Cassandra client instance connected.
+   */
+  boolean isConnected();
+
+  /**
    * Connect to a Cassandra service.
    *
    * @param connectHandler handler called when asynchronous connect call ends
