@@ -36,7 +36,7 @@ public class CassandraClientOptions {
   public static final int DEFAULT_PORT = 9042;
 
   /**
-   * Default port for connecting with Cassandra service.
+   * Default host for connecting with Cassandra service.
    */
   public static final String DEFAULT_HOST = "localhost";
 
