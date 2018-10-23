@@ -53,7 +53,7 @@ public class CassandraClientOptions {
   }
 
   /**
-   * Default constructor.
+   * Constructor using an existing {@link Cluster.Builder} instance.
    */
   public CassandraClientOptions(Cluster.Builder builder) {
     this.builder = builder;
@@ -69,6 +69,9 @@ public class CassandraClientOptions {
     CassandraClientOptionsConverter.fromJson(json, this);
   }
 
+  /**
+   * @return a JSON representation of these options
+   */
   public JsonObject toJson() {
     JsonObject json = new JsonObject();
     CassandraClientOptionsConverter.toJson(this, json);
