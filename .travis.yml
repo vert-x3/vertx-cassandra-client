@@ -2,9 +2,8 @@ language: java
 install: true
 branches:
   only:
-  - initial-work
-#  - master
-#  - /^\d+\.\d+$/
+  - master
+  - /^\d+\.\d+$/
 jobs:
   include:
   - stage: test
