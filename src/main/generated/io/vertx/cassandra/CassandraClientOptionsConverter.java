@@ -38,5 +38,10 @@ public class CassandraClientOptionsConverter {
   }
 
   public static void toJson(CassandraClientOptions obj, java.util.Map<String, Object> json) {
+    if (obj.getContactPoints() != null) {
+      JsonArray array = new JsonArray();
+      obj.getContactPoints().forEach(item -> array.add(item));
+      json.put("contactPoints", array);
+    }
   }
 }
