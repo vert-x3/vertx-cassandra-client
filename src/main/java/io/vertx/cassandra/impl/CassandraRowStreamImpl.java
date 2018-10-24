@@ -20,7 +20,7 @@ import com.datastax.driver.core.Row;
 import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.queue.Queue;
+import io.vertx.core.streams.impl.InboundBuffer;
 
 import java.util.Iterator;
 
@@ -34,7 +34,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
 
   private final ResultSet datastaxResultSet;
   private final Iterator<com.datastax.driver.core.Row> resultSetIterator;
-  private final Queue<Row> internalQueue;
+  private final InboundBuffer<Row> internalQueue;
   private final Context context;
 
   private Handler<Throwable> exceptionHandler;
@@ -43,7 +43,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   public CassandraRowStreamImpl(ResultSet result, Context context) {
     datastaxResultSet = result;
     resultSetIterator = result.iterator();
-    internalQueue = Queue.<Row>queue(context).writableHandler(v -> fire());
+    internalQueue = new InboundBuffer<Row>(context).drainHandler(v -> fire());
     this.context = context;
   }
 
@@ -82,7 +82,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
 
   @Override
   public synchronized CassandraRowStream fetch(long l) {
-    internalQueue.take(l);
+    internalQueue.fetch(l);
     return this;
   }
 
@@ -90,8 +90,10 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
     int availableWithoutFetching = datastaxResultSet.getAvailableWithoutFetching();
     boolean isFetched = datastaxResultSet.isFullyFetched();
     if (availableWithoutFetching != 0) {
-      for (int i = 0; i < availableWithoutFetching && internalQueue.isWritable(); i++) {
-        internalQueue.add(resultSetIterator.next());
+      for (int i = 0; i < availableWithoutFetching; i++) {
+        if (!internalQueue.write(resultSetIterator.next())) {
+          break;
+        }
       }
       if (internalQueue.isWritable()) {
         fetchAndCallOneMoreTime();
