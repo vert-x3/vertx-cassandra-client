@@ -22,6 +22,12 @@ Or, if you use Gradle:
 compile '${maven.groupId}:${maven.artifactId}:${maven.version}'
 ----
 
+WARNING: the Cassandra client is not compatible with the Vert.x Dropwizard Metrics library. Both are using a different
+major version of the Dropwizard Metrics library and the Cassandra driver https://github.com/datastax/java-driver/pull/943[won't upgrade]
+to the most recent version due to the drop of Java 7. The next major version of the Cassandra driver (4)
+will uses a more recent Dropwizard Metrics library  version.
+
+
 == Creating a client
 
 http://cassandra.apache.org/[Cassandra] is a distributed system, and it can have many nodes.
