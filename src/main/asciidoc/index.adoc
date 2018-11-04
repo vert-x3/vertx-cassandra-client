@@ -124,3 +124,5 @@ In case you'd like to execute several queries at once, you can use https://docs.
 ----
 {@link examples.CassandraClientExamples#batching}
 ----
+
+include::override/rxjava.adoc[]
