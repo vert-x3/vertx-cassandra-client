@@ -2,6 +2,8 @@
 
 A Vert.x client allowing applications to interact with a Cassandra service.
 
+WARNING: This module has Tech Preview status, this means the API can change between versions.
+
 == Using the Cassandra Client for Vert.x
 
 To use this module, add the following to the _dependencies_ section of your Maven POM file:
