@@ -20,6 +20,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Statement;
 import io.vertx.cassandra.impl.CassandraClientImpl;
 import io.vertx.codegen.annotations.Fluent;
+import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -140,7 +141,7 @@ public interface CassandraClient {
    * @param query         the query to execute
    * @return current Cassandra client instance
    */
-  @SuppressWarnings("codegen-allow-any-java-type")
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
   CassandraClient executeWithFullFetch(String query, Handler<AsyncResult<List<Row>>> resultHandler);
 
@@ -151,7 +152,7 @@ public interface CassandraClient {
    * @param statement     the statement to execute
    * @return current Cassandra client instance
    */
-  @SuppressWarnings("codegen-allow-any-java-type")
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
   CassandraClient executeWithFullFetch(Statement statement, Handler<AsyncResult<List<Row>>> resultHandler);
 
@@ -172,7 +173,7 @@ public interface CassandraClient {
    * @param statement         the statement to execute
    * @return current Cassandra client instance
    */
-  @SuppressWarnings("codegen-allow-any-java-type")
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
   CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler);
 
@@ -183,7 +184,7 @@ public interface CassandraClient {
    * @param query         the query to prepare
    * @return current Cassandra client instance
    */
-  @SuppressWarnings("codegen-allow-any-java-type")
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
   CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler);
 
@@ -204,7 +205,7 @@ public interface CassandraClient {
    * @param rowStreamHandler the handler which is called once the operation completes. It will return an instance of {@link CassandraRowStream}.
    * @return current Cassandra client instance
    */
-  @SuppressWarnings("codegen-allow-any-java-type")
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
   CassandraClient queryStream(Statement statement, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler);
 

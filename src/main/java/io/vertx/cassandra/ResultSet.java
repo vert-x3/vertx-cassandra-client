@@ -18,6 +18,7 @@ package io.vertx.cassandra;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.Row;
 import io.vertx.codegen.annotations.Fluent;
+import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
@@ -60,7 +61,7 @@ public interface ResultSet {
    * @param handler handler called when one row is fetched
    * @see com.datastax.driver.core.ResultSet#one
    */
-  @SuppressWarnings("codegen-allow-any-java-type")
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
   ResultSet one(Handler<AsyncResult<@Nullable Row>> handler);
 
@@ -68,14 +69,14 @@ public interface ResultSet {
    * @param handler handler called when all the rows is fetched
    * @see com.datastax.driver.core.ResultSet#all
    */
-  @SuppressWarnings("codegen-allow-any-java-type")
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
   ResultSet all(Handler<AsyncResult<List<Row>>> handler);
 
   /**
    * @see com.datastax.driver.core.ResultSet#getColumnDefinitions
    */
-  @SuppressWarnings("codegen-allow-any-java-type")
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
   ColumnDefinitions getColumnDefinitions();
 
   /**
