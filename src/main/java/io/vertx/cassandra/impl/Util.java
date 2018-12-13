@@ -23,6 +23,8 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 
+import java.util.Objects;
+
 /**
  * @author Pavel Drankou
  * @author Thomas Segismont
@@ -33,16 +35,20 @@ class Util {
    * Invokes the {@code handler} on a given {@code context} when the {@code listenableFuture} succeeds or fails.
    */
   static <T> void handleOnContext(ListenableFuture<T> listenableFuture, Context context, Handler<AsyncResult<T>> handler) {
-    Futures.addCallback(listenableFuture, new FutureCallback<T>() {
-      @Override
-      public void onSuccess(T result) {
-        context.runOnContext(v -> handler.handle(Future.succeededFuture(result)));
-      }
+    Objects.requireNonNull(listenableFuture, "listenableFuture must not be null");
+    Objects.requireNonNull(context, "context must not be null");
+    if (handler != null) {
+      Futures.addCallback(listenableFuture, new FutureCallback<T>() {
+        @Override
+        public void onSuccess(T result) {
+          context.runOnContext(v -> handler.handle(Future.succeededFuture(result)));
+        }
 
-      @Override
-      public void onFailure(Throwable t) {
-        context.runOnContext(v -> handler.handle(Future.failedFuture(t)));
-      }
-    });
+        @Override
+        public void onFailure(Throwable t) {
+          context.runOnContext(v -> handler.handle(Future.failedFuture(t)));
+        }
+      });
+    }
   }
 }

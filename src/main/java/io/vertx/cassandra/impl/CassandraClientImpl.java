@@ -241,17 +241,7 @@ public class CassandraClientImpl implements CassandraClient {
   public CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler) {
     Context context = vertx.getOrCreateContext();
     executeWithSession(session -> {
-      handleOnContext(session.closeAsync(), context, ar -> {
-        if (ar.succeeded()) {
-          if (disconnectHandler != null) {
-            disconnectHandler.handle(Future.succeededFuture());
-          }
-        } else {
-          if (disconnectHandler != null) {
-            disconnectHandler.handle(Future.failedFuture(ar.cause()));
-          }
-        }
-      });
+      handleOnContext(session.closeAsync(), context, disconnectHandler);
     }, disconnectHandler);
     return this;
   }
