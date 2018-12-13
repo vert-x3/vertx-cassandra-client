@@ -19,13 +19,18 @@ import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.SimpleStatement;
+import com.datastax.driver.mapping.annotations.PartitionKey;
+import com.datastax.driver.mapping.annotations.Table;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
 import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
+import io.vertx.cassandra.VertxMapper;
+import io.vertx.cassandra.VertxMappingManager;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerResponse;
 
+import java.util.Collections;
 import java.util.List;
 
 public class CassandraClientExamples {
@@ -191,5 +196,32 @@ public class CassandraClientExamples {
         result.cause().printStackTrace();
       }
     });
+  }
+
+  public void mapper(CassandraClient cassandraClient, Vertx vertx) {
+
+    // define class to use for database queries
+    @Table(keyspace = "test", name = "names")
+    class Test {
+      @PartitionKey private String name;
+
+      public Test(String name) {
+        this.name = name;
+      }
+    }
+
+    // define a mapper for the defined class
+    VertxMappingManager manager = VertxMappingManager.create(cassandraClient);
+    VertxMapper<Test> mapper = manager.mapper(Test.class, vertx);
+
+    // use mapper to get/save/delete objects
+    mapper.save(new Test("foo"), handler -> {
+      // handle result
+    });
+
+    mapper.save(new Test("foo"), handler -> {});
+    mapper.get(Collections.singletonList("foo"), handler -> {});
+    mapper.delete(Collections.singletonList("foo"), handler -> {});
+    mapper.delete(new Test("foo"), handler -> {});
   }
 }

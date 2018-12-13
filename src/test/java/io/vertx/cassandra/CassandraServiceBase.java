@@ -120,6 +120,10 @@ public abstract class CassandraServiceBase {
       Future<ResultSet> createTable = Future.future();
       cassandraClient.execute("create table names.names_by_first_letter (first_letter text, name text, primary key (first_letter, name));", createTable);
       return createTable;
+    }).compose(keySpaceCreated -> {
+      Future<ResultSet> createTable = Future.future();
+      cassandraClient.execute("create table names.mapper_test (name text, age int, primary key (name));", createTable);
+      return createTable;
     }).compose(tableCreated -> {
       Future<Void> disconnectFuture = Future.future();
       cassandraClient.disconnect(disconnectFuture);

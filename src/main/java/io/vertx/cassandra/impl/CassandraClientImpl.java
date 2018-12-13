@@ -24,6 +24,7 @@ import io.vertx.cassandra.ResultSet;
 import io.vertx.core.*;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.shareddata.Shareable;
+import io.vertx.cassandra.VertxMappingManager;
 
 import java.io.Closeable;
 import java.util.List;
@@ -241,13 +242,7 @@ public class CassandraClientImpl implements CassandraClient {
   public CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler) {
     Context context = vertx.getOrCreateContext();
     executeWithSession(session -> {
-      handleOnContext(session.closeAsync(), context, ar -> {
-        if (ar.succeeded()) {
-          disconnectHandler.handle(Future.succeededFuture());
-        } else {
-          disconnectHandler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
+      handleOnContext(session.closeAsync(), context, disconnectHandler);
     }, disconnectHandler);
     return this;
   }
@@ -261,5 +256,9 @@ public class CassandraClientImpl implements CassandraClient {
         handlerToFailIfNoSessionPresent.handle(Future.failedFuture("In order to do this, you should be connected"));
       }
     }
+  }
+
+  Session getSession() {
+    return cassandraHolder.session.get();
   }
 }

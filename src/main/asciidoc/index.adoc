@@ -127,6 +127,15 @@ In case you'd like to execute several queries at once, you can use https://docs.
 {@link examples.CassandraClientExamples#batching}
 ----
 
+=== Object Mapper
+
+You can use the [Datastax object mapper](https://docs.datastax.com/en/developer/java-driver/latest/manual/object_mapper/) to map between domain classes and queries:
+
+[source, $lang]
+----
+{@link examples.CassandraClientExamples#mapper}
+----
+
 ifeval::["$lang" == "java"]
 include::override/rxjava2.adoc[]
 endif::[]
