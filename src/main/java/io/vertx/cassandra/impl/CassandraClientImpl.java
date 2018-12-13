@@ -27,6 +27,7 @@ import io.vertx.core.impl.VertxInternal;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static io.vertx.cassandra.impl.Util.handleOnContext;
 
@@ -38,7 +39,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   private static final String HOLDERS_LOCAL_MAP_NAME = "__vertx.cassandraClient.sessionHolders";
 
-  private final VertxInternal vertx;
+  final VertxInternal vertx;
   private final String clientName;
   private final CassandraClientOptions options;
   private final Map<String, SessionHolder> holders;
@@ -48,6 +49,9 @@ public class CassandraClientImpl implements CassandraClient {
   private boolean closed;
 
   public CassandraClientImpl(Vertx vertx, String clientName, CassandraClientOptions options) {
+    Objects.requireNonNull(vertx, "vertx");
+    Objects.requireNonNull(clientName, "clientName");
+    Objects.requireNonNull(options, "options");
     this.vertx = (VertxInternal) vertx;
     this.clientName = clientName;
     this.options = options;
@@ -163,7 +167,7 @@ public class CassandraClientImpl implements CassandraClient {
     return this;
   }
 
-  private synchronized void getSession(ContextInternal context, Handler<AsyncResult<Session>> handler) {
+  synchronized void getSession(ContextInternal context, Handler<AsyncResult<Session>> handler) {
     if (closed) {
       handler.handle(Future.failedFuture("Client is closed"));
     } else if (cachedSession != null) {

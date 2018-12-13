@@ -19,13 +19,13 @@ import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.SimpleStatement;
-import io.vertx.cassandra.CassandraClient;
-import io.vertx.cassandra.CassandraClientOptions;
-import io.vertx.cassandra.CassandraRowStream;
-import io.vertx.cassandra.ResultSet;
+import com.datastax.driver.mapping.annotations.PartitionKey;
+import com.datastax.driver.mapping.annotations.Table;
+import io.vertx.cassandra.*;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerResponse;
 
+import java.util.Collections;
 import java.util.List;
 
 public class CassandraClientExamples {
@@ -184,6 +184,41 @@ public class CassandraClientExamples {
         System.out.println("Unable to execute the batch");
         result.cause().printStackTrace();
       }
+    });
+  }
+
+  @Table(keyspace = "test", name = "names")
+  public class MappedClass {
+    @PartitionKey
+    private String name;
+
+    public MappedClass(String name) {
+      this.name = name;
+    }
+
+    MappedClass() {
+      // Required for mapping
+    }
+
+    // getters / setters
+  }
+
+  public void objectMapper(CassandraClient cassandraClient) {
+    MappingManager mappingManager = MappingManager.create(cassandraClient);
+    Mapper<MappedClass> mapper = mappingManager.mapper(MappedClass.class);
+
+    MappedClass value = new MappedClass("foo");
+
+    mapper.save(value, handler -> {
+      // Entity saved
+    });
+
+    mapper.get(Collections.singletonList("foo"), handler -> {
+      // Entity loaded
+    });
+
+    mapper.delete(Collections.singletonList("foo"), handler -> {
+      // Entity deleted
     });
   }
 }
