@@ -127,7 +127,7 @@ You can prepare a query:
 {@link examples.CassandraClientExamples#prepareQuery}
 ----
 
-And then use the https://docs.datastax.com/en/drivers/java/${datastax-driver.minor.version}/com/datastax/driver/core/PreparedStatement.html[`PreparedStatement`] for all the next queries:
+And then use the https://docs.datastax.com/en/drivers/java/${datastax.driver.minor.version}/com/datastax/driver/core/PreparedStatement.html[`PreparedStatement`] for all the next queries:
 
 [source,$lang]
 ----
@@ -136,12 +136,64 @@ And then use the https://docs.datastax.com/en/drivers/java/${datastax-driver.min
 
 === Batching
 
-In case you'd like to execute several queries at once, you can use https://docs.datastax.com/en/drivers/java/${datastax-driver.minor.version}/com/datastax/driver/core/BatchStatement.html[`BatchStatement`] for that:
+In case you'd like to execute several queries at once, you can use https://docs.datastax.com/en/drivers/java/${datastax.driver.minor.version}/com/datastax/driver/core/BatchStatement.html[`BatchStatement`] for that:
 
 [source,$lang]
 ----
 {@link examples.CassandraClientExamples#batching}
 ----
+
+=== Object Mapper
+
+You can use the object {@link io.vertx.cassandra.Mapper} to map between domain classes and queries.
+
+First, add the following to the _dependencies_ section of your Maven POM file:
+
+[source,xml,subs="+attributes"]
+----
+<dependency>
+  <groupId>com.datastax.cassandra</groupId>
+  <artifactId>cassandra-driver-mapping</artifactId>
+  <version>${datastax.driver.version}</version>
+</dependency>
+----
+
+Or, if you use Gradle:
+
+[source,groovy,subs="+attributes"]
+----
+compile 'com.datastax.cassandra:cassandra-driver-mapping:${datastax.driver.version}'
+----
+
+Consider the following entity:
+
+[source, java]
+----
+@Table(keyspace = "test", name = "names")
+public class MappedClass {
+  @PartitionKey
+  private String name;
+
+  public MappedClass(String name) {
+    this.name = name;
+  }
+
+  MappedClass() {
+    // Required for mapping
+  }
+
+  // getters / setters
+}
+----
+
+Create a mapper for it and you may save, retrieve or delete data from the corresponding table:
+
+[source, $lang]
+----
+{@link examples.CassandraClientExamples#objectMapper}
+----
+
+TIP: It is safe to reuse mapping manager and mapper instances for a given Cassandra client.
 
 ifeval::["$lang" == "java"]
 include::override/rxjava2.adoc[]
