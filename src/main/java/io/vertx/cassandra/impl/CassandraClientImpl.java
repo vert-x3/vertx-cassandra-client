@@ -243,9 +243,13 @@ public class CassandraClientImpl implements CassandraClient {
     executeWithSession(session -> {
       handleOnContext(session.closeAsync(), context, ar -> {
         if (ar.succeeded()) {
-          disconnectHandler.handle(Future.succeededFuture());
+          if (disconnectHandler != null) {
+            disconnectHandler.handle(Future.succeededFuture());
+          }
         } else {
-          disconnectHandler.handle(Future.failedFuture(ar.cause()));
+          if (disconnectHandler != null) {
+            disconnectHandler.handle(Future.failedFuture(ar.cause()));
+          }
         }
       });
     }, disconnectHandler);
