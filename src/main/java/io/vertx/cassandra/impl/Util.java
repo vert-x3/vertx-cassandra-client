@@ -41,7 +41,7 @@ class Util {
 
       @Override
       public void onFailure(Throwable t) {
-        context.runOnContext(v -> Future.failedFuture(t));
+        context.runOnContext(v -> handler.handle(Future.failedFuture(t)));
       }
     });
   }
