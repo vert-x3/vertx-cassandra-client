@@ -48,7 +48,10 @@ public class CassandraClientImpl implements CassandraClient {
     cassandraHolder = lookupHolder(dataSourceName, cassandraClientOptions);
     Context ctx = Vertx.currentContext();
     if (ctx != null && ctx.owner() == vertx) {
-      ctx.addCloseHook(v -> cassandraHolder.close());
+      ctx.addCloseHook(v -> {
+        cassandraHolder.close();
+        v.handle(Future.succeededFuture());
+      });
     }
   }
 
