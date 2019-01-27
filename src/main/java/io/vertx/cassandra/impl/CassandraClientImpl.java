@@ -131,32 +131,36 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient connect(String keyspace, Handler<AsyncResult<Void>> connectHandler) {
-    cassandraHolder.session.set(null);
-    Cluster.Builder builder = cassandraHolder.options.dataStaxClusterBuilder();
-    if (builder.getContactPoints().isEmpty()) {
-      builder.addContactPoint(CassandraClientOptions.DEFAULT_HOST);
-    }
-    Cluster build = builder.build();
-    ListenableFuture<Session> connectGuavaFuture;
-    if (keyspace == null) {
-      connectGuavaFuture = build.connectAsync();
-    } else {
-      connectGuavaFuture = build.connectAsync(keyspace);
-    }
-
-    handleOnContext(connectGuavaFuture, vertx.getOrCreateContext(), ar -> {
-      if (ar.succeeded()) {
-        cassandraHolder.session.set(ar.result());
-        if (connectHandler != null) {
-          connectHandler.handle(Future.succeededFuture());
-        }
-      } else {
-        if (connectHandler != null) {
-          connectHandler.handle(Future.failedFuture(ar.cause()));
-        }
+    try {
+      cassandraHolder.session.set(null);
+      Cluster.Builder builder = cassandraHolder.options.dataStaxClusterBuilder();
+      if (builder.getContactPoints().isEmpty()) {
+        builder.addContactPoint(CassandraClientOptions.DEFAULT_HOST);
       }
-    });
+      Cluster build = builder.build();
+      ListenableFuture<Session> connectGuavaFuture;
 
+      if (keyspace == null) {
+        connectGuavaFuture = build.connectAsync();
+      } else {
+        connectGuavaFuture = build.connectAsync(keyspace);
+      }
+
+      handleOnContext(connectGuavaFuture, vertx.getOrCreateContext(), ar -> {
+        if (ar.succeeded()) {
+          cassandraHolder.session.set(ar.result());
+          if (connectHandler != null) {
+            connectHandler.handle(Future.succeededFuture());
+          }
+        } else {
+          if (connectHandler != null) {
+            connectHandler.handle(Future.failedFuture(ar.cause()));
+          }
+        }
+      });
+    } catch (Exception e) {
+      connectHandler.handle(Future.failedFuture(e));
+    }
     return this;
   }
 

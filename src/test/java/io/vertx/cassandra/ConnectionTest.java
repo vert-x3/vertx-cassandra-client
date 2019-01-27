@@ -28,6 +28,8 @@ public class ConnectionTest extends CassandraServiceBase {
 
   private static final Logger log = LoggerFactory.getLogger(ConnectionTest.class);
 
+  private static final String IP_HOST_WITHOUT_CASSANDRA = "100.100.100.100";
+
   @Test
   public void connectDisconnectTest(TestContext context) {
     CassandraClientOptions options = new CassandraClientOptions()
@@ -42,6 +44,27 @@ public class ConnectionTest extends CassandraServiceBase {
       .setPort(NATIVE_TRANSPORT_PORT);
     connectAndDisconnect(context, options);
   }
+
+  @Test
+  public void exceptionShouldNotBeThrownIfNoHostSpecified(TestContext context) {
+    CassandraClientOptions options = new CassandraClientOptions()
+      .setPort(NATIVE_TRANSPORT_PORT)
+      .addContactPoint(IP_HOST_WITHOUT_CASSANDRA);
+    CassandraClient client = CassandraClient.createNonShared(vertx, options);
+    Async async = context.async();
+    try {
+      client.connect(connectResult -> {
+        if (connectResult.succeeded()) {
+          context.fail();
+        } else {
+          async.countDown();
+        }
+      });
+    } catch (Exception e) {
+      context.fail("Exception should not be thrown here");
+    }
+  }
+
 
   private void connectAndDisconnect(TestContext context, CassandraClientOptions options) {
     CassandraClient cassandraClient = CassandraClient.createNonShared(
