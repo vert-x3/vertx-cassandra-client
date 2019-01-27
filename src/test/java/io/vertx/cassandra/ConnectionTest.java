@@ -55,13 +55,13 @@ public class ConnectionTest extends CassandraServiceBase {
     try {
       client.connect(connectResult -> {
         if (connectResult.succeeded()) {
-          context.fail();
+          context.fail("Successful connect to " + IP_HOST_WITHOUT_CASSANDRA + " was not expected");
         } else {
           async.countDown();
         }
       });
     } catch (Exception e) {
-      context.fail("Exception should not be thrown here");
+      context.fail("CassandraClient#connect should not throw any exceptions");
     }
   }
 
