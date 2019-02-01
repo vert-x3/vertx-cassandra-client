@@ -16,19 +16,17 @@
 package io.vertx.cassandra.impl;
 
 import com.datastax.driver.core.*;
-import com.google.common.util.concurrent.ListenableFuture;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
 import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.core.*;
-import io.vertx.core.shareddata.LocalMap;
-import io.vertx.core.shareddata.Shareable;
+import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.TaskQueue;
+import io.vertx.core.impl.VertxInternal;
 
-import java.io.Closeable;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.Map;
 
 import static io.vertx.cassandra.impl.Util.handleOnContext;
 
@@ -38,133 +36,37 @@ import static io.vertx.cassandra.impl.Util.handleOnContext;
  */
 public class CassandraClientImpl implements CassandraClient {
 
-  private static final String DS_LOCAL_MAP_NAME = "__vertx.CassandraClient.datasources";
+  private static final String HOLDERS_LOCAL_MAP_NAME = "__vertx.cassandraClient.sessionHolders";
 
-  private final Vertx vertx;
-  private final CassandraHolder cassandraHolder;
+  private final VertxInternal vertx;
+  private final String clientName;
+  private final CassandraClientOptions options;
+  private final Map<String, SessionHolder> holders;
+  private final TaskQueue connectionQueue;
 
-  public CassandraClientImpl(Vertx vertx, String dataSourceName, CassandraClientOptions cassandraClientOptions) {
-    this.vertx = vertx;
-    cassandraHolder = lookupHolder(dataSourceName, cassandraClientOptions);
-    Context ctx = Vertx.currentContext();
-    if (ctx != null && ctx.owner() == vertx) {
-      ctx.addCloseHook(v -> {
-        cassandraHolder.close();
-        v.handle(Future.succeededFuture());
-      });
-    }
-  }
+  private Session cachedSession;
+  private boolean closed;
 
-  class CassandraHolder implements Closeable, Shareable {
-    int refCount = 1;
-    AtomicReference<Session> session = new AtomicReference<>(null);
-    CassandraClientOptions options;
-    Runnable closeRunner;
-
-    public CassandraHolder(CassandraClientOptions options, Runnable closeRunner) {
-      this.options = options;
-      this.closeRunner = closeRunner;
-    }
-
-    synchronized void incRefCount() {
-      refCount++;
-    }
-
-    @Override
-    public void close() {
-      synchronized (this) {
-        --refCount;
-        if (refCount == 0 && session.get() != null) {
-          session.get().close();
-        }
-      }
-
-      if (refCount == 0 && closeRunner != null) {
-        closeRunner.run();
-      }
-    }
-  }
-
-  private LocalMap<String, CassandraHolder> cassandraHolderLocalMap() {
-    return vertx.sharedData().getLocalMap(DS_LOCAL_MAP_NAME);
-  }
-
-  private CassandraHolder lookupHolder(String dataSourceName, CassandraClientOptions cassandraClientOptions) {
-    LocalMap<String, CassandraHolder> map = cassandraHolderLocalMap();
-    synchronized (map) {
-      CassandraHolder theHolder = map.get(dataSourceName);
-      if (theHolder == null) {
-        theHolder = new CassandraHolder(cassandraClientOptions, () -> removeFromMap(map, dataSourceName));
-        map.put(dataSourceName, theHolder);
-      } else {
-        theHolder.incRefCount();
-      }
-      return theHolder;
-    }
-  }
-
-  private void removeFromMap(LocalMap<String, CassandraHolder> map, String dataSourceName) {
-    synchronized (map) {
-      map.remove(dataSourceName);
-      if (map.isEmpty()) {
-        map.close();
-      }
+  public CassandraClientImpl(Vertx vertx, String clientName, CassandraClientOptions options) {
+    this.vertx = (VertxInternal) vertx;
+    this.clientName = clientName;
+    this.options = options;
+    holders = vertx.sharedData().getLocalMap(HOLDERS_LOCAL_MAP_NAME);
+    SessionHolder current = holders.compute(clientName, (k, h) -> h == null ? new SessionHolder() : h.increment());
+    connectionQueue = current.connectionQueue;
+    Context context = Vertx.currentContext();
+    if (context != null && context.owner() == vertx) {
+      context.addCloseHook(this::close);
     }
   }
 
   @Override
-  public CassandraClient connect() {
-    return connect(null);
-  }
-
-  @Override
-  public boolean isConnected() {
-    Session session = this.cassandraHolder.session.get();
-    if (session == null) {
+  public synchronized boolean isConnected() {
+    if (closed) {
       return false;
-    } else {
-      return !session.isClosed();
     }
-  }
-
-  @Override
-  public CassandraClient connect(Handler<AsyncResult<Void>> connectHandler) {
-    return connect(null, connectHandler);
-  }
-
-  @Override
-  public CassandraClient connect(String keyspace, Handler<AsyncResult<Void>> connectHandler) {
-    try {
-      cassandraHolder.session.set(null);
-      Cluster.Builder builder = cassandraHolder.options.dataStaxClusterBuilder();
-      if (builder.getContactPoints().isEmpty()) {
-        builder.addContactPoint(CassandraClientOptions.DEFAULT_HOST);
-      }
-      Cluster build = builder.build();
-      ListenableFuture<Session> connectGuavaFuture;
-
-      if (keyspace == null) {
-        connectGuavaFuture = build.connectAsync();
-      } else {
-        connectGuavaFuture = build.connectAsync(keyspace);
-      }
-
-      handleOnContext(connectGuavaFuture, vertx.getOrCreateContext(), ar -> {
-        if (ar.succeeded()) {
-          cassandraHolder.session.set(ar.result());
-          if (connectHandler != null) {
-            connectHandler.handle(Future.succeededFuture());
-          }
-        } else {
-          if (connectHandler != null) {
-            connectHandler.handle(Future.failedFuture(ar.cause()));
-          }
-        }
-      });
-    } catch (Exception e) {
-      connectHandler.handle(Future.failedFuture(e));
-    }
-    return this;
+    Session s = cachedSession != null ? cachedSession : holders.get(clientName).session;
+    return s != null && !s.isClosed();
   }
 
   @Override
@@ -174,53 +76,44 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient executeWithFullFetch(Statement statement, Handler<AsyncResult<List<Row>>> resultHandler) {
-    execute(statement, ar -> {
-      if (ar.succeeded()) {
-        ar.result().all(resultHandler);
+    execute(statement, exec -> {
+      if (exec.succeeded()) {
+        ResultSet resultSet = exec.result();
+        resultSet.all(resultHandler);
       } else {
-        resultHandler.handle(Future.failedFuture(ar.cause()));
+        resultHandler.handle(Future.failedFuture(exec.cause()));
       }
     });
     return this;
   }
 
-  @Override
   public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler) {
     return execute(new SimpleStatement(query), resultHandler);
   }
 
   @Override
   public CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler) {
-    Context context = vertx.getOrCreateContext();
-    executeWithSession(session -> {
-      handleOnContext(session.executeAsync(statement), context, ar -> {
-        if (ar.succeeded()) {
-          resultHandler.handle(Future.succeededFuture(new ResultSetImpl(ar.result(), vertx)));
-        } else {
-          resultHandler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
-    }, resultHandler);
+    ContextInternal context = vertx.getOrCreateContext();
+    getSession(context, sess -> {
+      if (sess.succeeded()) {
+        handleOnContext(sess.result().executeAsync(statement), context, rs -> new ResultSetImpl(rs, vertx), resultHandler);
+      } else {
+        resultHandler.handle(Future.failedFuture(sess.cause()));
+      }
+    });
     return this;
   }
 
   @Override
-  public CassandraClient disconnect() {
-    return disconnect(null);
-  }
-
-  @Override
   public CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler) {
-    Context context = vertx.getOrCreateContext();
-    executeWithSession(session -> {
-      handleOnContext(session.prepareAsync(query), context, ar -> {
-        if (ar.succeeded()) {
-          resultHandler.handle(Future.succeededFuture(ar.result()));
-        } else {
-          resultHandler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
-    }, resultHandler);
+    ContextInternal context = vertx.getOrCreateContext();
+    getSession(context, sess -> {
+      if (sess.succeeded()) {
+        handleOnContext(sess.result().prepareAsync(query), context, resultHandler);
+      } else {
+        resultHandler.handle(Future.failedFuture(sess.cause()));
+      }
+    });
     return this;
   }
 
@@ -231,36 +124,88 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient queryStream(Statement statement, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler) {
-    Context context = vertx.getOrCreateContext();
-    executeWithSession(session -> {
-      handleOnContext(session.executeAsync(statement), context, ar -> {
-        if (ar.succeeded()) {
-          rowStreamHandler.handle(Future.succeededFuture(new CassandraRowStreamImpl(ar.result(), context)));
-        } else {
-          rowStreamHandler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
-    }, rowStreamHandler);
+    ContextInternal context = vertx.getOrCreateContext();
+    getSession(context, sess -> {
+      if (sess.succeeded()) {
+        handleOnContext(sess.result().executeAsync(statement), context, rs -> {
+          ResultSet resultSet = new ResultSetImpl(rs, vertx);
+          return new CassandraRowStreamImpl(context, resultSet);
+        }, rowStreamHandler);
+      } else {
+        rowStreamHandler.handle(Future.failedFuture(sess.cause()));
+      }
+    });
     return this;
   }
 
   @Override
-  public CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler) {
-    Context context = vertx.getOrCreateContext();
-    executeWithSession(session -> {
-      handleOnContext(session.closeAsync(), context, disconnectHandler);
-    }, disconnectHandler);
+  public CassandraClient close() {
+    return close(null);
+  }
+
+  @Override
+  public synchronized CassandraClient close(Handler<AsyncResult<Void>> closeHandler) {
+    if (closed) {
+      if (closeHandler != null) {
+        closeHandler.handle(Future.succeededFuture());
+      }
+    } else {
+      closed = true;
+      SessionHolder current = holders.compute(clientName, (k, h) -> h.decrement());
+      if (current.refCount < 1 && current.session != null) {
+        handleOnContext(current.session.closeAsync(), vertx.getOrCreateContext(), closeHandler);
+      } else {
+        if (closeHandler != null) {
+          closeHandler.handle(Future.succeededFuture());
+        }
+      }
+    }
     return this;
   }
 
-  private <T> void executeWithSession(Consumer<Session> sessionConsumer, Handler<AsyncResult<T>> handlerToFailIfNoSessionPresent) {
-    Session session = this.cassandraHolder.session.get();
-    if (session != null) {
-      sessionConsumer.accept(session);
+  private synchronized void getSession(ContextInternal context, Handler<AsyncResult<Session>> handler) {
+    if (closed) {
+      handler.handle(Future.failedFuture("Client is closed"));
+    } else if (cachedSession != null) {
+      handler.handle(Future.succeededFuture(cachedSession));
     } else {
-      if (handlerToFailIfNoSessionPresent != null) {
-        handlerToFailIfNoSessionPresent.handle(Future.failedFuture("In order to do this, you should be connected"));
+      context.<Session>executeBlocking(fut -> {
+        connect(fut, holders, clientName, options);
+      }, connectionQueue, ar -> {
+        if (ar.succeeded()) {
+          Session s = ar.result();
+          synchronized (this) {
+            cachedSession = s;
+          }
+          handler.handle(Future.succeededFuture(s));
+        } else {
+          handler.handle(Future.failedFuture(ar.cause()));
+        }
+      });
+    }
+  }
+
+  private static void connect(Future<Session> future, Map<String, SessionHolder> holders, String clientName, CassandraClientOptions options) {
+    SessionHolder current = holders.get(clientName);
+    if (current.session != null) {
+      future.complete(current.session);
+      return;
+    }
+    Cluster.Builder builder = options.dataStaxClusterBuilder();
+    if (builder.getContactPoints().isEmpty()) {
+      builder.addContactPoint(CassandraClientOptions.DEFAULT_HOST);
+    }
+    Cluster cluster = builder.build();
+    Session session = cluster.connect(options.getKeyspace());
+    current = holders.compute(clientName, (k, h) -> h == null ? null : h.connected(session));
+    if (current != null) {
+      future.complete(current.session);
+    } else {
+      try {
+        session.close();
+      } catch (Exception ignored) {
       }
+      future.fail("Client closed while connecting");
     }
   }
 }

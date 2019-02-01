@@ -24,6 +24,11 @@ public class CassandraClientOptionsConverter {
             obj.setContactPoints(list);
           }
           break;
+        case "keyspace":
+          if (member.getValue() instanceof String) {
+            obj.setKeyspace((String)member.getValue());
+          }
+          break;
         case "port":
           if (member.getValue() instanceof Number) {
             obj.setPort(((Number)member.getValue()).intValue());
@@ -42,6 +47,9 @@ public class CassandraClientOptionsConverter {
       JsonArray array = new JsonArray();
       obj.getContactPoints().forEach(item -> array.add(item));
       json.put("contactPoints", array);
+    }
+    if (obj.getKeyspace() != null) {
+      json.put("keyspace", obj.getKeyspace());
     }
   }
 }

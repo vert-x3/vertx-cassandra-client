@@ -39,106 +39,76 @@ import java.util.UUID;
 public interface CassandraClient {
 
   /**
-   * The name of the default pool
+   * The default shared client name.
    */
-  String DEFAULT_POOL_NAME = "DEFAULT_POOL";
-
+  String DEFAULT_SHARED_CLIENT_NAME = "DEFAULT";
 
   /**
-   * Like {@link CassandraClient#createNonShared(Vertx, CassandraClientOptions)}  but with default client options.
+   * Like {@link CassandraClient#createNonShared(Vertx, CassandraClientOptions)} with default options.
    */
   static CassandraClient createNonShared(Vertx vertx) {
     return createNonShared(vertx, new CassandraClientOptions());
   }
 
   /**
-   * Create a Cassandra client which maintains its own data source.
+   * Create a Cassandra client which maintains its own driver session.
    * <p>
    * It is not recommended to create several non shared clients in an application.
-   * Your application should either use only single non shared client, or use shared client.
-   * This is because {@link CassandraClient} backed by {@link com.datastax.driver.core.Session}.
-   * And Datastax does not recommended to have several {@link com.datastax.driver.core.Session}
-   * instances. Better to have only one, and share it.
    *
-   * @param vertx                  the Vert.x instance
-   * @param cassandraClientOptions the options
+   * @param vertx the Vert.x instance
+   * @param options the options
+   *
    * @return the client
    */
-  static CassandraClient createNonShared(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
-    return new CassandraClientImpl(vertx, UUID.randomUUID().toString(), cassandraClientOptions);
+  static CassandraClient createNonShared(Vertx vertx, CassandraClientOptions options) {
+    return new CassandraClientImpl(vertx, UUID.randomUUID().toString(), options);
   }
 
   /**
-   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with default client options and datasource.
+   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)} with default options and client name.
    */
   static CassandraClient createShared(Vertx vertx) {
-    return createShared(vertx, DEFAULT_POOL_NAME);
+    return createShared(vertx, DEFAULT_SHARED_CLIENT_NAME);
   }
 
   /**
-   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with default client options.
+   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)} with default options.
    */
-  static CassandraClient createShared(Vertx vertx, String datasourceName) {
-    return createShared(vertx, datasourceName, new CassandraClientOptions());
+  static CassandraClient createShared(Vertx vertx, String clientName) {
+    return createShared(vertx, clientName, new CassandraClientOptions());
   }
 
   /**
-   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)}, but with datasource name.
+   * Like {@link CassandraClient#createShared(Vertx, String, CassandraClientOptions)} with default client name.
    */
-  static CassandraClient createShared(Vertx vertx, CassandraClientOptions cassandraClientOptions) {
-    return createShared(vertx, DEFAULT_POOL_NAME, cassandraClientOptions);
+  static CassandraClient createShared(Vertx vertx, CassandraClientOptions options) {
+    return createShared(vertx, DEFAULT_SHARED_CLIENT_NAME, options);
   }
 
   /**
-   * Create a Cassandra client which shares its data source with any other Cassandra clients created with the same
-   * data source name.
+   * Create a Cassandra client that shares its driver session with any other client having the same name.
    *
-   * @param vertx                  the Vert.x instance
-   * @param cassandraClientOptions the options
-   * @param datasourceName         the data source name
+   * @param vertx the Vert.x instance
+   * @param options the options
+   * @param clientName the shared client name
+   *
    * @return the client
    */
-  static CassandraClient createShared(Vertx vertx, String datasourceName, CassandraClientOptions cassandraClientOptions) {
-    return new CassandraClientImpl(vertx, datasourceName, cassandraClientOptions);
+  static CassandraClient createShared(Vertx vertx, String clientName, CassandraClientOptions options) {
+    return new CassandraClientImpl(vertx, clientName, options);
   }
 
   /**
-   * Connect to a Cassandra service.
-   *
-   * @return current Cassandra client instance
-   */
-  @Fluent
-  CassandraClient connect();
-
-  /**
-   * @return whether this Cassandra client instance connected.
+   * @return whether this Cassandra client instance is connected
    */
   boolean isConnected();
-
-  /**
-   * Connect to a Cassandra service.
-   *
-   * @param connectHandler handler called when asynchronous connect call ends
-   * @return current Cassandra client instance
-   */
-  @Fluent
-  CassandraClient connect(Handler<AsyncResult<Void>> connectHandler);
-
-  /**
-   * Connect to a Cassandra service.
-   *
-   * @param keyspace       The name of the keyspace to use for the created connection.
-   * @param connectHandler handler called when asynchronous connect call ends
-   * @return current Cassandra client instance
-   */
-  @Fluent
-  CassandraClient connect(String keyspace, Handler<AsyncResult<Void>> connectHandler);
 
   /**
    * Execute the query and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is fully fetched.
-   * @param query         the query to execute
+   * @param query the query to execute
+   *
    * @return current Cassandra client instance
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
@@ -149,7 +119,8 @@ public interface CassandraClient {
    * Execute the query and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is fully fetched.
-   * @param statement     the statement to execute
+   * @param statement the statement to execute
+   *
    * @return current Cassandra client instance
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
@@ -160,7 +131,8 @@ public interface CassandraClient {
    * Execute the query and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is present, but can be not fully fetched
-   * @param query         the query to execute
+   * @param query the query to execute
+   *
    * @return current Cassandra client instance
    */
   @Fluent
@@ -170,7 +142,8 @@ public interface CassandraClient {
    * Execute the statement and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is present
-   * @param statement         the statement to execute
+   * @param statement the statement to execute
+   *
    * @return current Cassandra client instance
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
@@ -181,7 +154,8 @@ public interface CassandraClient {
    * Prepares the provided query string.
    *
    * @param resultHandler handler called when result of query preparation is present
-   * @param query         the query to prepare
+   * @param query the query to prepare
+   *
    * @return current Cassandra client instance
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
@@ -191,8 +165,9 @@ public interface CassandraClient {
   /**
    * Executes the given SQL <code>SELECT</code> statement which returns the results of the query as a read stream.
    *
-   * @param sql              the SQL to execute. For example <code>SELECT * FROM table ...</code>.
+   * @param sql the SQL to execute. For example <code>SELECT * FROM table ...</code>.
    * @param rowStreamHandler the handler which is called once the operation completes. It will return an instance of {@link CassandraRowStream}.
+   *
    * @return current Cassandra client instance
    */
   @Fluent
@@ -201,8 +176,9 @@ public interface CassandraClient {
   /**
    * Executes the given SQL statement which returns the results of the query as a read stream.
    *
-   * @param statement        the statement to execute.
+   * @param statement the statement to execute.
    * @param rowStreamHandler the handler which is called once the operation completes. It will return an instance of {@link CassandraRowStream}.
+   *
    * @return current Cassandra client instance
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
@@ -210,19 +186,20 @@ public interface CassandraClient {
   CassandraClient queryStream(Statement statement, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler);
 
   /**
-   * Disconnects from the Cassandra service.
+   * Closes this client.
    *
    * @return current Cassandra client instance
    */
   @Fluent
-  CassandraClient disconnect();
+  CassandraClient close();
 
   /**
-   * Disconnects from the Cassandra service.
+   * Closes this client.
    *
-   * @param disconnectHandler handler called when asynchronous disconnect call ends
+   * @param closeHandler handler called when client is closed
+   *
    * @return current Cassandra client instance
    */
   @Fluent
-  CassandraClient disconnect(Handler<AsyncResult<Void>> disconnectHandler);
+  CassandraClient close(Handler<AsyncResult<Void>> closeHandler);
 }

@@ -43,6 +43,7 @@ public class CassandraClientOptions {
   public static final String DEFAULT_HOST = "localhost";
 
   private Cluster.Builder builder;
+  private String keyspace;
 
   /**
    * Default constructor.
@@ -50,6 +51,16 @@ public class CassandraClientOptions {
   public CassandraClientOptions() {
     this(Cluster.builder());
     setPort(DEFAULT_PORT);
+  }
+
+  /**
+   * Copy constructor.
+   */
+  public CassandraClientOptions(CassandraClientOptions other) {
+    this(Cluster.builder());
+    setPort(DEFAULT_PORT);
+    setContactPoints(other.getContactPoints());
+    keyspace = other.keyspace;
   }
 
   /**
@@ -124,5 +135,24 @@ public class CassandraClientOptions {
    */
   public Cluster.Builder dataStaxClusterBuilder() {
     return builder;
+  }
+
+  /**
+   * @return the keyspace to use when creating the Cassandra session
+   */
+  public String getKeyspace() {
+    return keyspace;
+  }
+
+  /**
+   * Set the keyspace to use when creating the Cassandra session. Defaults to {@code null}.
+   *
+   * @param keyspace the keyspace to use when creating the Cassandra session
+   *
+   * @return a reference to this, so the API can be used fluently
+   */
+  public CassandraClientOptions setKeyspace(String keyspace) {
+    this.keyspace = keyspace;
+    return this;
   }
 }
