@@ -15,16 +15,13 @@
  */
 package io.vertx.cassandra.impl;
 
-import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import io.vertx.cassandra.CassandraRowStream;
+import io.vertx.cassandra.ResultSet;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.streams.impl.InboundBuffer;
-
-import java.util.Iterator;
-
-import static io.vertx.cassandra.impl.Util.handleOnContext;
 
 /**
  * @author Pavel Drankou
@@ -32,101 +29,170 @@ import static io.vertx.cassandra.impl.Util.handleOnContext;
  */
 public class CassandraRowStreamImpl implements CassandraRowStream {
 
-  private final ResultSet datastaxResultSet;
-  private final Iterator<com.datastax.driver.core.Row> resultSetIterator;
-  private final InboundBuffer<Row> internalQueue;
-  private final Context context;
+  private enum State {
+    IDLE, STARTED, EXHAUSTED, STOPPED
+  }
 
+  private final Context context;
+  private final ResultSet resultSet;
+  private final InboundBuffer<Row> internalQueue;
+
+  private State state;
+  private int inFlight;
+  private Handler<Row> handler;
   private Handler<Throwable> exceptionHandler;
   private Handler<Void> endHandler;
 
-  public CassandraRowStreamImpl(ResultSet result, Context context) {
-    datastaxResultSet = result;
-    resultSetIterator = result.iterator();
-    internalQueue = new InboundBuffer<Row>(context).drainHandler(v -> fire());
+  public CassandraRowStreamImpl(Context context, ResultSet resultSet) {
     this.context = context;
+    this.resultSet = resultSet;
+    internalQueue = new InboundBuffer<Row>(context)
+      .exceptionHandler(this::handleException)
+      .drainHandler(v -> fetchRow());
+    state = State.IDLE;
   }
 
   @Override
-  public CassandraRowStream exceptionHandler(Handler<Throwable> handler) {
-    exceptionHandler = handler;
-    internalQueue.exceptionHandler(handler);
+  public synchronized CassandraRowStream exceptionHandler(Handler<Throwable> handler) {
+    if (state != State.STOPPED) {
+      exceptionHandler = handler;
+    }
     return this;
   }
 
   @Override
-  public CassandraRowStream handler(Handler<Row> handler) {
-    internalQueue.handler(handler);
-    fire();
+  public synchronized CassandraRowStream handler(Handler<Row> handler) {
+    if (state == State.STOPPED) {
+      return this;
+    }
+    if (handler == null) {
+      stop();
+      if (context != Vertx.currentContext()) {
+        context.runOnContext(v -> handleEnd());
+      } else {
+        handleEnd();
+      }
+    } else {
+      this.handler = handler;
+      internalQueue.handler(this::handleRow);
+      if (state == State.IDLE) {
+        state = State.STARTED;
+        if (context != Vertx.currentContext()) {
+          context.runOnContext(v -> fetchRow());
+        } else {
+          fetchRow();
+        }
+      }
+    }
     return this;
   }
 
   @Override
-  public CassandraRowStream pause() {
-    internalQueue.pause();
+  public synchronized CassandraRowStream pause() {
+    if (state != State.STOPPED) {
+      internalQueue.pause();
+    }
     return this;
   }
 
   @Override
-  public CassandraRowStream resume() {
-    internalQueue.resume();
+  public synchronized CassandraRowStream resume() {
+    if (state != State.STOPPED) {
+      internalQueue.resume();
+    }
     return this;
   }
 
   @Override
   public synchronized CassandraRowStream endHandler(Handler<Void> handler) {
-    endHandler = handler;
-    tryToTriggerEndOfTheStream();
+    if (state != State.STOPPED) {
+      endHandler = handler;
+    }
     return this;
   }
 
   @Override
   public synchronized CassandraRowStream fetch(long l) {
-    internalQueue.fetch(l);
+    if (state != State.STOPPED) {
+      internalQueue.fetch(l);
+    }
     return this;
   }
 
-  private synchronized void fire() {
-    int availableWithoutFetching = datastaxResultSet.getAvailableWithoutFetching();
-    boolean isFetched = datastaxResultSet.isFullyFetched();
-    if (availableWithoutFetching != 0) {
-      for (int i = 0; i < availableWithoutFetching; i++) {
-        if (!internalQueue.write(resultSetIterator.next())) {
-          break;
-        }
-      }
-      if (internalQueue.isWritable()) {
-        fetchAndCallOneMoreTime();
-      }
-    } else if (isFetched) {
-      tryToTriggerEndOfTheStream();
-    } else {
-      fetchAndCallOneMoreTime();
-    }
-  }
-
-  private void fetchAndCallOneMoreTime() {
-    if (datastaxResultSet.isFullyFetched()) {
-      fire();
+  private synchronized void fetchRow() {
+    if (state == State.STOPPED) {
       return;
     }
-    handleOnContext(datastaxResultSet.fetchMoreResults(), context, ar -> {
+    resultSet.one(ar -> {
       if (ar.succeeded()) {
-        fire();
+        handleFetched(ar.result());
       } else {
-        if (exceptionHandler != null) {
-          exceptionHandler.handle(ar.cause());
-        }
-        if (endHandler != null) {
-          endHandler.handle(null);
-        }
+        handleException(ar.cause());
       }
     });
   }
 
-  private void tryToTriggerEndOfTheStream() {
-    if (endHandler != null && datastaxResultSet.isFullyFetched() && !resultSetIterator.hasNext()) {
-      endHandler.handle(null);
+  private synchronized void handleFetched(Row row) {
+    if (state == State.STOPPED) {
+      return;
     }
+    if (row != null) {
+      inFlight++;
+      if (internalQueue.write(row)) {
+        fetchRow();
+      }
+    } else {
+      state = State.EXHAUSTED;
+      if (inFlight == 0) {
+        stop();
+        handleEnd();
+      }
+    }
+  }
+
+  private void handleRow(Row row) {
+    synchronized (this) {
+      if (state == State.STOPPED) {
+        return;
+      }
+      inFlight--;
+    }
+    handler.handle(row);
+    synchronized (this) {
+      if (state == State.EXHAUSTED && inFlight == 0) {
+        stop();
+        handleEnd();
+      }
+    }
+  }
+
+  private void handleException(Throwable cause) {
+    Handler<Throwable> h;
+    synchronized (this) {
+      if (state != State.STOPPED) {
+        stop();
+        h = exceptionHandler;
+      } else {
+        h = null;
+      }
+    }
+    if (h != null) {
+      h.handle(cause);
+    }
+  }
+
+  private synchronized void handleEnd() {
+    Handler<Void> h;
+    synchronized (this) {
+      h = endHandler;
+    }
+    if (h != null) {
+      h.handle(null);
+    }
+  }
+
+  private synchronized void stop() {
+    state = State.STOPPED;
+    internalQueue.handler(null).drainHandler(null);
   }
 }
