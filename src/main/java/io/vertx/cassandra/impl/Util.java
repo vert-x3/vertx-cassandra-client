@@ -24,6 +24,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * @author Pavel Drankou
@@ -35,13 +36,21 @@ class Util {
    * Invokes the {@code handler} on a given {@code context} when the {@code listenableFuture} succeeds or fails.
    */
   static <T> void handleOnContext(ListenableFuture<T> listenableFuture, Context context, Handler<AsyncResult<T>> handler) {
+    handleOnContext(listenableFuture, context, Function.identity(), handler);
+  }
+
+  /**
+   * Invokes the {@code handler} on a given {@code context} when the {@code listenableFuture} succeeds or fails.
+   */
+  static <I, O> void handleOnContext(ListenableFuture<I> listenableFuture, Context context, Function<I, O> converter, Handler<AsyncResult<O>> handler) {
     Objects.requireNonNull(listenableFuture, "listenableFuture must not be null");
     Objects.requireNonNull(context, "context must not be null");
+    Objects.requireNonNull(converter, "converter must not be null");
     if (handler != null) {
-      Futures.addCallback(listenableFuture, new FutureCallback<T>() {
+      Futures.addCallback(listenableFuture, new FutureCallback<I>() {
         @Override
-        public void onSuccess(T result) {
-          context.runOnContext(v -> handler.handle(Future.succeededFuture(result)));
+        public void onSuccess(I result) {
+          context.runOnContext(v -> handler.handle(Future.succeededFuture(converter.apply(result))));
         }
 
         @Override

@@ -57,26 +57,16 @@ public class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSet fetchMoreResults(Handler<AsyncResult<Void>> handler) {
-    handleOnContext(resultSet.fetchMoreResults(), vertx.getOrCreateContext(), ar -> {
-      if (ar.succeeded()) {
-        handler.handle(Future.succeededFuture());
-      } else {
-        handler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
+    Context context = vertx.getOrCreateContext();
+    handleOnContext(resultSet.fetchMoreResults(), context, ignore -> null, handler);
     return this;
   }
 
   @Override
   public ResultSet one(Handler<AsyncResult<Row>> handler) {
     if (getAvailableWithoutFetching() == 0 && !resultSet.isFullyFetched()) {
-      handleOnContext(resultSet.fetchMoreResults(), vertx.getOrCreateContext(), ar -> {
-        if (ar.succeeded()) {
-          handler.handle(Future.succeededFuture(resultSet.one()));
-        } else {
-          handler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
+      Context context = vertx.getOrCreateContext();
+      handleOnContext(resultSet.fetchMoreResults(), context, ignored -> resultSet.one(), handler);
     } else {
       handler.handle(Future.succeededFuture(resultSet.one()));
     }

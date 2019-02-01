@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 
 /**
  * @author Thomas Segismont
@@ -45,7 +46,7 @@ public class UtilTest {
     SettableFuture<String> future = SettableFuture.create();
     Context context = vertx.getOrCreateContext();
     Util.handleOnContext(future, context, testContext.asyncAssertSuccess(value -> {
-      testContext.assertTrue(context == vertx.getOrCreateContext());
+      testContext.assertTrue(context == Vertx.currentContext());
       testContext.assertEquals("foo", value);
     }));
     future.set("foo");
@@ -58,7 +59,7 @@ public class UtilTest {
     Context context = vertx.getOrCreateContext();
     Exception expected = new Exception();
     Util.handleOnContext(future, context, testContext.asyncAssertFailure(throwable -> {
-      testContext.assertTrue(context == vertx.getOrCreateContext());
+      testContext.assertTrue(context == Vertx.currentContext());
       testContext.assertTrue(expected == throwable);
     }));
     future.setException(expected);
@@ -75,5 +76,21 @@ public class UtilTest {
     };
     Context context = vertx.getOrCreateContext();
     Util.handleOnContext(future, context, null);
+  }
+
+  @Test
+  public void testConverterInvokedOnContext(TestContext testContext) {
+    Vertx vertx = rule.vertx();
+    SettableFuture<String> future = SettableFuture.create();
+    Context context = vertx.getOrCreateContext();
+    Function<String, Integer> converter = s -> {
+      testContext.assertTrue(context == Vertx.currentContext());
+      return s.length();
+    };
+    Util.handleOnContext(future, context, converter, testContext.asyncAssertSuccess(value -> {
+      testContext.assertTrue(context == Vertx.currentContext());
+      testContext.assertEquals(3, value);
+    }));
+    future.set("foo");
   }
 }
