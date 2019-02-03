@@ -45,8 +45,8 @@ public class ExecutionTest extends CassandraClientTestBase {
     initializeRandomStringKeyspace(50);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
     SimpleStatement statement = new SimpleStatement(query);
-    // we would like to test that we are able to handle a lot of fetches.
-    // that is why we are setting fetch size here to 1
+    // we would like to test that we are able to handle several fetches.
+    // that is why we are setting a small fetch size
     statement.setFetchSize(3);
     client.executeWithFullFetch(statement, testContext.asyncAssertSuccess(rows -> {
       for (Row row : rows) {
