@@ -1,92 +1,46 @@
 /*
- * Copyright 2018 The Vert.x Community.
+ * Copyright 2019 Red Hat, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Red Hat licenses this file to you under the Apache License, version 2.0
+ * (the "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at:
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  */
 package io.vertx.cassandra;
 
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
 
 @RunWith(VertxUnitRunner.class)
-public class ConnectionTest extends CassandraServiceBase {
-
-  private static final Logger log = LoggerFactory.getLogger(ConnectionTest.class);
+public class ConnectionTest extends CassandraClientTestBase {
 
   private static final String IP_HOST_WITHOUT_CASSANDRA = "100.100.100.100";
 
   @Test
-  public void connectDisconnectTest(TestContext context) {
-    CassandraClientOptions options = new CassandraClientOptions()
-      .addContactPoint(HOST)
-      .setPort(NATIVE_TRANSPORT_PORT);
-    connectAndDisconnect(context, options);
+  public void testDefaultHost(TestContext testContext) {
+    getCassandraReleaseVersion(client, testContext.asyncAssertSuccess(version -> {
+      testContext.assertTrue(version.matches("\\d+\\.\\d+\\.\\d"));
+    }));
   }
 
   @Test
-  public void defaultContactPointShouldWorks(TestContext context) {
-    CassandraClientOptions options = new CassandraClientOptions()
-      .setPort(NATIVE_TRANSPORT_PORT);
-    connectAndDisconnect(context, options);
-  }
-
-  @Test
-  public void exceptionShouldNotBeThrownIfNoHostSpecified(TestContext context) {
-    CassandraClientOptions options = new CassandraClientOptions()
-      .setPort(NATIVE_TRANSPORT_PORT)
-      .addContactPoint(IP_HOST_WITHOUT_CASSANDRA);
-    CassandraClient client = CassandraClient.createNonShared(vertx, options);
-    Async async = context.async();
-    try {
-      client.connect(connectResult -> {
-        if (connectResult.succeeded()) {
-          context.fail("Successful connect to " + IP_HOST_WITHOUT_CASSANDRA + " was not expected");
-        } else {
-          async.countDown();
-        }
-      });
-    } catch (Exception e) {
-      context.fail("CassandraClient#connect should not throw any exceptions");
-    }
-  }
-
-
-  private void connectAndDisconnect(TestContext context, CassandraClientOptions options) {
-    CassandraClient cassandraClient = CassandraClient.createNonShared(
-      vertx,
-      options
-    );
-    Async async = context.async(2);
-    cassandraClient.connect("system", connectEvent -> {
-      if (connectEvent.succeeded()) {
-        log.info("successfully connected");
-        async.countDown();
-        cassandraClient.disconnect(disconnectEvent -> {
-          if (disconnectEvent.succeeded()) {
-            log.info("successfully disconnected");
-            async.countDown();
-          } else {
-            context.fail();
-          }
-        });
-      } else {
-        context.fail();
-      }
-    });
+  public void testFailIfNoHostAvailable(TestContext testContext) {
+    client.close();
+    CassandraClientOptions options = createClientOptions()
+      .setContactPoints(Collections.singletonList(IP_HOST_WITHOUT_CASSANDRA));
+    client = CassandraClient.createNonShared(vertx, options);
+    client.executeWithFullFetch("select release_version from system.local", testContext.asyncAssertFailure());
   }
 }
+

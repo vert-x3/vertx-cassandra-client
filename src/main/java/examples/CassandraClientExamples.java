@@ -35,29 +35,23 @@ public class CassandraClientExamples {
       .addContactPoint("node1.address")
       .addContactPoint("node2.address")
       .addContactPoint("node3.address");
-    CassandraClient client = CassandraClient.createShared(vertx, options);
+    CassandraClient client = CassandraClient.createNonShared(vertx, options);
   }
 
-  public void connecting(CassandraClient cassandraClient) {
-    cassandraClient.connect(connect -> {
-      if (connect.succeeded()) {
-        System.out.println("Just connected");
-      } else {
-        System.out.println("Unable to connect");
-        connect.cause().printStackTrace();
-      }
-    });
+  public void portAndKeyspace(Vertx vertx) {
+    CassandraClientOptions options = new CassandraClientOptions()
+      .setPort(9142)
+      .setKeyspace("my_keyspace");
+    CassandraClient client = CassandraClient.createNonShared(vertx, options);
   }
 
-  public void disconnecting(CassandraClient cassandraClient) {
-    cassandraClient.disconnect(disconnect -> {
-      if (disconnect.succeeded()) {
-        System.out.println("Just disconnected");
-      } else {
-        System.out.println("Unable to disconnect");
-        disconnect.cause().printStackTrace();
-      }
-    });
+  public void sharedClient(Vertx vertx) {
+    CassandraClientOptions options = new CassandraClientOptions()
+      .addContactPoint("node1.address")
+      .addContactPoint("node2.address")
+      .addContactPoint("node3.address")
+      .setKeyspace("my_keyspace");
+    CassandraClient client = CassandraClient.createShared(vertx, "sharedClientName", options);
   }
 
   public void lowLevelQuerying(CassandraClient cassandraClient) {
