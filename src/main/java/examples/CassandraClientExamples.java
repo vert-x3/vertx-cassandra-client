@@ -19,8 +19,6 @@ import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.SimpleStatement;
-import com.datastax.driver.mapping.annotations.PartitionKey;
-import com.datastax.driver.mapping.annotations.Table;
 import io.vertx.cassandra.*;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerResponse;
@@ -187,20 +185,9 @@ public class CassandraClientExamples {
     });
   }
 
-  @Table(keyspace = "test", name = "names")
   public class MappedClass {
-    @PartitionKey
-    private String name;
-
     public MappedClass(String name) {
-      this.name = name;
     }
-
-    MappedClass() {
-      // Required for mapping
-    }
-
-    // getters / setters
   }
 
   public void objectMapper(CassandraClient cassandraClient) {
