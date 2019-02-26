@@ -28,6 +28,7 @@ import io.vertx.core.Vertx;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collector;
 
 /**
  * Eclipse Vert.x Cassandra client.
@@ -139,6 +140,20 @@ public interface CassandraClient {
   CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler);
 
   /**
+   * Execute a query and produce a result by applying a collector to result set rows.
+   *
+   * @param query the query to execute
+   * @param collector the collector to use to produce a result
+   * @param resultHandler the handler called when result of execution and collection is present
+   * @param <R> the result type
+   *
+   * @return current Cassandra client instance
+   */
+  @GenIgnore
+  @Fluent
+  <R> CassandraClient execute(String query, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> resultHandler);
+
+  /**
    * Execute the statement and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is present
@@ -149,6 +164,20 @@ public interface CassandraClient {
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
   CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler);
+
+  /**
+   * Execute a statement and produce a result by applying a collector to result set rows.
+   *
+   * @param statement the statement to execute
+   * @param collector the collector to use to produce a result
+   * @param resultHandler the handler called when result of execution and collection is present
+   * @param <R> the result type
+   *
+   * @return current Cassandra client instance
+   */
+  @GenIgnore
+  @Fluent
+  <R> CassandraClient execute(Statement statement, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> resultHandler);
 
   /**
    * Prepares the provided query string.

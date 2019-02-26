@@ -107,6 +107,15 @@ This API should be used when you need to process all the rows at the same time.
 
 CAUTION: Use bulk fetching only if you can afford to load the full result set in memory.
 
+=== Collector queries
+
+You can use Java collectors with the query API:
+
+[source,$lang]
+----
+{@link examples.CassandraClientExamples#executeAndCollect}
+----
+
 ==== Low level fetch
 
 This API provides greater control over loading at the expense of being a bit lower-level than the streaming and bulk fetching APIs.
