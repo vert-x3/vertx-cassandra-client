@@ -28,6 +28,9 @@ import io.vertx.core.impl.VertxInternal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.stream.Collector;
 
 import static io.vertx.cassandra.impl.Util.handleOnContext;
 
@@ -96,6 +99,11 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
+  public <R> CassandraClient execute(String query, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> asyncResultHandler) {
+    return execute(new SimpleStatement(query), collector, asyncResultHandler);
+  }
+
+  @Override
   public CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler) {
     ContextInternal context = vertx.getOrCreateContext();
     getSession(context, sess -> {
@@ -106,6 +114,32 @@ public class CassandraClientImpl implements CassandraClient {
       }
     });
     return this;
+  }
+
+  @Override
+  public <R> CassandraClient execute(Statement statement, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> asyncResultHandler) {
+    executeAndCollect(statement, collector, asyncResultHandler);
+    return this;
+  }
+
+  private <C, R> void executeAndCollect(Statement statement, Collector<Row, C, R> collector, Handler<AsyncResult<R>> asyncResultHandler) {
+    Future<CassandraRowStream> cassandraRowStreamFuture = Future.future();
+    queryStream(statement, cassandraRowStreamFuture);
+    C container = collector.supplier().get();
+    BiConsumer<C, Row> accumulator = collector.accumulator();
+    Function<C, R> finisher = collector.finisher();
+    cassandraRowStreamFuture.compose(cassandraRowStream -> {
+      Future<R> resultFuture = Future.future();
+      cassandraRowStream.endHandler(end -> {
+        R result = finisher.apply(container);
+        resultFuture.complete(result);
+      });
+      cassandraRowStream.handler(row -> {
+        accumulator.accept(container, row);
+      });
+      cassandraRowStream.exceptionHandler(resultFuture::fail);
+      return resultFuture;
+    }).setHandler(asyncResultHandler);
   }
 
   @Override
