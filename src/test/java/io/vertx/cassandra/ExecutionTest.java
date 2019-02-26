@@ -15,6 +15,7 @@
  */
 package io.vertx.cassandra;
 
+import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
@@ -22,6 +23,10 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Test Casssandra client on how it executes queries.
@@ -53,6 +58,31 @@ public class ExecutionTest extends CassandraClientTestBase {
         String selectedString = row.getString(0);
         testContext.assertNotNull(selectedString);
       }
+    }));
+  }
+
+  @Test
+  public void executeWithCollector(TestContext testContext) {
+    initializeNamesKeyspace();
+    String prefix = "(";
+    String suffix = ")";
+    String delimiter = ",";
+    Collector<Row, ?, String> collector = Collectors.mapping(
+      row -> row.getString(0),
+      Collectors.joining(delimiter, prefix, suffix)
+    );
+    String insert = "INSERT INTO names.names_by_first_letter (first_letter, name) VALUES (?, ?)";
+    client.prepare(insert, testContext.asyncAssertSuccess(prepared -> {
+      BatchStatement batch = new BatchStatement();
+      Stream.of("Paul", "Paulo", "Pavel")
+        .map(name -> prepared.bind(name.substring(0, 1), name))
+        .forEach(boundStatement -> batch.add(boundStatement));
+      client.execute(batch, testContext.asyncAssertSuccess(exec -> {
+        String query = "select name from names.names_by_first_letter where first_letter = 'P'";
+        client.execute(query, collector, testContext.asyncAssertSuccess(result -> {
+          testContext.assertEquals(result, "(Paul,Paulo,Pavel)");
+        }));
+      }));
     }));
   }
 
