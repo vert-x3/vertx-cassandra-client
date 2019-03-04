@@ -74,6 +74,35 @@ public class ResultSetImpl implements ResultSet {
   }
 
   @Override
+  public ResultSet few(int amount, Handler<AsyncResult<List<Row>>> handler) {
+    loadFew(amount, handler);
+    return this;
+  }
+
+  private void loadFew(int amount, Handler<AsyncResult<List<Row>>> handler) {
+    if (isFullyFetched()) {
+      if (getAvailableWithoutFetching() >= amount) {
+        List<Row> rows = getRows(amount);
+        handler.handle(Future.succeededFuture(rows));
+      } else {
+        int amountToFetch = getAvailableWithoutFetching();
+        List<Row> rows = getRows(amountToFetch);
+        handler.handle(Future.succeededFuture(rows));
+      }
+    } else if (!isFullyFetched()) {
+      fetchMoreResults(voidAsyncResult -> loadFew(amount, handler));
+    }
+  }
+
+  private List<Row> getRows(int amountToFetch) {
+    List<Row> rows = new ArrayList<>(amountToFetch);
+    for (int i = 0; i < amountToFetch; i++) {
+      rows.add(resultSet.one());
+    }
+    return rows;
+  }
+
+  @Override
   public ResultSet all(Handler<AsyncResult<List<Row>>> handler) {
     loadMore(vertx.getOrCreateContext(), Collections.emptyList(), handler);
     return this;

@@ -24,6 +24,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,6 +59,24 @@ public class ExecutionTest extends CassandraClientTestBase {
         String selectedString = row.getString(0);
         testContext.assertNotNull(selectedString);
       }
+    }));
+  }
+
+  @Test
+  public void fetchFewRows(TestContext testContext) {
+    int amountToFetch = 20;
+    initializeRandomStringKeyspace(amountToFetch * 2);
+    String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
+    SimpleStatement statement = new SimpleStatement(query);
+    client.execute(statement, testContext.asyncAssertSuccess(rows -> {
+      rows.few(amountToFetch, listAsyncResult -> {
+        if (listAsyncResult.succeeded()) {
+          List<Row> result = listAsyncResult.result();
+          testContext.assertEquals(amountToFetch, result.size());
+        } else {
+          testContext.fail();
+        }
+      });
     }));
   }
 

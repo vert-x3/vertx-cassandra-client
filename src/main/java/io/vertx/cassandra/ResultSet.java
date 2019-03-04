@@ -66,6 +66,16 @@ public interface ResultSet {
   ResultSet one(Handler<AsyncResult<@Nullable Row>> handler);
 
   /**
+   * Fetch a specific amount of rows and notify via a handler.
+   *
+   * @param handler the handler
+   * @param amount the amount
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  @Fluent
+  ResultSet few(int amount, Handler<AsyncResult<List<Row>>> handler);
+
+  /**
    * @param handler handler called when all the rows is fetched
    * @see com.datastax.driver.core.ResultSet#all
    */
