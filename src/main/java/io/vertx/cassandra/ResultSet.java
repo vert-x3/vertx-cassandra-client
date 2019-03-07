@@ -73,7 +73,7 @@ public interface ResultSet {
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
-  ResultSet few(int amount, Handler<AsyncResult<List<Row>>> handler);
+  ResultSet several(int amount, Handler<AsyncResult<List<Row>>> handler);
 
   /**
    * @param handler handler called when all the rows is fetched

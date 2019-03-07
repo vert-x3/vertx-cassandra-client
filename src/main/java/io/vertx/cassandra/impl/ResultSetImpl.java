@@ -74,7 +74,7 @@ public class ResultSetImpl implements ResultSet {
   }
 
   @Override
-  public ResultSet few(int amount, Handler<AsyncResult<List<Row>>> handler) {
+  public ResultSet several(int amount, Handler<AsyncResult<List<Row>>> handler) {
     loadFew(amount, handler);
     return this;
   }

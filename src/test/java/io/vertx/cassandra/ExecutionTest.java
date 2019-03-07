@@ -69,7 +69,7 @@ public class ExecutionTest extends CassandraClientTestBase {
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
     SimpleStatement statement = new SimpleStatement(query);
     client.execute(statement, testContext.asyncAssertSuccess(rows -> {
-      rows.few(amountToFetch, listAsyncResult -> {
+      rows.several(amountToFetch, listAsyncResult -> {
         if (listAsyncResult.succeeded()) {
           List<Row> result = listAsyncResult.result();
           testContext.assertEquals(amountToFetch, result.size());
