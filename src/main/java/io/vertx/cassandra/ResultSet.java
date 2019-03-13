@@ -72,7 +72,7 @@ public interface ResultSet {
    * the {@code handler} will be called with a successful result encompassing just the remaining rows.
    *
    * <p>
-   * The method should be used concurrently with others like {@link #one(Handler)} or {@link #all(Handler)}.
+   * The method should <strong>not</strong> be used concurrently with others like {@link #one(Handler)} or {@link #all(Handler)}.
    * This may lead to unexpected result.
    *
    * @param handler the handler
