@@ -85,8 +85,7 @@ public class ResultSetImpl implements ResultSet {
       if (availableWithoutFetching > 0 && availableWithoutFetching < remainedToAdd) {
         List<Row> rows = getRows(availableWithoutFetching);
         resultedList.addAll(rows);
-        remainedToAdd -= rows.size();
-        loadSeveral(remainedToAdd, resultedList, handler);
+        loadSeveral(remainedToAdd - rows.size(), resultedList, handler);
       } else if (availableWithoutFetching >= remainedToAdd) {
         List<Row> rows = getRows(remainedToAdd);
         resultedList.addAll(rows);
@@ -95,10 +94,9 @@ public class ResultSetImpl implements ResultSet {
         if (isFullyFetched()) {
           handler.handle(Future.succeededFuture(resultedList));
         } else {
-          final int finalRemainedToAdd = remainedToAdd;
           fetchMoreResults(voidAsyncResult -> {
             if (voidAsyncResult.succeeded()) {
-              loadSeveral(finalRemainedToAdd, resultedList, handler);
+              loadSeveral(remainedToAdd, resultedList, handler);
             } else {
               handler.handle(Future.failedFuture(voidAsyncResult.cause()));
             }
