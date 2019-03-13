@@ -18,11 +18,7 @@ package io.vertx.cassandra.impl;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.Row;
 import io.vertx.cassandra.ResultSet;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -100,8 +96,7 @@ public class ResultSetImpl implements ResultSet {
           handler.handle(Future.succeededFuture(resultedList));
         } else {
           final int finalRemainedToAdd = remainedToAdd;
-          fetchMoreResults(voidAsyncResult ->
-          {
+          fetchMoreResults(voidAsyncResult -> {
             if (voidAsyncResult.succeeded()) {
               loadSeveral(finalRemainedToAdd, resultedList, handler);
             } else {
