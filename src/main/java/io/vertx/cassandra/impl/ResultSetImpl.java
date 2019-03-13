@@ -18,7 +18,11 @@ package io.vertx.cassandra.impl;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.Row;
 import io.vertx.cassandra.ResultSet;
-import io.vertx.core.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,29 +79,44 @@ public class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSet several(int amount, Handler<AsyncResult<List<Row>>> handler) {
-    loadFew(amount, handler);
+    loadSeveral(amount, new ArrayList<>(amount), handler);
     return this;
   }
 
-  private void loadFew(int amount, Handler<AsyncResult<List<Row>>> handler) {
-    if (isFullyFetched()) {
-      if (getAvailableWithoutFetching() >= amount) {
-        List<Row> rows = getRows(amount);
-        handler.handle(Future.succeededFuture(rows));
-      } else {
-        int amountToFetch = getAvailableWithoutFetching();
-        List<Row> rows = getRows(amountToFetch);
-        handler.handle(Future.succeededFuture(rows));
+  private void loadSeveral(int remainedToAdd, List<Row> resultedList, Handler<AsyncResult<List<Row>>> handler) {
+    int availableWithoutFetching = getAvailableWithoutFetching();
+    if (remainedToAdd > 0) {
+      if (availableWithoutFetching > 0 && availableWithoutFetching < remainedToAdd) {
+        List<Row> rows = getRows(availableWithoutFetching);
+        resultedList.addAll(rows);
+        remainedToAdd -= rows.size();
+        loadSeveral(remainedToAdd, resultedList, handler);
+      } else if (availableWithoutFetching >= remainedToAdd) {
+        List<Row> rows = getRows(remainedToAdd);
+        resultedList.addAll(rows);
+        handler.handle(Future.succeededFuture(resultedList));
+      } else if (availableWithoutFetching == 0) {
+        if (isFullyFetched()) {
+          handler.handle(Future.succeededFuture(resultedList));
+        } else {
+          final int finalRemainedToAdd = remainedToAdd;
+          fetchMoreResults(voidAsyncResult -> loadSeveral(finalRemainedToAdd, resultedList, handler));
+        }
       }
-    } else if (!isFullyFetched()) {
-      fetchMoreResults(voidAsyncResult -> loadFew(amount, handler));
+    } else {
+      handler.handle(Future.succeededFuture(resultedList));
     }
   }
 
   private List<Row> getRows(int amountToFetch) {
     List<Row> rows = new ArrayList<>(amountToFetch);
     for (int i = 0; i < amountToFetch; i++) {
-      rows.add(resultSet.one());
+      Row row = resultSet.one();
+      if (row != null) {
+        rows.add(row);
+      } else {
+        break;
+      }
     }
     return rows;
   }
