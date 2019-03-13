@@ -67,6 +67,13 @@ public interface ResultSet {
 
   /**
    * Fetch a specific amount of rows and notify via a handler.
+   * <p>
+   * If remained amount of rows in a result set is less then desired amount of rows to fetch,
+   * a handler will be called with remained amount of rows.
+   *
+   * <p>
+   * The method should be used concurrently with others like {@link #one(Handler)} or {@link #all(Handler)}.
+   * This may lead to unexpected result.
    *
    * @param handler the handler
    * @param amount the amount
