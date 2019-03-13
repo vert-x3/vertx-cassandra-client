@@ -58,6 +58,9 @@ public interface ResultSet {
   ResultSet fetchMoreResults(Handler<AsyncResult<Void>> handler);
 
   /**
+   * The method should <strong>not</strong> be used concurrently with others like {@link #several(int, Handler)} or {@link #all(Handler)}.
+   * This may lead to unexpected result.
+   *
    * @param handler handler called when one row is fetched
    * @see com.datastax.driver.core.ResultSet#one
    */
@@ -83,6 +86,9 @@ public interface ResultSet {
   ResultSet several(int amount, Handler<AsyncResult<List<Row>>> handler);
 
   /**
+   * The method should <strong>not</strong> be used concurrently with others like {@link #several(int, Handler)} or {@link #one(Handler)}.
+   * This may lead to unexpected result.
+   *
    * @param handler handler called when all the rows is fetched
    * @see com.datastax.driver.core.ResultSet#all
    */
