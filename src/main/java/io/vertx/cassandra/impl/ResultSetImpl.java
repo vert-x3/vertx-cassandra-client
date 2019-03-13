@@ -100,7 +100,14 @@ public class ResultSetImpl implements ResultSet {
           handler.handle(Future.succeededFuture(resultedList));
         } else {
           final int finalRemainedToAdd = remainedToAdd;
-          fetchMoreResults(voidAsyncResult -> loadSeveral(finalRemainedToAdd, resultedList, handler));
+          fetchMoreResults(voidAsyncResult ->
+          {
+            if (voidAsyncResult.succeeded()) {
+              loadSeveral(finalRemainedToAdd, resultedList, handler);
+            } else {
+              handler.handle(Future.failedFuture(voidAsyncResult.cause()));
+            }
+          });
         }
       }
     } else {

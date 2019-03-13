@@ -63,18 +63,20 @@ public class ExecutionTest extends CassandraClientTestBase {
   }
 
   @Test
-  public void fetchFewRows(TestContext testContext) {
+  public void fetchSeveralRows(TestContext testContext) {
     int amountToFetch = 20;
-    initializeRandomStringKeyspace(amountToFetch * 2);
+    initializeRandomStringKeyspace(amountToFetch * 10);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
     SimpleStatement statement = new SimpleStatement(query);
+    statement.setFetchSize(amountToFetch);
     client.execute(statement, testContext.asyncAssertSuccess(rows -> {
       rows.several(amountToFetch, listAsyncResult -> {
         if (listAsyncResult.succeeded()) {
           List<Row> result = listAsyncResult.result();
           testContext.assertEquals(amountToFetch, result.size());
+          testContext.assertFalse(rows.isFullyFetched());
         } else {
-          testContext.fail();
+          testContext.fail(listAsyncResult.cause());
         }
       });
     }));
