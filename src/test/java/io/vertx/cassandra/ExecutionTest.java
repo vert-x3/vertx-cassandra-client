@@ -63,7 +63,7 @@ public class ExecutionTest extends CassandraClientTestBase {
   }
 
   @Test
-  public void fetchSeveralRows(TestContext testContext) {
+  public void fetchSeveralRowsWithoutFetchingAllOfThem(TestContext testContext) {
     int amountToFetch = 20;
     initializeRandomStringKeyspace(amountToFetch * 10);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
@@ -79,6 +79,40 @@ public class ExecutionTest extends CassandraClientTestBase {
           testContext.fail(listAsyncResult.cause());
         }
       });
+    }));
+  }
+
+  @Test
+  public void fetchSeveralRowsWhenAllInMemory(TestContext testContext) {
+    int severalRows = 20;
+    int resultedSetSize = severalRows * 10;
+    initializeRandomStringKeyspace(resultedSetSize);
+    String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
+    SimpleStatement statement = new SimpleStatement(query);
+    statement.setFetchSize(resultedSetSize);
+    client.execute(statement, testContext.asyncAssertSuccess(rows -> {
+      rows.fetchMoreResults(testContext.asyncAssertSuccess(voidAsyncResult -> {
+        testContext.assertTrue(rows.isFullyFetched());
+        rows.several(severalRows, testContext.asyncAssertSuccess(result -> {
+          testContext.assertEquals(severalRows, result.size());
+        }));
+      }));
+    }));
+  }
+
+  @Test
+  public void fetchSeveralRowsWhenResultedSetContainsLess(TestContext testContext) {
+    int severalRows = 20;
+    int resultedSetSize = 1;
+    initializeRandomStringKeyspace(resultedSetSize);
+    String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
+    SimpleStatement statement = new SimpleStatement(query);
+    client.execute(statement, testContext.asyncAssertSuccess(rows -> {
+        testContext.assertTrue(rows.isFullyFetched());
+        rows.several(severalRows, testContext.asyncAssertSuccess(result -> {
+          testContext.assertTrue(rows.isExhausted());
+          testContext.assertEquals(resultedSetSize, result.size());
+      }));
     }));
   }
 
