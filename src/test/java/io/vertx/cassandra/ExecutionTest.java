@@ -24,6 +24,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,6 +59,60 @@ public class ExecutionTest extends CassandraClientTestBase {
         String selectedString = row.getString(0);
         testContext.assertNotNull(selectedString);
       }
+    }));
+  }
+
+  @Test
+  public void fetchSeveralRowsWithoutFetchingAllOfThem(TestContext testContext) {
+    int amountToFetch = 20;
+    initializeRandomStringKeyspace(amountToFetch * 10);
+    String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
+    SimpleStatement statement = new SimpleStatement(query);
+    statement.setFetchSize(amountToFetch);
+    client.execute(statement, testContext.asyncAssertSuccess(rows -> {
+      rows.several(amountToFetch, listAsyncResult -> {
+        if (listAsyncResult.succeeded()) {
+          List<Row> result = listAsyncResult.result();
+          testContext.assertEquals(amountToFetch, result.size());
+          testContext.assertFalse(rows.isFullyFetched());
+        } else {
+          testContext.fail(listAsyncResult.cause());
+        }
+      });
+    }));
+  }
+
+  @Test
+  public void fetchSeveralRowsWhenAllInMemory(TestContext testContext) {
+    int severalRows = 20;
+    int resultedSetSize = severalRows * 10;
+    initializeRandomStringKeyspace(resultedSetSize);
+    String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
+    SimpleStatement statement = new SimpleStatement(query);
+    statement.setFetchSize(resultedSetSize);
+    client.execute(statement, testContext.asyncAssertSuccess(rows -> {
+      rows.fetchMoreResults(testContext.asyncAssertSuccess(voidAsyncResult -> {
+        testContext.assertTrue(rows.isFullyFetched());
+        rows.several(severalRows, testContext.asyncAssertSuccess(result -> {
+          testContext.assertEquals(severalRows, result.size());
+        }));
+      }));
+    }));
+  }
+
+  @Test
+  public void fetchSeveralRowsWhenResultedSetContainsLess(TestContext testContext) {
+    int severalRows = 20;
+    int resultedSetSize = 1;
+    initializeRandomStringKeyspace(resultedSetSize);
+    String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
+    SimpleStatement statement = new SimpleStatement(query);
+    client.execute(statement, testContext.asyncAssertSuccess(rows -> {
+        testContext.assertTrue(rows.isFullyFetched());
+        rows.several(severalRows, testContext.asyncAssertSuccess(result -> {
+          testContext.assertTrue(rows.isExhausted());
+          testContext.assertEquals(resultedSetSize, result.size());
+      }));
     }));
   }
 
