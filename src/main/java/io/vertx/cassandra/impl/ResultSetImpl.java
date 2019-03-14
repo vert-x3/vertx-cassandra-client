@@ -74,6 +74,54 @@ public class ResultSetImpl implements ResultSet {
   }
 
   @Override
+  public ResultSet several(int amount, Handler<AsyncResult<List<Row>>> handler) {
+    loadSeveral(amount, new ArrayList<>(amount), handler);
+    return this;
+  }
+
+  private void loadSeveral(int remainedToAdd, List<Row> resultedList, Handler<AsyncResult<List<Row>>> handler) {
+    int availableWithoutFetching = getAvailableWithoutFetching();
+    if (remainedToAdd > 0) {
+      if (availableWithoutFetching > 0 && availableWithoutFetching < remainedToAdd) {
+        List<Row> rows = getRows(availableWithoutFetching);
+        resultedList.addAll(rows);
+        loadSeveral(remainedToAdd - rows.size(), resultedList, handler);
+      } else if (availableWithoutFetching >= remainedToAdd) {
+        List<Row> rows = getRows(remainedToAdd);
+        resultedList.addAll(rows);
+        handler.handle(Future.succeededFuture(resultedList));
+      } else if (availableWithoutFetching == 0) {
+        if (isFullyFetched()) {
+          handler.handle(Future.succeededFuture(resultedList));
+        } else {
+          fetchMoreResults(voidAsyncResult -> {
+            if (voidAsyncResult.succeeded()) {
+              loadSeveral(remainedToAdd, resultedList, handler);
+            } else {
+              handler.handle(Future.failedFuture(voidAsyncResult.cause()));
+            }
+          });
+        }
+      }
+    } else {
+      handler.handle(Future.succeededFuture(resultedList));
+    }
+  }
+
+  private List<Row> getRows(int amountToFetch) {
+    List<Row> rows = new ArrayList<>(amountToFetch);
+    for (int i = 0; i < amountToFetch; i++) {
+      Row row = resultSet.one();
+      if (row != null) {
+        rows.add(row);
+      } else {
+        break;
+      }
+    }
+    return rows;
+  }
+
+  @Override
   public ResultSet all(Handler<AsyncResult<List<Row>>> handler) {
     loadMore(vertx.getOrCreateContext(), Collections.emptyList(), handler);
     return this;
