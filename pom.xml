@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -10,10 +9,10 @@
   </parent>
 
   <artifactId>vertx-cassandra-client</artifactId>
-  <version>3.7.0-SNAPSHOT</version>
+  <version>3.7.0</version>
 
   <properties>
-    <stack.version>3.7.0-SNAPSHOT</stack.version>
+    <stack.version>3.7.0</stack.version>
     <datastax-driver.minor.version>3.5</datastax-driver.minor.version>
     <datastax-driver.version>${datastax-driver.minor.version}.0</datastax-driver.version>
     <junit.version>4.12</junit.version>
