@@ -9,10 +9,10 @@
   </parent>
 
   <artifactId>vertx-cassandra-client</artifactId>
-  <version>3.7.1</version>
+  <version>3.7.2-SNAPSHOT</version>
 
   <properties>
-    <stack.version>3.7.1</stack.version>
+    <stack.version>3.7.2-SNAPSHOT</stack.version>
     <datastax-driver.minor.version>3.5</datastax-driver.minor.version>
     <datastax-driver.version>${datastax-driver.minor.version}.0</datastax-driver.version>
     <junit.version>4.12</junit.version>
