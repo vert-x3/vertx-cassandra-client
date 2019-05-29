@@ -123,22 +123,22 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   private <C, R> void executeAndCollect(Statement statement, Collector<Row, C, R> collector, Handler<AsyncResult<R>> asyncResultHandler) {
-    Future<CassandraRowStream> cassandraRowStreamFuture = Future.future();
-    queryStream(statement, cassandraRowStreamFuture);
+    Promise<CassandraRowStream> cassandraRowStreamPromise = Promise.promise();
+    queryStream(statement, cassandraRowStreamPromise);
     C container = collector.supplier().get();
     BiConsumer<C, Row> accumulator = collector.accumulator();
     Function<C, R> finisher = collector.finisher();
-    cassandraRowStreamFuture.compose(cassandraRowStream -> {
-      Future<R> resultFuture = Future.future();
+    cassandraRowStreamPromise.future().compose(cassandraRowStream -> {
+      Promise<R> resultPromise = Promise.promise();
       cassandraRowStream.endHandler(end -> {
         R result = finisher.apply(container);
-        resultFuture.complete(result);
+        resultPromise.complete(result);
       });
       cassandraRowStream.handler(row -> {
         accumulator.accept(container, row);
       });
-      cassandraRowStream.exceptionHandler(resultFuture::fail);
-      return resultFuture;
+      cassandraRowStream.exceptionHandler(resultPromise::fail);
+      return resultPromise.future();
     }).setHandler(asyncResultHandler);
   }
 
@@ -223,7 +223,7 @@ public class CassandraClientImpl implements CassandraClient {
     }
   }
 
-  private static void connect(Future<Session> future, Map<String, SessionHolder> holders, String clientName, CassandraClientOptions options) {
+  private static void connect(Promise<Session> future, Map<String, SessionHolder> holders, String clientName, CassandraClientOptions options) {
     SessionHolder current = holders.get(clientName);
     if (current.session != null) {
       future.complete(current.session);
