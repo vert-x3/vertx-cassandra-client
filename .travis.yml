@@ -12,9 +12,9 @@ before_cache:
 jobs:
   include:
   - stage: test
-    name: "Unit tests - OracleJDK 8"
+    name: "Unit tests - OpenJDK 8"
     script: mvn -B verify
-    jdk: oraclejdk8
+    jdk: openjdk8
   - name: "Compile - OpenJDK 11"
     if: type != pull_request
     script: mvn -B compile
