@@ -17,7 +17,7 @@
 package io.vertx.cassandra;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
@@ -71,7 +71,7 @@ public class SharedTest extends CassandraClientTestBase {
     }
 
     @Override
-    public void stop(Future<Void> stopFuture) {
+    public void stop(Promise<Void> stopFuture) {
       if (closeOnStop) {
         client.close(stopFuture);
       } else {

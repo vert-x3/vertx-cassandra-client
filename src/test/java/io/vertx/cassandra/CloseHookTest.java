@@ -17,7 +17,7 @@
 package io.vertx.cassandra;
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
@@ -76,7 +76,7 @@ public class CloseHookTest extends CassandraClientTestBase {
     }
 
     @Override
-    public void start(Future<Void> startFuture) {
+    public void start(Promise<Void> startFuture) {
       client = CassandraClient.createShared(vertx, TEST_CLIENT_NAME, options);
       getCassandraReleaseVersion(client, ar -> {
         if (ar.succeeded()) {
@@ -88,7 +88,7 @@ public class CloseHookTest extends CassandraClientTestBase {
     }
 
     @Override
-    public void stop(Future<Void> stopFuture) throws Exception {
+    public void stop(Promise<Void> stopFuture) throws Exception {
       if (closeClientOnStop && client != null) {
         client.close(stopFuture);
       } else {
