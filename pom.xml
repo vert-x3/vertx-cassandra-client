@@ -13,6 +13,9 @@
 
   <properties>
     <stack.version>3.7.2-SNAPSHOT</stack.version>
+    <!--
+    Update these properties in the vertx-lang-* modules too
+     -->
     <datastax-driver.minor.version>3.5</datastax-driver.minor.version>
     <datastax-driver.version>${datastax-driver.minor.version}.0</datastax-driver.version>
     <junit.version>4.12</junit.version>
