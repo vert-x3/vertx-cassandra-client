@@ -4,12 +4,21 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.JsonArray;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import io.vertx.core.spi.json.JsonCodec;
 
 /**
- * Converter for {@link io.vertx.cassandra.CassandraClientOptions}.
+ * Converter and Codec for {@link io.vertx.cassandra.CassandraClientOptions}.
  * NOTE: This class has been automatically generated from the {@link io.vertx.cassandra.CassandraClientOptions} original class using Vert.x codegen.
  */
-public class CassandraClientOptionsConverter {
+public class CassandraClientOptionsConverter implements JsonCodec<CassandraClientOptions, JsonObject> {
+
+  public static final CassandraClientOptionsConverter INSTANCE = new CassandraClientOptionsConverter();
+
+  @Override public JsonObject encode(CassandraClientOptions value) { return (value != null) ? value.toJson() : null; }
+
+  @Override public CassandraClientOptions decode(JsonObject value) { return (value != null) ? new CassandraClientOptions(value) : null; }
+
+  @Override public Class<CassandraClientOptions> getTargetClass() { return CassandraClientOptions.class; }
 
   public static void fromJson(Iterable<java.util.Map.Entry<String, Object>> json, CassandraClientOptions obj) {
     for (java.util.Map.Entry<String, Object> member : json) {
