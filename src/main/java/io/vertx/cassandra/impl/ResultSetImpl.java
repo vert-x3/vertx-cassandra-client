@@ -18,6 +18,7 @@ package io.vertx.cassandra.impl;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.Row;
 import io.vertx.cassandra.ResultSet;
+import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.*;
 
 import java.util.ArrayList;
@@ -63,6 +64,13 @@ public class ResultSetImpl implements ResultSet {
   }
 
   @Override
+  public Future<Void> fetchMoreResults() {
+    Promise<Void> promise = Promise.promise();
+    fetchMoreResults(promise);
+    return promise.future();
+  }
+
+  @Override
   public ResultSet one(Handler<AsyncResult<Row>> handler) {
     if (getAvailableWithoutFetching() == 0 && !resultSet.isFullyFetched()) {
       Context context = vertx.getOrCreateContext();
@@ -74,9 +82,23 @@ public class ResultSetImpl implements ResultSet {
   }
 
   @Override
+  public Future<@Nullable Row> one() {
+    Promise<Row> promise = Promise.promise();
+    one(promise);
+    return promise.future();
+  }
+
+  @Override
   public ResultSet several(int amount, Handler<AsyncResult<List<Row>>> handler) {
     loadSeveral(amount, new ArrayList<>(amount), handler);
     return this;
+  }
+
+  @Override
+  public Future<List<Row>> several(int amount) {
+    Promise<List<Row>> promise = Promise.promise();
+    several(amount, promise);
+    return promise.future();
   }
 
   private void loadSeveral(int remainedToAdd, List<Row> resultedList, Handler<AsyncResult<List<Row>>> handler) {
@@ -125,6 +147,13 @@ public class ResultSetImpl implements ResultSet {
   public ResultSet all(Handler<AsyncResult<List<Row>>> handler) {
     loadMore(vertx.getOrCreateContext(), Collections.emptyList(), handler);
     return this;
+  }
+
+  @Override
+  public Future<List<Row>> all() {
+    Promise<List<Row>> promise = Promise.promise();
+    all(promise);
+    return promise.future();
   }
 
   private void loadMore(Context context, List<Row> loaded, Handler<AsyncResult<List<Row>>> handler) {

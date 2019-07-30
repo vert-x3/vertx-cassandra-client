@@ -19,6 +19,7 @@ import io.vertx.cassandra.Mapper;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.impl.ContextInternal;
 
 import java.util.List;
@@ -55,6 +56,13 @@ public class MapperImpl<T> implements Mapper<T> {
   }
 
   @Override
+  public Future<Void> save(T entity) {
+    Promise<Void> promise = Promise.promise();
+    save(entity, promise);
+    return promise.future();
+  }
+
+  @Override
   public void delete(List<Object> primaryKey, Handler<AsyncResult<Void>> handler) {
     ContextInternal context = mappingManager.client.vertx.getOrCreateContext();
     getMapper(context, ar -> {
@@ -67,6 +75,13 @@ public class MapperImpl<T> implements Mapper<T> {
   }
 
   @Override
+  public Future<Void> delete(List<Object> primaryKey) {
+    Promise<Void> promise = Promise.promise();
+    delete(primaryKey, promise);
+    return promise.future();
+  }
+
+  @Override
   public void get(List<Object> primaryKey, Handler<AsyncResult<T>> handler) {
     ContextInternal context = mappingManager.client.vertx.getOrCreateContext();
     getMapper(context, ar -> {
@@ -76,6 +91,13 @@ public class MapperImpl<T> implements Mapper<T> {
         handler.handle(Future.failedFuture(ar.cause()));
       }
     });
+  }
+
+  @Override
+  public Future<T> get(List<Object> primaryKey) {
+    Promise<T> promise = Promise.promise();
+    get(primaryKey, promise);
+    return promise.future();
   }
 
   synchronized void getMapper(ContextInternal context, Handler<AsyncResult<com.datastax.driver.mapping.Mapper>> handler) {

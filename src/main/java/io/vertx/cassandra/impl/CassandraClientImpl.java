@@ -78,6 +78,13 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
+  public Future<List<Row>> executeWithFullFetch(String query) {
+    Promise<List<Row>> promise = Promise.promise();
+    executeWithFullFetch(query, promise);
+    return promise.future();
+  }
+
+  @Override
   public CassandraClient executeWithFullFetch(Statement statement, Handler<AsyncResult<List<Row>>> resultHandler) {
     execute(statement, exec -> {
       if (exec.succeeded()) {
@@ -90,13 +97,34 @@ public class CassandraClientImpl implements CassandraClient {
     return this;
   }
 
+  @Override
+  public Future<List<Row>> executeWithFullFetch(Statement statement) {
+    Promise<List<Row>> promise = Promise.promise();
+    executeWithFullFetch(statement, promise);
+    return promise.future();
+  }
+
   public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler) {
     return execute(new SimpleStatement(query), resultHandler);
   }
 
   @Override
+  public Future<ResultSet> execute(String query) {
+    Promise<ResultSet> promise = Promise.promise();
+    execute(query, promise);
+    return promise.future();
+  }
+
+  @Override
   public <R> CassandraClient execute(String query, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> asyncResultHandler) {
     return execute(new SimpleStatement(query), collector, asyncResultHandler);
+  }
+
+  @Override
+  public <R> Future<R> execute(String query, Collector<Row, ?, R> collector) {
+    Promise<R> promise = Promise.promise();
+    execute(query, collector, promise);
+    return promise.future();
   }
 
   @Override
@@ -113,9 +141,23 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
+  public Future<ResultSet> execute(Statement statement) {
+    Promise<ResultSet> promise = Promise.promise();
+    execute(statement, promise);
+    return promise.future();
+  }
+
+  @Override
   public <R> CassandraClient execute(Statement statement, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> asyncResultHandler) {
     executeAndCollect(statement, collector, asyncResultHandler);
     return this;
+  }
+
+  @Override
+  public <R> Future<R> execute(Statement statement, Collector<Row, ?, R> collector) {
+    Promise<R> promise = Promise.promise();
+    execute(statement, collector, promise);
+    return promise.future();
   }
 
   private <C, R> void executeAndCollect(Statement statement, Collector<Row, C, R> collector, Handler<AsyncResult<R>> asyncResultHandler) {
@@ -152,8 +194,22 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
+  public Future<PreparedStatement> prepare(String query) {
+    Promise<PreparedStatement> promise = Promise.promise();
+    prepare(query, promise);
+    return promise.future();
+  }
+
+  @Override
   public CassandraClient queryStream(String sql, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler) {
     return queryStream(new SimpleStatement(sql), rowStreamHandler);
+  }
+
+  @Override
+  public Future<CassandraRowStream> queryStream(String sql) {
+    Promise<CassandraRowStream> promise = Promise.promise();
+    queryStream(sql, promise);
+    return promise.future();
   }
 
   @Override
@@ -173,8 +229,17 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
-  public CassandraClient close() {
-    return close(null);
+  public Future<CassandraRowStream> queryStream(Statement statement) {
+    Promise<CassandraRowStream> promise = Promise.promise();
+    queryStream(statement, promise);
+    return promise.future();
+  }
+
+  @Override
+  public Future<Void> close() {
+    Promise<Void> promise = Promise.promise();
+    close(promise);
+    return promise.future();
   }
 
   @Override

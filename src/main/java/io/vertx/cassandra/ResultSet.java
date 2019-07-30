@@ -22,6 +22,7 @@ import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 
 import java.util.List;
@@ -58,6 +59,11 @@ public interface ResultSet {
   ResultSet fetchMoreResults(Handler<AsyncResult<Void>> handler);
 
   /**
+   * Like {@link #fetchMoreResults(Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  Future<Void> fetchMoreResults();
+
+  /**
    * The method should <strong>not</strong> be used concurrently with others like {@link #several(int, Handler)} or {@link #all(Handler)}.
    * This may lead to unexpected result.
    *
@@ -67,6 +73,12 @@ public interface ResultSet {
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
   ResultSet one(Handler<AsyncResult<@Nullable Row>> handler);
+
+  /**
+   * Like {@link #one(Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  Future<@Nullable Row> one();
 
   /**
    * Fetch a specific amount of rows and notify via a handler.
@@ -86,6 +98,12 @@ public interface ResultSet {
   ResultSet several(int amount, Handler<AsyncResult<List<Row>>> handler);
 
   /**
+   * Like {@link #several(int, Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  Future<List<Row>> several(int amount);
+
+  /**
    * The method should <strong>not</strong> be used concurrently with others like {@link #several(int, Handler)} or {@link #one(Handler)}.
    * This may lead to unexpected result.
    *
@@ -95,6 +113,12 @@ public interface ResultSet {
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
   ResultSet all(Handler<AsyncResult<List<Row>>> handler);
+
+  /**
+   * Like {@link #all(Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  Future<List<Row>> all();
 
   /**
    * @see com.datastax.driver.core.ResultSet#getColumnDefinitions

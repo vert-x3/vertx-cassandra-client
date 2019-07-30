@@ -23,6 +23,7 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
@@ -117,6 +118,12 @@ public interface CassandraClient {
   CassandraClient executeWithFullFetch(String query, Handler<AsyncResult<List<Row>>> resultHandler);
 
   /**
+   * Like {@link #executeWithFullFetch(String, Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  Future<List<Row>> executeWithFullFetch(String query);
+
+  /**
    * Execute the query and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is fully fetched.
@@ -129,6 +136,12 @@ public interface CassandraClient {
   CassandraClient executeWithFullFetch(Statement statement, Handler<AsyncResult<List<Row>>> resultHandler);
 
   /**
+   * Like {@link #executeWithFullFetch(Statement, Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  Future<List<Row>> executeWithFullFetch(Statement statement);
+
+  /**
    * Execute the query and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is present, but can be not fully fetched
@@ -138,6 +151,11 @@ public interface CassandraClient {
    */
   @Fluent
   CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler);
+
+  /**
+   * Like {@link #execute(String, Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  Future<ResultSet> execute(String query);
 
   /**
    * Execute a query and produce a result by applying a collector to result set rows.
@@ -154,6 +172,12 @@ public interface CassandraClient {
   <R> CassandraClient execute(String query, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> resultHandler);
 
   /**
+   * Like {@link #execute(String, Collector, Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  @GenIgnore
+  <R> Future<R> execute(String query, Collector<Row, ?, R> collector);
+
+  /**
    * Execute the statement and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is present
@@ -164,6 +188,12 @@ public interface CassandraClient {
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
   CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler);
+
+  /**
+   * Like {@link #execute(Statement, Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  Future<ResultSet> execute(Statement statement);
 
   /**
    * Execute a statement and produce a result by applying a collector to result set rows.
@@ -180,6 +210,12 @@ public interface CassandraClient {
   <R> CassandraClient execute(Statement statement, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> resultHandler);
 
   /**
+   * Like {@link #execute(Statement, Collector, Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  @GenIgnore
+  <R> Future<R> execute(Statement statement, Collector<Row, ?, R> collector);
+
+  /**
    * Prepares the provided query string.
    *
    * @param resultHandler handler called when result of query preparation is present
@@ -192,6 +228,12 @@ public interface CassandraClient {
   CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler);
 
   /**
+   * Like {@link #prepare(String, Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  Future<PreparedStatement> prepare(String query);
+
+  /**
    * Executes the given SQL <code>SELECT</code> statement which returns the results of the query as a read stream.
    *
    * @param sql the SQL to execute. For example <code>SELECT * FROM table ...</code>.
@@ -201,6 +243,11 @@ public interface CassandraClient {
    */
   @Fluent
   CassandraClient queryStream(String sql, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler);
+
+  /**
+   * Like {@link #queryStream(String, Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  Future<CassandraRowStream> queryStream(String sql);
 
   /**
    * Executes the given SQL statement which returns the results of the query as a read stream.
@@ -215,12 +262,15 @@ public interface CassandraClient {
   CassandraClient queryStream(Statement statement, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler);
 
   /**
-   * Closes this client.
-   *
-   * @return current Cassandra client instance
+   * Like {@link #queryStream(Statement, Handler)} but returns a {@code Future} of the asynchronous result.
    */
-  @Fluent
-  CassandraClient close();
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  Future<CassandraRowStream> queryStream(Statement statement);
+
+  /**
+   * Like {@link #close(Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  Future<Void> close();
 
   /**
    * Closes this client.
