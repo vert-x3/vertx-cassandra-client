@@ -214,16 +214,9 @@ public class CassandraClientImpl implements CassandraClient {
       if (holder.session != null) {
         handler.handle(Future.succeededFuture(holder.session));
       } else {
-        context.<Session>executeBlocking(promise -> {
+        context.executeBlocking(promise -> {
           connect(promise);
-        }, holder.connectionQueue, ar -> {
-          if (ar.succeeded()) {
-            Session s = ar.result();
-            handler.handle(Future.succeededFuture(s));
-          } else {
-            handler.handle(Future.failedFuture(ar.cause()));
-          }
-        });
+        }, holder.connectionQueue, handler);
       }
     }
   }
