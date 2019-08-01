@@ -223,6 +223,10 @@ public class CassandraClientImpl implements CassandraClient {
 
   private void connect(Promise<Session> promise) {
     SessionHolder current = holders.get(clientName);
+    if (current == null) {
+      promise.fail("Client closed while connecting");
+      return;
+    }
     if (current.session != null) {
       promise.complete(current.session);
       return;
