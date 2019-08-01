@@ -40,7 +40,7 @@ import static io.vertx.cassandra.impl.Util.handleOnContext;
  */
 public class CassandraClientImpl implements CassandraClient {
 
-  private static final String HOLDERS_LOCAL_MAP_NAME = "__vertx.cassandraClient.sessionHolders";
+  static final String HOLDERS_LOCAL_MAP_NAME = "__vertx.cassandraClient.sessionHolders";
 
   final VertxInternal vertx;
   private final String clientName;
@@ -182,23 +182,32 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
-  public synchronized CassandraClient close(Handler<AsyncResult<Void>> closeHandler) {
-    if (closed) {
-      if (closeHandler != null) {
-        closeHandler.handle(Future.succeededFuture());
-      }
-    } else {
-      closed = true;
-      SessionHolder current = holders.compute(clientName, (k, h) -> h.decrement());
-      if (current.refCount < 1 && current.session != null) {
-        handleOnContext(current.session.closeAsync(), vertx.getOrCreateContext(), closeHandler);
-      } else {
-        if (closeHandler != null) {
-          closeHandler.handle(Future.succeededFuture());
+  public CassandraClient close(Handler<AsyncResult<Void>> closeHandler) {
+    if (raiseCloseFlag()) {
+      do {
+        SessionHolder current = holders.get(clientName);
+        SessionHolder next = current.decrement();
+        if (next.refCount == 0) {
+          if (holders.remove(clientName, current)) {
+            if (current.session != null) {
+              handleOnContext(current.session.closeAsync(), vertx.getOrCreateContext(), closeHandler);
+              return this;
+            }
+            break;
+          }
+        } else if (holders.replace(clientName, current, next)) {
+          break;
         }
-      }
+      } while (true);
+    }
+    if (closeHandler != null) {
+      closeHandler.handle(Future.succeededFuture());
     }
     return this;
+  }
+
+  private synchronized boolean raiseCloseFlag() {
+    return !closed && (closed = true);
   }
 
   synchronized void getSession(ContextInternal context, Handler<AsyncResult<Session>> handler) {
@@ -207,8 +216,8 @@ public class CassandraClientImpl implements CassandraClient {
     } else if (cachedSession != null) {
       handler.handle(Future.succeededFuture(cachedSession));
     } else {
-      context.<Session>executeBlocking(fut -> {
-        connect(fut, holders, clientName, options);
+      context.<Session>executeBlocking(promise -> {
+        connect(promise);
       }, connectionQueue, ar -> {
         if (ar.succeeded()) {
           Session s = ar.result();
@@ -223,10 +232,10 @@ public class CassandraClientImpl implements CassandraClient {
     }
   }
 
-  private static void connect(Promise<Session> future, Map<String, SessionHolder> holders, String clientName, CassandraClientOptions options) {
+  private void connect(Promise<Session> promise) {
     SessionHolder current = holders.get(clientName);
     if (current.session != null) {
-      future.complete(current.session);
+      promise.complete(current.session);
       return;
     }
     Cluster.Builder builder = options.dataStaxClusterBuilder();
@@ -237,13 +246,13 @@ public class CassandraClientImpl implements CassandraClient {
     Session session = cluster.connect(options.getKeyspace());
     current = holders.compute(clientName, (k, h) -> h == null ? null : h.connected(session));
     if (current != null) {
-      future.complete(current.session);
+      promise.complete(current.session);
     } else {
       try {
         session.close();
       } catch (Exception ignored) {
       }
-      future.fail("Client closed while connecting");
+      promise.fail("Client closed while connecting");
     }
   }
 }
