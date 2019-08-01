@@ -61,6 +61,7 @@ public class CassandraClientImpl implements CassandraClient {
     holders = vertx.sharedData().getLocalMap(HOLDERS_LOCAL_MAP_NAME);
     SessionHolder current = holders.compute(clientName, (k, h) -> h == null ? new SessionHolder() : h.increment());
     connectionQueue = current.connectionQueue;
+    cachedSession = current.session;
     Context context = Vertx.currentContext();
     if (context != null && context.owner() == vertx) {
       context.addCloseHook(this::close);
