@@ -22,7 +22,6 @@ import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.core.*;
 import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.TaskQueue;
 import io.vertx.core.impl.VertxInternal;
 
 import java.util.List;
@@ -46,9 +45,7 @@ public class CassandraClientImpl implements CassandraClient {
   private final String clientName;
   private final CassandraClientOptions options;
   private final Map<String, SessionHolder> holders;
-  private final TaskQueue connectionQueue;
 
-  private Session cachedSession;
   private boolean closed;
 
   public CassandraClientImpl(Vertx vertx, String clientName, CassandraClientOptions options) {
@@ -60,8 +57,6 @@ public class CassandraClientImpl implements CassandraClient {
     this.options = options;
     holders = vertx.sharedData().getLocalMap(HOLDERS_LOCAL_MAP_NAME);
     SessionHolder current = holders.compute(clientName, (k, h) -> h == null ? new SessionHolder() : h.increment());
-    connectionQueue = current.connectionQueue;
-    cachedSession = current.session;
     Context context = Vertx.currentContext();
     if (context != null && context.owner() == vertx) {
       context.addCloseHook(this::close);
@@ -73,7 +68,7 @@ public class CassandraClientImpl implements CassandraClient {
     if (closed) {
       return false;
     }
-    Session s = cachedSession != null ? cachedSession : holders.get(clientName).session;
+    Session s = holders.get(clientName).session;
     return s != null && !s.isClosed();
   }
 
@@ -214,22 +209,22 @@ public class CassandraClientImpl implements CassandraClient {
   synchronized void getSession(ContextInternal context, Handler<AsyncResult<Session>> handler) {
     if (closed) {
       handler.handle(Future.failedFuture("Client is closed"));
-    } else if (cachedSession != null) {
-      handler.handle(Future.succeededFuture(cachedSession));
     } else {
-      context.<Session>executeBlocking(promise -> {
-        connect(promise);
-      }, connectionQueue, ar -> {
-        if (ar.succeeded()) {
-          Session s = ar.result();
-          synchronized (this) {
-            cachedSession = s;
+      SessionHolder holder = holders.get(clientName);
+      if (holder.session != null) {
+        handler.handle(Future.succeededFuture(holder.session));
+      } else {
+        context.<Session>executeBlocking(promise -> {
+          connect(promise);
+        }, holder.connectionQueue, ar -> {
+          if (ar.succeeded()) {
+            Session s = ar.result();
+            handler.handle(Future.succeededFuture(s));
+          } else {
+            handler.handle(Future.failedFuture(ar.cause()));
           }
-          handler.handle(Future.succeededFuture(s));
-        } else {
-          handler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
+        });
+      }
     }
   }
 
