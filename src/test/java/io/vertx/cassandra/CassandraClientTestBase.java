@@ -57,6 +57,7 @@ public abstract class CassandraClientTestBase {
   @BeforeClass
   public static void startEmbeddedCassandra() throws Exception {
     String version = System.getProperty("java.version");
+    // this statement can be removed only when this issue[https://github.com/jsevellec/cassandra-unit/issues/249] will be resolved
     if (!version.startsWith("1.8")) {
       throw new IllegalStateException("Only Java 8 is allowed for running tests. Your java version: " + version);
     }
