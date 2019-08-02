@@ -203,7 +203,11 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   private synchronized boolean raiseCloseFlag() {
-    return !closed && (closed = true);
+    if (!closed) {
+      closed = true;
+      return true;
+    }
+    return false;
   }
 
   synchronized void getSession(ContextInternal context, Handler<AsyncResult<Session>> handler) {
