@@ -17,6 +17,7 @@ package io.vertx.cassandra;
 
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 
 import java.util.List;
@@ -38,6 +39,11 @@ public interface Mapper<T> {
   void save(T entity, Handler<AsyncResult<Void>> handler);
 
   /**
+   * Like {@link #save(Object, Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  Future<Void> save(T entity);
+
+  /**
    * Asynchronous delete method based on the column values of the primary key.
    *
    * @param primaryKey primary key used to find row to delete
@@ -46,10 +52,20 @@ public interface Mapper<T> {
   void delete(List<Object> primaryKey, Handler<AsyncResult<Void>> handler);
 
   /**
+   * Like {@link #delete(List, Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  Future<Void> delete(List<Object> primaryKey);
+
+  /**
    * Asynchronous get method based on the column values of the primary key.
    *
    * @param primaryKey primary key used to retrieve row
    * @param handler result handler
    */
   void get(List<Object> primaryKey, Handler<AsyncResult<T>> handler);
+
+  /**
+   * Like {@link #get(List, Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  Future<T> get(List<Object> primaryKey);
 }
