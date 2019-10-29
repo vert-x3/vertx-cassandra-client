@@ -18,10 +18,9 @@ package io.vertx.cassandra.impl;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import io.vertx.core.impl.ContextInternal;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -35,29 +34,29 @@ class Util {
   /**
    * Invokes the {@code handler} on a given {@code context} when the {@code listenableFuture} succeeds or fails.
    */
-  static <T> void handleOnContext(ListenableFuture<T> listenableFuture, Context context, Handler<AsyncResult<T>> handler) {
-    handleOnContext(listenableFuture, context, Function.identity(), handler);
+  static <T> Future<T> handleOnContext(ListenableFuture<T> listenableFuture, ContextInternal context) {
+    return handleOnContext(listenableFuture, context, Function.identity());
   }
+
 
   /**
    * Invokes the {@code handler} on a given {@code context} when the {@code listenableFuture} succeeds or fails.
    */
-  static <I, O> void handleOnContext(ListenableFuture<I> listenableFuture, Context context, Function<I, O> converter, Handler<AsyncResult<O>> handler) {
+  static <I, O> Future<O> handleOnContext(ListenableFuture<I> listenableFuture, ContextInternal context, Function<I, O> converter) {
     Objects.requireNonNull(listenableFuture, "listenableFuture must not be null");
     Objects.requireNonNull(context, "context must not be null");
     Objects.requireNonNull(converter, "converter must not be null");
-    if (handler != null) {
-      Futures.addCallback(listenableFuture, new FutureCallback<I>() {
-        @Override
-        public void onSuccess(I result) {
-          context.runOnContext(v -> handler.handle(Future.succeededFuture(converter.apply(result))));
-        }
-
-        @Override
-        public void onFailure(Throwable t) {
-          context.runOnContext(v -> handler.handle(Future.failedFuture(t)));
-        }
-      });
-    }
+    Promise<O> promise = context.promise();
+    Futures.addCallback(listenableFuture, new FutureCallback<I>() {
+      @Override
+      public void onSuccess(I result) {
+        promise.complete(converter.apply(result));
+      }
+      @Override
+      public void onFailure(Throwable t) {
+        promise.fail(t);
+      }
+    });
+    return promise.future();
   }
 }

@@ -19,7 +19,6 @@ import io.vertx.cassandra.Mapper;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.impl.ContextInternal;
 
 import java.util.List;
@@ -45,82 +44,56 @@ public class MapperImpl<T> implements Mapper<T> {
 
   @Override
   public void save(T entity, Handler<AsyncResult<Void>> handler) {
-    ContextInternal context = mappingManager.client.vertx.getOrCreateContext();
-    getMapper(context, ar -> {
-      if (ar.succeeded()) {
-        handleOnContext(mapper.saveAsync(entity), context, handler);
-      } else {
-        handler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
+    Future<Void> fut = save(entity);
+    if (handler != null) {
+      fut.setHandler(handler);
+    }
   }
 
   @Override
   public Future<Void> save(T entity) {
-    Promise<Void> promise = Promise.promise();
-    save(entity, promise);
-    return promise.future();
+    ContextInternal context = mappingManager.client.vertx.getOrCreateContext();
+    return getMapper(context).compose(mapper -> handleOnContext(mapper.saveAsync(entity), context));
   }
 
   @Override
   public void delete(List<Object> primaryKey, Handler<AsyncResult<Void>> handler) {
-    ContextInternal context = mappingManager.client.vertx.getOrCreateContext();
-    getMapper(context, ar -> {
-      if (ar.succeeded()) {
-        handleOnContext(mapper.deleteAsync(primaryKey.toArray()), context, handler);
-      } else {
-        handler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
+    Future<Void> fut = delete(primaryKey);
+    if (handler != null) {
+      fut.setHandler(handler);
+    }
   }
 
   @Override
   public Future<Void> delete(List<Object> primaryKey) {
-    Promise<Void> promise = Promise.promise();
-    delete(primaryKey, promise);
-    return promise.future();
+    ContextInternal context = mappingManager.client.vertx.getOrCreateContext();
+    return getMapper(context).compose(mapper -> handleOnContext(mapper.deleteAsync(primaryKey.toArray()), context));
   }
 
   @Override
   public void get(List<Object> primaryKey, Handler<AsyncResult<T>> handler) {
-    ContextInternal context = mappingManager.client.vertx.getOrCreateContext();
-    getMapper(context, ar -> {
-      if (ar.succeeded()) {
-        handleOnContext(mapper.getAsync(primaryKey.toArray()), context, handler);
-      } else {
-        handler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
+    Future<T> fut = get(primaryKey);
+    if (handler != null) {
+      fut.setHandler(handler);
+    }
   }
 
   @Override
   public Future<T> get(List<Object> primaryKey) {
-    Promise<T> promise = Promise.promise();
-    get(primaryKey, promise);
-    return promise.future();
+    ContextInternal context = mappingManager.client.vertx.getOrCreateContext();
+    return getMapper(context).compose(mapper -> handleOnContext(mapper.getAsync(primaryKey.toArray()), context));
   }
 
-  synchronized void getMapper(ContextInternal context, Handler<AsyncResult<com.datastax.driver.mapping.Mapper>> handler) {
+  synchronized Future<com.datastax.driver.mapping.Mapper<T>> getMapper(ContextInternal context) {
     if (mapper != null) {
-      handler.handle(Future.succeededFuture(mapper));
+      return context.succeededFuture(mapper);
     } else {
-      mappingManager.getMappingManager(context, ar -> {
-        if (ar.succeeded()) {
-          com.datastax.driver.mapping.Mapper m;
-          try {
-            synchronized (this) {
-              if (mapper == null) {
-                mapper = ar.result().mapper(mappedClass);
-              }
-              m = mapper;
-            }
-          } catch (Exception e) {
-            handler.handle(Future.failedFuture(e));
-            return;
+      return mappingManager.getMappingManager(context).map(mgr -> {
+        synchronized (this) {
+          if (mapper == null) {
+            mapper = mgr.mapper(mappedClass);
           }
-          handler.handle(Future.succeededFuture(m));
-        } else {
-          handler.handle(Future.failedFuture(ar.cause()));
+          return mapper;
         }
       });
     }

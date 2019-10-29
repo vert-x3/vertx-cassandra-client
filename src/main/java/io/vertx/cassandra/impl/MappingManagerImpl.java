@@ -18,9 +18,7 @@ package io.vertx.cassandra.impl;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.Mapper;
 import io.vertx.cassandra.MappingManager;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.impl.ContextInternal;
 
 import java.util.Objects;
@@ -43,27 +41,16 @@ public class MappingManagerImpl implements MappingManager {
     return new MapperImpl<>(this, mappedClass);
   }
 
-  synchronized void getMappingManager(ContextInternal context, Handler<AsyncResult<com.datastax.driver.mapping.MappingManager>> handler) {
+  synchronized Future<com.datastax.driver.mapping.MappingManager> getMappingManager(ContextInternal context) {
     if (mappingManager != null) {
-      handler.handle(Future.succeededFuture(mappingManager));
+      return context.succeededFuture(mappingManager);
     } else {
-      client.getSession(context, ar -> {
-        if (ar.succeeded()) {
-          com.datastax.driver.mapping.MappingManager manager;
-          try {
-            synchronized (this) {
-              if (mappingManager == null) {
-                mappingManager = new com.datastax.driver.mapping.MappingManager(ar.result());
-              }
-              manager = mappingManager;
-            }
-          } catch (Exception e) {
-            handler.handle(Future.failedFuture(e));
-            return;
+      return client.getSession(context).map(session -> {
+        synchronized (this) {
+          if (mappingManager == null) {
+            mappingManager = new com.datastax.driver.mapping.MappingManager(session);
           }
-          handler.handle(Future.succeededFuture(manager));
-        } else {
-          handler.handle(Future.failedFuture(ar.cause()));
+          return mappingManager;
         }
       });
     }

@@ -129,22 +129,17 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler) {
-    ContextInternal context = vertx.getOrCreateContext();
-    getSession(context, sess -> {
-      if (sess.succeeded()) {
-        handleOnContext(sess.result().executeAsync(statement), context, rs -> new ResultSetImpl(rs, vertx), resultHandler);
-      } else {
-        resultHandler.handle(Future.failedFuture(sess.cause()));
-      }
-    });
+    Future<ResultSet> fut = execute(statement);
+    if (resultHandler != null) {
+      fut.setHandler(resultHandler);
+    }
     return this;
   }
 
   @Override
   public Future<ResultSet> execute(Statement statement) {
-    Promise<ResultSet> promise = Promise.promise();
-    execute(statement, promise);
-    return promise.future();
+    ContextInternal context = vertx.getOrCreateContext();
+    return getSession(context).compose(sess -> handleOnContext(sess.executeAsync(statement), context, rs -> new ResultSetImpl(rs, vertx)));
   }
 
   @Override
@@ -182,22 +177,18 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler) {
-    ContextInternal context = vertx.getOrCreateContext();
-    getSession(context, sess -> {
-      if (sess.succeeded()) {
-        handleOnContext(sess.result().prepareAsync(query), context, resultHandler);
-      } else {
-        resultHandler.handle(Future.failedFuture(sess.cause()));
-      }
-    });
+    Future<PreparedStatement> fut = prepare(query);
+    if (fut != null) {
+      fut.setHandler(resultHandler);
+    }
     return this;
   }
 
   @Override
   public Future<PreparedStatement> prepare(String query) {
-    Promise<PreparedStatement> promise = Promise.promise();
-    prepare(query, promise);
-    return promise.future();
+    ContextInternal context = vertx.getOrCreateContext();
+    Future<Session> fut = getSession(context);
+    return fut.compose(sess -> Util.handleOnContext(sess.prepareAsync(query), context));
   }
 
   @Override
@@ -214,36 +205,26 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient queryStream(Statement statement, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler) {
-    ContextInternal context = vertx.getOrCreateContext();
-    getSession(context, sess -> {
-      if (sess.succeeded()) {
-        handleOnContext(sess.result().executeAsync(statement), context, rs -> {
-          ResultSet resultSet = new ResultSetImpl(rs, vertx);
-          return new CassandraRowStreamImpl(context, resultSet);
-        }, rowStreamHandler);
-      } else {
-        rowStreamHandler.handle(Future.failedFuture(sess.cause()));
-      }
-    });
+    Future<CassandraRowStream> fut = queryStream(statement);
+    if (rowStreamHandler != null) {
+      fut.setHandler(rowStreamHandler);
+    }
     return this;
   }
 
   @Override
   public Future<CassandraRowStream> queryStream(Statement statement) {
-    Promise<CassandraRowStream> promise = Promise.promise();
-    queryStream(statement, promise);
-    return promise.future();
+    ContextInternal context = vertx.getOrCreateContext();
+    return getSession(context)
+      .compose(sess -> handleOnContext(sess.executeAsync(statement), context, rs -> {
+        ResultSet resultSet = new ResultSetImpl(rs, vertx);
+        return new CassandraRowStreamImpl(context, resultSet);
+      }));
   }
 
   @Override
   public Future<Void> close() {
-    Promise<Void> promise = Promise.promise();
-    close(promise);
-    return promise.future();
-  }
-
-  @Override
-  public CassandraClient close(Handler<AsyncResult<Void>> closeHandler) {
+    ContextInternal ctx = vertx.getOrCreateContext();
     if (raiseCloseFlag()) {
       do {
         SessionHolder current = holders.get(clientName);
@@ -251,8 +232,7 @@ public class CassandraClientImpl implements CassandraClient {
         if (next.refCount == 0) {
           if (holders.remove(clientName, current)) {
             if (current.session != null) {
-              handleOnContext(current.session.closeAsync(), vertx.getOrCreateContext(), closeHandler);
-              return this;
+              return Util.handleOnContext(current.session.closeAsync(), ctx);
             }
             break;
           }
@@ -261,8 +241,14 @@ public class CassandraClientImpl implements CassandraClient {
         }
       } while (true);
     }
+    return ctx.succeededFuture();
+  }
+
+  @Override
+  public CassandraClient close(Handler<AsyncResult<Void>> closeHandler) {
+    Future<Void> fut = close();
     if (closeHandler != null) {
-      closeHandler.handle(Future.succeededFuture());
+      fut.setHandler(closeHandler);
     }
     return this;
   }
@@ -275,17 +261,15 @@ public class CassandraClientImpl implements CassandraClient {
     return false;
   }
 
-  synchronized void getSession(ContextInternal context, Handler<AsyncResult<Session>> handler) {
+  synchronized Future<Session> getSession(ContextInternal context) {
     if (closed) {
-      handler.handle(Future.failedFuture("Client is closed"));
+      return context.failedFuture("Client is closed");
     } else {
       SessionHolder holder = holders.get(clientName);
       if (holder.session != null) {
-        handler.handle(Future.succeededFuture(holder.session));
+        return context.succeededFuture(holder.session);
       } else {
-        context.executeBlocking(promise -> {
-          connect(promise);
-        }, holder.connectionQueue, handler);
+        return context.executeBlocking(this::connect, holder.connectionQueue);
       }
     }
   }

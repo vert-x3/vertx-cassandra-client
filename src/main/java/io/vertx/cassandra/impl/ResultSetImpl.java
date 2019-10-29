@@ -18,8 +18,9 @@ package io.vertx.cassandra.impl;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.Row;
 import io.vertx.cassandra.ResultSet;
-import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.*;
+import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.VertxInternal;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,9 +35,9 @@ import static io.vertx.cassandra.impl.Util.handleOnContext;
 public class ResultSetImpl implements ResultSet {
 
   private com.datastax.driver.core.ResultSet resultSet;
-  private Vertx vertx;
+  private VertxInternal vertx;
 
-  public ResultSetImpl(com.datastax.driver.core.ResultSet resultSet, Vertx vertx) {
+  public ResultSetImpl(com.datastax.driver.core.ResultSet resultSet, VertxInternal vertx) {
     this.resultSet = resultSet;
     this.vertx = vertx;
   }
@@ -58,34 +59,36 @@ public class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSet fetchMoreResults(Handler<AsyncResult<Void>> handler) {
-    Context context = vertx.getOrCreateContext();
-    handleOnContext(resultSet.fetchMoreResults(), context, ignore -> null, handler);
-    return this;
-  }
-
-  @Override
-  public Future<Void> fetchMoreResults() {
-    Promise<Void> promise = Promise.promise();
-    fetchMoreResults(promise);
-    return promise.future();
-  }
-
-  @Override
-  public ResultSet one(Handler<AsyncResult<Row>> handler) {
-    if (getAvailableWithoutFetching() == 0 && !resultSet.isFullyFetched()) {
-      Context context = vertx.getOrCreateContext();
-      handleOnContext(resultSet.fetchMoreResults(), context, ignored -> resultSet.one(), handler);
-    } else {
-      handler.handle(Future.succeededFuture(resultSet.one()));
+    Future<Void> fut = fetchMoreResults();
+    if (handler != null) {
+      fut.setHandler(handler);
     }
     return this;
   }
 
   @Override
-  public Future<@Nullable Row> one() {
-    Promise<Row> promise = Promise.promise();
-    one(promise);
-    return promise.future();
+  public Future<Void> fetchMoreResults() {
+    ContextInternal context = vertx.getOrCreateContext();
+    return handleOnContext(resultSet.fetchMoreResults(), context, ignore -> null);
+  }
+
+  @Override
+  public ResultSet one(Handler<AsyncResult<Row>> handler) {
+    Future<Row> fut = one();
+    if (handler != null) {
+      fut.setHandler(handler);
+    }
+    return this;
+  }
+
+  @Override
+  public Future<Row> one() {
+    ContextInternal context = vertx.getOrCreateContext();
+    if (getAvailableWithoutFetching() == 0 && !resultSet.isFullyFetched()) {
+      return handleOnContext(resultSet.fetchMoreResults(), context, ignored -> resultSet.one());
+    } else {
+      return context.succeededFuture(resultSet.one());
+    }
   }
 
   @Override
@@ -145,18 +148,19 @@ public class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSet all(Handler<AsyncResult<List<Row>>> handler) {
-    loadMore(vertx.getOrCreateContext(), Collections.emptyList(), handler);
+    Future<List<Row>> fut = all();
+    if (handler != null) {
+      fut.setHandler(handler);
+    }
     return this;
   }
 
   @Override
   public Future<List<Row>> all() {
-    Promise<List<Row>> promise = Promise.promise();
-    all(promise);
-    return promise.future();
+    return loadMore(vertx.getOrCreateContext(), Collections.emptyList());
   }
 
-  private void loadMore(Context context, List<Row> loaded, Handler<AsyncResult<List<Row>>> handler) {
+  private Future<List<Row>> loadMore(ContextInternal context, List<Row> loaded) {
     int availableWithoutFetching = resultSet.getAvailableWithoutFetching();
     List<Row> rows = new ArrayList<>(loaded.size() + availableWithoutFetching);
     for (int i = 0; i < availableWithoutFetching; i++) {
@@ -164,15 +168,9 @@ public class ResultSetImpl implements ResultSet {
     }
 
     if (!resultSet.isFullyFetched()) {
-      handleOnContext(resultSet.fetchMoreResults(), context, ar -> {
-        if (ar.succeeded()) {
-          loadMore(context, rows, handler);
-        } else {
-          handler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
+      return handleOnContext(resultSet.fetchMoreResults(), context).compose(res -> loadMore(context, rows));
     } else {
-      handler.handle(Future.succeededFuture(rows));
+      return context.succeededFuture(rows);
     }
   }
 
