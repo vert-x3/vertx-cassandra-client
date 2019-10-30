@@ -16,6 +16,7 @@
 package io.vertx.cassandra.impl;
 
 import com.datastax.driver.core.ColumnDefinitions;
+import com.datastax.driver.core.ExecutionInfo;
 import com.datastax.driver.core.Row;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.codegen.annotations.Nullable;
@@ -184,5 +185,10 @@ public class ResultSetImpl implements ResultSet {
   @Override
   public boolean wasApplied() {
     return resultSet.wasApplied();
+  }
+
+  @Override
+  public ExecutionInfo getExecutionInfo() {
+    return resultSet.getExecutionInfo();
   }
 }

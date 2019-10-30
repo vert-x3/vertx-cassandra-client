@@ -16,6 +16,7 @@
 package io.vertx.cassandra;
 
 import com.datastax.driver.core.ColumnDefinitions;
+import com.datastax.driver.core.ExecutionInfo;
 import com.datastax.driver.core.Row;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
@@ -130,4 +131,11 @@ public interface ResultSet {
    * @see com.datastax.driver.core.ResultSet#wasApplied
    */
   boolean wasApplied();
+
+  /**
+   * @see com.datastax.driver.core.ResultSet#getExecutionInfo
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  ExecutionInfo getExecutionInfo();
+  
 }
