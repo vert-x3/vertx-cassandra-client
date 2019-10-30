@@ -133,9 +133,14 @@ public interface ResultSet {
   boolean wasApplied();
 
   /**
-   * @see com.datastax.driver.core.ResultSet#getExecutionInfo
+   * @see com.datastax.driver.core.PagingIterable#getExecutionInfo
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   ExecutionInfo getExecutionInfo();
   
+  /**
+   * @see com.datastax.driver.core.PagingIterable#getExecutionInfo
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  List<ExecutionInfo> getAllExecutionInfo();
 }

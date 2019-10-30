@@ -191,4 +191,9 @@ public class ResultSetImpl implements ResultSet {
   public ExecutionInfo getExecutionInfo() {
     return resultSet.getExecutionInfo();
   }
+
+  @Override
+  public List<ExecutionInfo> getAllExecutionInfo() {
+    return resultSet.getAllExecutionInfo();
+  }
 }
