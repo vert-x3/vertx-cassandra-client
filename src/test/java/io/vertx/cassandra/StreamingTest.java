@@ -66,6 +66,24 @@ public class StreamingTest extends CassandraClientTestBase {
   }
 
   @Test
+  public void streamFetchesDoesNotOverflowDefault512KbJVMStack(TestContext testContext) {
+    int fetchSize = 100_000;
+    initializeRandomStringKeyspace(5_000);
+    Statement query = new SimpleStatement(
+      String.format(
+        "select random_string from random_strings.random_string_by_first_letter limit %d",
+        fetchSize
+      )
+    ).setFetchSize(fetchSize);
+    Async async = testContext.async();
+    client.queryStream(query, testContext.asyncAssertSuccess(stream -> {
+      stream.endHandler(end -> async.countDown())
+        .exceptionHandler(testContext::fail)
+        .handler(item -> {});
+    }));
+  }
+
+  @Test
   public void emptyStream(TestContext testContext) {
     initializeRandomStringKeyspace(1);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = '$'";
