@@ -73,11 +73,13 @@ public class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSet one(Handler<AsyncResult<Row>> handler) {
+    Context context = vertx.getOrCreateContext();
     if (getAvailableWithoutFetching() == 0 && !resultSet.isFullyFetched()) {
-      Context context = vertx.getOrCreateContext();
       handleOnContext(resultSet.fetchMoreResults(), context, ignored -> resultSet.one(), handler);
     } else {
-      handler.handle(Future.succeededFuture(resultSet.one()));
+      // we want to run this action `on context` in order to avoid
+      // stack overflow in case when query fetch size is enormous
+      context.runOnContext(v -> handler.handle(Future.succeededFuture(resultSet.one())));
     }
     return this;
   }
