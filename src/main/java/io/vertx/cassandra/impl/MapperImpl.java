@@ -19,13 +19,15 @@ import io.vertx.cassandra.Mapper;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.VertxInternal;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
-import static io.vertx.cassandra.impl.Util.handleOnContext;
+import static io.vertx.cassandra.impl.Util.setHandler;
+import static io.vertx.cassandra.impl.Util.toVertxFuture;
 
 /**
  * @author Martijn Zwennes
@@ -34,95 +36,67 @@ public class MapperImpl<T> implements Mapper<T> {
 
   private final MappingManagerImpl mappingManager;
   private final Class<T> mappedClass;
-  private com.datastax.driver.mapping.Mapper<T> mapper;
+  private final VertxInternal vertx;
+
+  private AtomicReference<com.datastax.driver.mapping.Mapper<T>> mapper = new AtomicReference<>();
 
   MapperImpl(MappingManagerImpl mappingManager, Class<T> mappedClass) {
     Objects.requireNonNull(mappingManager, "mappingManager");
     Objects.requireNonNull(mappedClass, "mappedClass");
     this.mappingManager = mappingManager;
     this.mappedClass = mappedClass;
+    vertx = mappingManager.client.vertx;
   }
 
   @Override
   public void save(T entity, Handler<AsyncResult<Void>> handler) {
-    ContextInternal context = mappingManager.client.vertx.getOrCreateContext();
-    getMapper(context, ar -> {
-      if (ar.succeeded()) {
-        handleOnContext(mapper.saveAsync(entity), context, handler);
-      } else {
-        handler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
+    Future<Void> future = save(entity);
+    setHandler(future, handler);
   }
 
   @Override
   public Future<Void> save(T entity) {
-    Promise<Void> promise = Promise.promise();
-    save(entity, promise);
-    return promise.future();
+    ContextInternal context = vertx.getOrCreateContext();
+    return getMapper(context)
+      .flatMap(m -> Util.toVertxFuture(m.saveAsync(entity), context));
   }
 
   @Override
   public void delete(List<Object> primaryKey, Handler<AsyncResult<Void>> handler) {
-    ContextInternal context = mappingManager.client.vertx.getOrCreateContext();
-    getMapper(context, ar -> {
-      if (ar.succeeded()) {
-        handleOnContext(mapper.deleteAsync(primaryKey.toArray()), context, handler);
-      } else {
-        handler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
+    Future<Void> future = delete(primaryKey);
+    setHandler(future, handler);
   }
 
   @Override
   public Future<Void> delete(List<Object> primaryKey) {
-    Promise<Void> promise = Promise.promise();
-    delete(primaryKey, promise);
-    return promise.future();
+    ContextInternal context = vertx.getOrCreateContext();
+    return getMapper(context)
+      .flatMap(m -> toVertxFuture(m.deleteAsync(primaryKey.toArray()), context));
   }
 
   @Override
   public void get(List<Object> primaryKey, Handler<AsyncResult<T>> handler) {
-    ContextInternal context = mappingManager.client.vertx.getOrCreateContext();
-    getMapper(context, ar -> {
-      if (ar.succeeded()) {
-        handleOnContext(mapper.getAsync(primaryKey.toArray()), context, handler);
-      } else {
-        handler.handle(Future.failedFuture(ar.cause()));
-      }
-    });
+    Future<T> future = get(primaryKey);
+    setHandler(future, handler);
   }
 
   @Override
   public Future<T> get(List<Object> primaryKey) {
-    Promise<T> promise = Promise.promise();
-    get(primaryKey, promise);
-    return promise.future();
+    ContextInternal context = vertx.getOrCreateContext();
+    return getMapper(context)
+      .flatMap(m -> toVertxFuture(m.getAsync(primaryKey.toArray()), context));
   }
 
-  synchronized void getMapper(ContextInternal context, Handler<AsyncResult<com.datastax.driver.mapping.Mapper>> handler) {
-    if (mapper != null) {
-      handler.handle(Future.succeededFuture(mapper));
-    } else {
-      mappingManager.getMappingManager(context, ar -> {
-        if (ar.succeeded()) {
-          com.datastax.driver.mapping.Mapper m;
-          try {
-            synchronized (this) {
-              if (mapper == null) {
-                mapper = ar.result().mapper(mappedClass);
-              }
-              m = mapper;
-            }
-          } catch (Exception e) {
-            handler.handle(Future.failedFuture(e));
-            return;
-          }
-          handler.handle(Future.succeededFuture(m));
-        } else {
-          handler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
+  private synchronized Future<com.datastax.driver.mapping.Mapper<T>> getMapper(ContextInternal context) {
+    com.datastax.driver.mapping.Mapper<T> current = mapper.get();
+    if (current != null) {
+      return context.succeededFuture(current);
     }
+    return mappingManager.getMappingManager(context)
+      .map(this::getOrCreateMapper);
+  }
+
+  private com.datastax.driver.mapping.Mapper<T> getOrCreateMapper(com.datastax.driver.mapping.MappingManager manager) {
+    return mapper.updateAndGet(m -> m != null ? m : manager.mapper(mappedClass));
   }
 }
