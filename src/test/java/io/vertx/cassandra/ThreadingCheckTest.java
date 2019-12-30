@@ -16,7 +16,7 @@
 
 package io.vertx.cassandra;
 
-import com.datastax.driver.core.Statement;
+import com.datastax.oss.driver.api.core.cql.Statement;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;

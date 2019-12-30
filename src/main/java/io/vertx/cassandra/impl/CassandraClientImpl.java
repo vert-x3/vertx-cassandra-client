@@ -15,7 +15,13 @@
  */
 package io.vertx.cassandra.impl;
 
-import com.datastax.driver.core.*;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.session.Session;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
 import io.vertx.cassandra.CassandraRowStream;
@@ -74,7 +80,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient executeWithFullFetch(String query, Handler<AsyncResult<List<Row>>> resultHandler) {
-    return executeWithFullFetch(new SimpleStatement(query), resultHandler);
+    return executeWithFullFetch(SimpleStatement.newInstance(query), resultHandler);
   }
 
   @Override
@@ -105,7 +111,7 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler) {
-    return execute(new SimpleStatement(query), resultHandler);
+    return execute(SimpleStatement.newInstance(query), resultHandler);
   }
 
   @Override
@@ -117,7 +123,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public <R> CassandraClient execute(String query, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> asyncResultHandler) {
-    return execute(new SimpleStatement(query), collector, asyncResultHandler);
+    return execute(SimpleStatement.newInstance(query), collector, asyncResultHandler);
   }
 
   @Override
@@ -202,7 +208,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient queryStream(String sql, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler) {
-    return queryStream(new SimpleStatement(sql), rowStreamHandler);
+    return queryStream(SimpleStatement.newInstance(sql), rowStreamHandler);
   }
 
   @Override
@@ -275,7 +281,7 @@ public class CassandraClientImpl implements CassandraClient {
     return false;
   }
 
-  synchronized void getSession(ContextInternal context, Handler<AsyncResult<Session>> handler) {
+  synchronized void getSession(ContextInternal context, Handler<AsyncResult<CqlSession>> handler) {
     if (closed) {
       handler.handle(Future.failedFuture("Client is closed"));
     } else {
@@ -290,7 +296,7 @@ public class CassandraClientImpl implements CassandraClient {
     }
   }
 
-  private void connect(Promise<Session> promise) {
+  private void connect(Promise<CqlSession> promise) {
     SessionHolder current = holders.get(clientName);
     if (current == null) {
       promise.fail("Client closed while connecting");
@@ -300,12 +306,8 @@ public class CassandraClientImpl implements CassandraClient {
       promise.complete(current.session);
       return;
     }
-    Cluster.Builder builder = options.dataStaxClusterBuilder();
-    if (builder.getContactPoints().isEmpty()) {
-      builder.addContactPoint(CassandraClientOptions.DEFAULT_HOST);
-    }
-    Cluster cluster = builder.build();
-    Session session = cluster.connect(options.getKeyspace());
+    CqlSessionBuilder builder = options.dataStaxClusterBuilder();
+    CqlSession session = builder.build();
     current = holders.compute(clientName, (k, h) -> h == null ? null : h.connected(session));
     if (current != null) {
       promise.complete(current.session);

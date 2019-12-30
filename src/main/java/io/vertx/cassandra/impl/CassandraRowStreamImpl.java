@@ -15,7 +15,7 @@
  */
 package io.vertx.cassandra.impl;
 
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.Row;
 import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.core.Context;
@@ -123,13 +123,24 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
     if (state == State.STOPPED) {
       return;
     }
-    resultSet.one(ar -> {
-      if (ar.succeeded()) {
-        handleFetched(ar.result());
+  
+    if (resultSet.remaining() > 0) {
+      handleFetched(resultSet.one());
+    } else {
+      if (resultSet.hasMorePages()) {
+        resultSet.fetchNextPage().map(rs -> resultSet.one())
+          .setHandler(event -> {
+            if (event.succeeded()) {
+              handleFetched(event.result());
+            } else {
+              handleException(event.cause());
+            }
+          });
       } else {
-        handleException(ar.cause());
+        // last row
+        handleFetched(null);
       }
-    });
+    }
   }
 
   private synchronized void handleFetched(Row row) {
