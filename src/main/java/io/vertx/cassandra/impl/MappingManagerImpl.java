@@ -15,15 +15,15 @@
  */
 package io.vertx.cassandra.impl;
 
+import com.datastax.driver.core.Session;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.Mapper;
 import io.vertx.cassandra.MappingManager;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.impl.ContextInternal;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Martijn Zwennes
@@ -31,7 +31,8 @@ import java.util.Objects;
 public class MappingManagerImpl implements MappingManager {
 
   final CassandraClientImpl client;
-  private com.datastax.driver.mapping.MappingManager mappingManager;
+
+  private AtomicReference<com.datastax.driver.mapping.MappingManager> mappingManager = new AtomicReference<>();
 
   public MappingManagerImpl(CassandraClient client) {
     Objects.requireNonNull(client, "client");
@@ -43,29 +44,16 @@ public class MappingManagerImpl implements MappingManager {
     return new MapperImpl<>(this, mappedClass);
   }
 
-  synchronized void getMappingManager(ContextInternal context, Handler<AsyncResult<com.datastax.driver.mapping.MappingManager>> handler) {
-    if (mappingManager != null) {
-      handler.handle(Future.succeededFuture(mappingManager));
-    } else {
-      client.getSession(context, ar -> {
-        if (ar.succeeded()) {
-          com.datastax.driver.mapping.MappingManager manager;
-          try {
-            synchronized (this) {
-              if (mappingManager == null) {
-                mappingManager = new com.datastax.driver.mapping.MappingManager(ar.result());
-              }
-              manager = mappingManager;
-            }
-          } catch (Exception e) {
-            handler.handle(Future.failedFuture(e));
-            return;
-          }
-          handler.handle(Future.succeededFuture(manager));
-        } else {
-          handler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
+  synchronized Future<com.datastax.driver.mapping.MappingManager> getMappingManager(ContextInternal context) {
+    com.datastax.driver.mapping.MappingManager current = mappingManager.get();
+    if (current != null) {
+      return context.succeededFuture(current);
     }
+    return client.getSession(context)
+      .map(this::getOrCreateManager);
+  }
+
+  private com.datastax.driver.mapping.MappingManager getOrCreateManager(Session session) {
+    return mappingManager.updateAndGet(m -> m != null ? m : new com.datastax.driver.mapping.MappingManager(session));
   }
 }

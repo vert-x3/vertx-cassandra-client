@@ -16,20 +16,17 @@
 
 package io.vertx.cassandra.impl;
 
-import com.google.common.util.concurrent.AbstractFuture;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.ContextInternal;
+import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.util.concurrent.Executor;
-import java.util.function.Function;
 
 /**
  * @author Thomas Segismont
@@ -45,10 +42,14 @@ public class UtilTest {
     Vertx vertx = rule.vertx();
     SettableFuture<String> future = SettableFuture.create();
     Context context = vertx.getOrCreateContext();
-    Util.handleOnContext(future, context, testContext.asyncAssertSuccess(value -> {
-      testContext.assertTrue(context == Vertx.currentContext());
-      testContext.assertEquals("foo", value);
-    }));
+    Async async = testContext.async();
+    Util.toVertxFuture(future, (ContextInternal) context)
+      .onFailure(testContext::fail)
+      .onSuccess(value -> {
+        testContext.assertTrue(context == Vertx.currentContext());
+        testContext.assertEquals("foo", value);
+        async.complete();
+      });
     future.set("foo");
   }
 
@@ -58,39 +59,14 @@ public class UtilTest {
     SettableFuture<String> future = SettableFuture.create();
     Context context = vertx.getOrCreateContext();
     Exception expected = new Exception();
-    Util.handleOnContext(future, context, testContext.asyncAssertFailure(throwable -> {
-      testContext.assertTrue(context == Vertx.currentContext());
-      testContext.assertTrue(expected == throwable);
-    }));
+    Async async = testContext.async();
+    Util.toVertxFuture(future, (ContextInternal) context)
+      .onSuccess(testContext::fail)
+      .onFailure(throwable -> {
+        testContext.assertTrue(context == Vertx.currentContext());
+        testContext.assertTrue(expected == throwable);
+        async.complete();
+      });
     future.setException(expected);
-  }
-
-  @Test
-  public void testNoHandler(TestContext testContext) {
-    Vertx vertx = rule.vertx();
-    ListenableFuture<Void> future = new AbstractFuture<Void>() {
-      @Override
-      public void addListener(Runnable listener, Executor executor) {
-        testContext.fail("No listener should be set");
-      }
-    };
-    Context context = vertx.getOrCreateContext();
-    Util.handleOnContext(future, context, null);
-  }
-
-  @Test
-  public void testConverterInvokedOnContext(TestContext testContext) {
-    Vertx vertx = rule.vertx();
-    SettableFuture<String> future = SettableFuture.create();
-    Context context = vertx.getOrCreateContext();
-    Function<String, Integer> converter = s -> {
-      testContext.assertTrue(context == Vertx.currentContext());
-      return s.length();
-    };
-    Util.handleOnContext(future, context, converter, testContext.asyncAssertSuccess(value -> {
-      testContext.assertTrue(context == Vertx.currentContext());
-      testContext.assertEquals(3, value);
-    }));
-    future.set("foo");
   }
 }

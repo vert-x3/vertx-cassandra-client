@@ -20,13 +20,19 @@ import com.datastax.driver.core.ExecutionInfo;
 import com.datastax.driver.core.Row;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.codegen.annotations.Nullable;
-import io.vertx.core.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.impl.ContextInternal;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static io.vertx.cassandra.impl.Util.handleOnContext;
+import static io.vertx.cassandra.impl.Util.setHandler;
+import static io.vertx.cassandra.impl.Util.toVertxFuture;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.concat;
 
 /**
  * @author Pavel Drankou
@@ -35,11 +41,11 @@ import static io.vertx.cassandra.impl.Util.handleOnContext;
 public class ResultSetImpl implements ResultSet {
 
   private com.datastax.driver.core.ResultSet resultSet;
-  private Vertx vertx;
+  private final ContextInternal context;
 
-  public ResultSetImpl(com.datastax.driver.core.ResultSet resultSet, Vertx vertx) {
+  public ResultSetImpl(com.datastax.driver.core.ResultSet resultSet, ContextInternal context) {
     this.resultSet = resultSet;
-    this.vertx = vertx;
+    this.context = context;
   }
 
   @Override
@@ -59,78 +65,61 @@ public class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSet fetchMoreResults(Handler<AsyncResult<Void>> handler) {
-    Context context = vertx.getOrCreateContext();
-    handleOnContext(resultSet.fetchMoreResults(), context, ignore -> null, handler);
+    Future<Void> future = fetchMoreResults();
+    setHandler(future, handler);
     return this;
   }
 
   @Override
   public Future<Void> fetchMoreResults() {
-    Promise<Void> promise = Promise.promise();
-    fetchMoreResults(promise);
-    return promise.future();
+    return toVertxFuture(resultSet.fetchMoreResults(), context).mapEmpty();
   }
 
   @Override
   public ResultSet one(Handler<AsyncResult<Row>> handler) {
-    Context context = vertx.getOrCreateContext();
-    if (getAvailableWithoutFetching() == 0 && !resultSet.isFullyFetched()) {
-      handleOnContext(resultSet.fetchMoreResults(), context, ignored -> resultSet.one(), handler);
-    } else {
-      // we want to run this action `on context` in order to avoid
-      // stack overflow in case when query fetch size is enormous
-      context.runOnContext(v -> handler.handle(Future.succeededFuture(resultSet.one())));
-    }
+    Future<Row> future = one();
+    setHandler(future, handler);
     return this;
   }
 
   @Override
   public Future<@Nullable Row> one() {
-    Promise<Row> promise = Promise.promise();
-    one(promise);
-    return promise.future();
+    if (getAvailableWithoutFetching() == 0 && !resultSet.isFullyFetched()) {
+      return fetchMoreResults().map(v -> resultSet.one());
+    }
+    return context.succeededFuture(resultSet.one());
   }
 
   @Override
   public ResultSet several(int amount, Handler<AsyncResult<List<Row>>> handler) {
-    loadSeveral(amount, new ArrayList<>(amount), handler);
+    Future<List<Row>> future = several(amount);
+    setHandler(future, handler);
     return this;
   }
 
   @Override
   public Future<List<Row>> several(int amount) {
-    Promise<List<Row>> promise = Promise.promise();
-    several(amount, promise);
-    return promise.future();
+    return loadSeveral(amount);
   }
 
-  private void loadSeveral(int remainedToAdd, List<Row> resultedList, Handler<AsyncResult<List<Row>>> handler) {
-    int availableWithoutFetching = getAvailableWithoutFetching();
-    if (remainedToAdd > 0) {
-      if (availableWithoutFetching > 0 && availableWithoutFetching < remainedToAdd) {
-        List<Row> rows = getRows(availableWithoutFetching);
-        resultedList.addAll(rows);
-        loadSeveral(remainedToAdd - rows.size(), resultedList, handler);
-      } else if (availableWithoutFetching >= remainedToAdd) {
-        List<Row> rows = getRows(remainedToAdd);
-        resultedList.addAll(rows);
-        handler.handle(Future.succeededFuture(resultedList));
-      } else if (availableWithoutFetching == 0) {
-        if (isFullyFetched()) {
-          handler.handle(Future.succeededFuture(resultedList));
-        } else {
-          fetchMoreResults(voidAsyncResult -> {
-            if (voidAsyncResult.succeeded()) {
-              loadSeveral(remainedToAdd, resultedList, handler);
-            } else {
-              handler.handle(Future.failedFuture(voidAsyncResult.cause()));
-            }
-          });
-        }
-      }
-    } else {
-      handler.handle(Future.succeededFuture(resultedList));
+  private Future<List<Row>> loadSeveral(int count) {
+    if (count <= 0) {
+      return context.succeededFuture(Collections.emptyList());
     }
+    int availableWithoutFetching = getAvailableWithoutFetching();
+    if (availableWithoutFetching > 0 && availableWithoutFetching < count) {
+      List<Row> rows = getRows(availableWithoutFetching);
+      return loadSeveral(count - rows.size())
+        .map(res -> concat(rows.stream(), res.stream()).collect(toList()));
+    }
+    if (availableWithoutFetching >= count) {
+      List<Row> rows = getRows(count);
+      return context.succeededFuture(rows);
+    }
+    if (isFullyFetched()) {
+      return context.succeededFuture(Collections.emptyList());
+    }
+    return fetchMoreResults().flatMap(v -> loadSeveral(count));
   }
 
   private List<Row> getRows(int amountToFetch) {
@@ -148,35 +137,24 @@ public class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSet all(Handler<AsyncResult<List<Row>>> handler) {
-    loadMore(vertx.getOrCreateContext(), Collections.emptyList(), handler);
+    Future<List<Row>> future = all();
+    setHandler(future, handler);
     return this;
   }
 
   @Override
   public Future<List<Row>> all() {
-    Promise<List<Row>> promise = Promise.promise();
-    all(promise);
-    return promise.future();
+    return loadMore();
   }
 
-  private void loadMore(Context context, List<Row> loaded, Handler<AsyncResult<List<Row>>> handler) {
-    int availableWithoutFetching = resultSet.getAvailableWithoutFetching();
-    List<Row> rows = new ArrayList<>(loaded.size() + availableWithoutFetching);
-    for (int i = 0; i < availableWithoutFetching; i++) {
-      rows.add(resultSet.one());
+  private Future<List<Row>> loadMore() {
+    List<Row> rows = getRows(resultSet.getAvailableWithoutFetching());
+    if (resultSet.isFullyFetched()) {
+      return context.succeededFuture(rows);
     }
-
-    if (!resultSet.isFullyFetched()) {
-      handleOnContext(resultSet.fetchMoreResults(), context, ar -> {
-        if (ar.succeeded()) {
-          loadMore(context, rows, handler);
-        } else {
-          handler.handle(Future.failedFuture(ar.cause()));
-        }
-      });
-    } else {
-      handler.handle(Future.succeededFuture(rows));
-    }
+    return fetchMoreResults()
+      .flatMap(v -> loadMore())
+      .map(res -> concat(rows.stream(), res.stream()).collect(toList()));
   }
 
   @Override
