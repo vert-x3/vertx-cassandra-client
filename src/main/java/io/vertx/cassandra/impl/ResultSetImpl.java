@@ -23,6 +23,7 @@ import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.impl.ContextInternal;
 
 import java.util.ArrayList;
@@ -87,7 +88,11 @@ public class ResultSetImpl implements ResultSet {
     if (getAvailableWithoutFetching() == 0 && !resultSet.isFullyFetched()) {
       return fetchMoreResults().map(v -> resultSet.one());
     }
-    return context.succeededFuture(resultSet.one());
+    final Promise<Row> promise = Promise.promise();
+    // we need to run this action `on context` in order to avoid
+    // stack overflow in case when query fetch size is enormous
+    context.runOnContext(v -> promise.complete(resultSet.one()));
+    return promise.future();
   }
 
   @Override
