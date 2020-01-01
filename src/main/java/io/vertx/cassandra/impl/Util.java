@@ -15,9 +15,8 @@
  */
 package io.vertx.cassandra.impl;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
+import io.vertx.core.*;
+import io.vertx.core.impl.ContextInternal;
 
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
@@ -53,4 +52,35 @@ class Util {
         }
       });
     }
+
+  /**
+   * Adapt {@link CompletionStage} to Vert.x {@link Future}.
+   * <p>
+   * The returned {@link Future} callbacks will be invoked on the provided {@code context}.
+   */
+  static <T> Future<T> toVertxFuture(CompletionStage<T> completionStage, ContextInternal context) {
+    Objects.requireNonNull(completionStage, "completionStage must not be null");
+    Objects.requireNonNull(context, "context must not be null");
+    Promise<T> promise = context.promise();
+    completionStage
+      .whenComplete((result, err) -> {
+        if (err != null) {
+          promise.fail(err);
+        } else {
+          promise.complete(result);
+        }
+      });
+    return promise.future();
+  }
+
+
+  /**
+   * Set the {@code handler} on the given {@code future}, if the {@code handler} is not null.
+   */
+  static <T> void setHandler(Future<T> future, Handler<AsyncResult<T>> handler) {
+    Objects.requireNonNull(future, "future must not be null");
+    if (handler != null) {
+      future.setHandler(handler);
+    }
+  }
 }

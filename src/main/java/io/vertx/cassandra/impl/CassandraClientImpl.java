@@ -81,7 +81,6 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient executeWithFullFetch(String query, Handler<AsyncResult<List<Row>>> resultHandler) {
-    return executeWithFullFetch(SimpleStatement.newInstance(query), resultHandler);
     Future<List<Row>> listFuture = executeWithFullFetch(query);
     setHandler(listFuture, resultHandler);
     return this;
@@ -106,7 +105,6 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler) {
-    return execute(SimpleStatement.newInstance(query), resultHandler);
     Future<ResultSet> future = execute(query);
     setHandler(future, resultHandler);
     return this;
@@ -119,7 +117,6 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public <R> CassandraClient execute(String query, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> asyncResultHandler) {
-    return execute(SimpleStatement.newInstance(query), collector, asyncResultHandler);
     Future<R> future = execute(query, collector);
     setHandler(future, asyncResultHandler);
     return this;
@@ -127,7 +124,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public <R> Future<R> execute(String query, Collector<Row, ?, R> collector) {
-    return execute(new SimpleStatement(query), collector);
+    return execute(SimpleStatement.newInstance(query), collector);
   }
 
   @Override
@@ -141,7 +138,7 @@ public class CassandraClientImpl implements CassandraClient {
   public Future<ResultSet> execute(Statement statement) {
     return getSession(vertx.getOrCreateContext())
       .flatMap(session -> toVertxFuture(session.executeAsync(statement), vertx.getContext()))
-      .map(rs -> new ResultSetImpl(rs, vertx.getContext()));
+      .map(rs -> new ResultSetImpl(rs, vertx));
   }
 
   @Override
@@ -212,7 +209,7 @@ public class CassandraClientImpl implements CassandraClient {
     return getSession(vertx.getOrCreateContext())
       .flatMap(session -> toVertxFuture(session.executeAsync(statement), vertx.getContext()))
       .map(rs -> {
-        ResultSet resultSet = new ResultSetImpl(rs, vertx.getContext());
+        ResultSet resultSet = new ResultSetImpl(rs, vertx);
         return new CassandraRowStreamImpl(vertx.getContext(), resultSet);
       });
   }
