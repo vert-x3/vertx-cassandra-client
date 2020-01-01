@@ -37,7 +37,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 
-import static io.vertx.cassandra.impl.Util.handleOnContext;
+import static io.vertx.cassandra.impl.Util.setHandler;
+import static io.vertx.cassandra.impl.Util.toVertxFuture;
 
 /**
  * @author Pavel Drankou
@@ -81,129 +82,110 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public CassandraClient executeWithFullFetch(String query, Handler<AsyncResult<List<Row>>> resultHandler) {
     return executeWithFullFetch(SimpleStatement.newInstance(query), resultHandler);
+    Future<List<Row>> listFuture = executeWithFullFetch(query);
+    setHandler(listFuture, resultHandler);
+    return this;
   }
 
   @Override
   public Future<List<Row>> executeWithFullFetch(String query) {
-    Promise<List<Row>> promise = Promise.promise();
-    executeWithFullFetch(query, promise);
-    return promise.future();
+    return executeWithFullFetch(SimpleStatement.newInstance(query));
   }
 
   @Override
   public CassandraClient executeWithFullFetch(Statement statement, Handler<AsyncResult<List<Row>>> resultHandler) {
-    execute(statement, exec -> {
-      if (exec.succeeded()) {
-        ResultSet resultSet = exec.result();
-        resultSet.all(resultHandler);
-      } else {
-        resultHandler.handle(Future.failedFuture(exec.cause()));
-      }
-    });
+    Future<List<Row>> future = executeWithFullFetch(statement);
+    setHandler(future, resultHandler);
     return this;
   }
 
   @Override
   public Future<List<Row>> executeWithFullFetch(Statement statement) {
-    Promise<List<Row>> promise = Promise.promise();
-    executeWithFullFetch(statement, promise);
-    return promise.future();
+    return execute(statement)
+      .flatMap(ResultSet::all);
   }
 
   public CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler) {
     return execute(SimpleStatement.newInstance(query), resultHandler);
+    Future<ResultSet> future = execute(query);
+    setHandler(future, resultHandler);
+    return this;
   }
 
   @Override
   public Future<ResultSet> execute(String query) {
-    Promise<ResultSet> promise = Promise.promise();
-    execute(query, promise);
-    return promise.future();
+    return execute(SimpleStatement.newInstance(query));
   }
 
   @Override
   public <R> CassandraClient execute(String query, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> asyncResultHandler) {
     return execute(SimpleStatement.newInstance(query), collector, asyncResultHandler);
+    Future<R> future = execute(query, collector);
+    setHandler(future, asyncResultHandler);
+    return this;
   }
 
   @Override
   public <R> Future<R> execute(String query, Collector<Row, ?, R> collector) {
-    Promise<R> promise = Promise.promise();
-    execute(query, collector, promise);
-    return promise.future();
+    return execute(new SimpleStatement(query), collector);
   }
 
   @Override
   public CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler) {
-    ContextInternal context = vertx.getOrCreateContext();
-    getSession(context, sess -> {
-      if (sess.succeeded()) {
-        handleOnContext(sess.result().executeAsync(statement), context, rs -> new ResultSetImpl(rs, vertx), resultHandler);
-      } else {
-        resultHandler.handle(Future.failedFuture(sess.cause()));
-      }
-    });
+    Future<ResultSet> future = execute(statement);
+    setHandler(future, resultHandler);
     return this;
   }
 
   @Override
   public Future<ResultSet> execute(Statement statement) {
-    Promise<ResultSet> promise = Promise.promise();
-    execute(statement, promise);
-    return promise.future();
+    return getSession(vertx.getOrCreateContext())
+      .flatMap(session -> toVertxFuture(session.executeAsync(statement), vertx.getContext()))
+      .map(rs -> new ResultSetImpl(rs, vertx.getContext()));
   }
 
   @Override
   public <R> CassandraClient execute(Statement statement, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> asyncResultHandler) {
-    executeAndCollect(statement, collector, asyncResultHandler);
+    Future<R> future = execute(statement, collector);
+    setHandler(future, asyncResultHandler);
     return this;
   }
 
   @Override
   public <R> Future<R> execute(Statement statement, Collector<Row, ?, R> collector) {
-    Promise<R> promise = Promise.promise();
-    execute(statement, collector, promise);
-    return promise.future();
+    return executeAndCollect(statement, collector);
   }
 
-  private <C, R> void executeAndCollect(Statement statement, Collector<Row, C, R> collector, Handler<AsyncResult<R>> asyncResultHandler) {
-    Promise<CassandraRowStream> cassandraRowStreamPromise = Promise.promise();
-    queryStream(statement, cassandraRowStreamPromise);
+  private <C, R> Future<R> executeAndCollect(Statement statement, Collector<Row, C, R> collector) {
     C container = collector.supplier().get();
     BiConsumer<C, Row> accumulator = collector.accumulator();
     Function<C, R> finisher = collector.finisher();
-    cassandraRowStreamPromise.future().compose(cassandraRowStream -> {
-      Promise<R> resultPromise = Promise.promise();
-      cassandraRowStream.endHandler(end -> {
-        R result = finisher.apply(container);
-        resultPromise.complete(result);
+    return queryStream(statement)
+      .flatMap(cassandraRowStream -> {
+        Promise<R> resultPromise = Promise.promise();
+        cassandraRowStream.endHandler(end -> {
+          R result = finisher.apply(container);
+          resultPromise.complete(result);
+        });
+        cassandraRowStream.handler(row -> {
+          accumulator.accept(container, row);
+        });
+        cassandraRowStream.exceptionHandler(resultPromise::fail);
+        return resultPromise.future();
       });
-      cassandraRowStream.handler(row -> {
-        accumulator.accept(container, row);
-      });
-      cassandraRowStream.exceptionHandler(resultPromise::fail);
-      return resultPromise.future();
-    }).setHandler(asyncResultHandler);
   }
 
   @Override
   public CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler) {
-    ContextInternal context = vertx.getOrCreateContext();
-    getSession(context, sess -> {
-      if (sess.succeeded()) {
-        handleOnContext(sess.result().prepareAsync(query), context, resultHandler);
-      } else {
-        resultHandler.handle(Future.failedFuture(sess.cause()));
-      }
-    });
+    Future<PreparedStatement> future = prepare(query);
+    setHandler(future, resultHandler);
     return this;
   }
 
   @Override
   public Future<PreparedStatement> prepare(String query) {
-    Promise<PreparedStatement> promise = Promise.promise();
-    prepare(query, promise);
-    return promise.future();
+    return getSession(vertx.getOrCreateContext())
+      .flatMap(session -> toVertxFuture(session.prepareAsync(query), vertx.getContext()));
   }
 
   @Override
@@ -220,36 +202,24 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public CassandraClient queryStream(Statement statement, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler) {
-    ContextInternal context = vertx.getOrCreateContext();
-    getSession(context, sess -> {
-      if (sess.succeeded()) {
-        handleOnContext(sess.result().executeAsync(statement), context, rs -> {
-          ResultSet resultSet = new ResultSetImpl(rs, vertx);
-          return new CassandraRowStreamImpl(context, resultSet);
-        }, rowStreamHandler);
-      } else {
-        rowStreamHandler.handle(Future.failedFuture(sess.cause()));
-      }
-    });
+    Future<CassandraRowStream> future = queryStream(statement);
+    setHandler(future, rowStreamHandler);
     return this;
   }
 
   @Override
   public Future<CassandraRowStream> queryStream(Statement statement) {
-    Promise<CassandraRowStream> promise = Promise.promise();
-    queryStream(statement, promise);
-    return promise.future();
+    return getSession(vertx.getOrCreateContext())
+      .flatMap(session -> toVertxFuture(session.executeAsync(statement), vertx.getContext()))
+      .map(rs -> {
+        ResultSet resultSet = new ResultSetImpl(rs, vertx.getContext());
+        return new CassandraRowStreamImpl(vertx.getContext(), resultSet);
+      });
   }
 
   @Override
   public Future<Void> close() {
-    Promise<Void> promise = Promise.promise();
-    close(promise);
-    return promise.future();
-  }
-
-  @Override
-  public CassandraClient close(Handler<AsyncResult<Void>> closeHandler) {
+    ContextInternal context = vertx.getOrCreateContext();
     if (raiseCloseFlag()) {
       do {
         SessionHolder current = holders.get(clientName);
@@ -257,8 +227,7 @@ public class CassandraClientImpl implements CassandraClient {
         if (next.refCount == 0) {
           if (holders.remove(clientName, current)) {
             if (current.session != null) {
-              handleOnContext(current.session.closeAsync(), vertx.getOrCreateContext(), closeHandler);
-              return this;
+              return toVertxFuture(current.session.closeAsync(), context);
             }
             break;
           }
@@ -267,9 +236,13 @@ public class CassandraClientImpl implements CassandraClient {
         }
       } while (true);
     }
-    if (closeHandler != null) {
-      closeHandler.handle(Future.succeededFuture());
-    }
+    return context.succeededFuture();
+  }
+
+  @Override
+  public CassandraClient close(Handler<AsyncResult<Void>> closeHandler) {
+    Future<Void> future = close();
+    setHandler(future, closeHandler);
     return this;
   }
 
@@ -281,19 +254,17 @@ public class CassandraClientImpl implements CassandraClient {
     return false;
   }
 
-  synchronized void getSession(ContextInternal context, Handler<AsyncResult<CqlSession>> handler) {
+  synchronized Future<CqlSession> getSession(ContextInternal context) {
     if (closed) {
-      handler.handle(Future.failedFuture("Client is closed"));
-    } else {
-      SessionHolder holder = holders.get(clientName);
-      if (holder.session != null) {
-        handler.handle(Future.succeededFuture(holder.session));
-      } else {
-        context.executeBlocking(promise -> {
-          connect(promise);
-        }, holder.connectionQueue, handler);
-      }
+      return context.failedFuture("Client is closed");
     }
+    SessionHolder holder = holders.get(clientName);
+    if (holder.session != null) {
+      return context.succeededFuture(holder.session);
+    }
+    return context.executeBlocking(promise -> {
+      connect(promise);
+    }, holder.connectionQueue);
   }
 
   private void connect(Promise<CqlSession> promise) {

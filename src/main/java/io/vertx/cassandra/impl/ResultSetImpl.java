@@ -21,13 +21,21 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.core.*;
 import io.vertx.core.impl.ContextInternal;
+import io.vertx.codegen.annotations.Nullable;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.impl.ContextInternal;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.vertx.cassandra.impl.Util.handleOnContext;
+import static io.vertx.cassandra.impl.Util.setHandler;
+import static io.vertx.cassandra.impl.Util.toVertxFuture;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.concat;
 
 /**
  * @author Pavel Drankou
@@ -38,9 +46,9 @@ public class ResultSetImpl implements ResultSet {
   private final Vertx vertx;
   private final AtomicReference<com.datastax.oss.driver.api.core.cql.AsyncResultSet> resultSetRef;
 
-  public ResultSetImpl(com.datastax.oss.driver.api.core.cql.AsyncResultSet resultSet, Vertx vertx) {
+  public ResultSetImpl(com.datastax.oss.driver.api.core.cql.AsyncResultSet resultSet, ContextInternal context) {
     this.resultSetRef = new AtomicReference<>(resultSet);
-    this.vertx = vertx;
+    this.context = context;
   }
 
   @Override
@@ -67,6 +75,10 @@ public class ResultSetImpl implements ResultSet {
   }
 
   @Override
+  public ResultSet fetchMoreResults(Handler<AsyncResult<Void>> handler) {
+    Future<Void> future = fetchMoreResults();
+    setHandler(future, handler);
+    return this;
   public int remaining() {
     return resultSetRef.get().remaining();
   }
