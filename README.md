@@ -8,7 +8,7 @@ The client is built on top of [DataStax Java Driver](https://github.com/datastax
 
 WARNING: This module has Tech Preview status, this means the API can change between versions.
 
-# Note for running tests in Intellij Idea
+## Running tests in IntelliJ Idea
 
 Before running tests directly in **Intellij Idea**, please, ensure you have disabled
 passing JUnit _argLine_ setting at **Build, Execution, Deployment** >
