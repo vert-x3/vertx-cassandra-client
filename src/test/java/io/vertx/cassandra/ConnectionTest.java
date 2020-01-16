@@ -39,7 +39,7 @@ public class ConnectionTest extends CassandraClientTestBase {
     client.close();
     CassandraClientOptions options = createClientOptions()
       .setContactPoints(Collections.singletonList(IP_HOST_WITHOUT_CASSANDRA));
-    client = CassandraClient.createNonShared(vertx, options);
+    client = CassandraClient.create(vertx, options);
     client.executeWithFullFetch("select release_version from system.local", testContext.asyncAssertFailure());
   }
 }
