@@ -38,7 +38,6 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 
 import static io.vertx.cassandra.impl.Util.setHandler;
-import static io.vertx.cassandra.impl.Util.toVertxFuture;
 
 /**
  * @author Pavel Drankou
@@ -137,7 +136,7 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public Future<ResultSet> execute(Statement statement) {
     return getSession(vertx.getOrCreateContext())
-      .flatMap(session -> toVertxFuture(session.executeAsync(statement), vertx.getContext()))
+      .flatMap(session -> Future.fromCompletionStage(session.executeAsync(statement), vertx.getContext()))
       .map(rs -> new ResultSetImpl(rs, vertx));
   }
 
@@ -182,7 +181,7 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public Future<PreparedStatement> prepare(String query) {
     return getSession(vertx.getOrCreateContext())
-      .flatMap(session -> toVertxFuture(session.prepareAsync(query), vertx.getContext()));
+      .flatMap(session -> Future.fromCompletionStage(session.prepareAsync(query), vertx.getContext()));
   }
 
   @Override
@@ -207,7 +206,7 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public Future<CassandraRowStream> queryStream(Statement statement) {
     return getSession(vertx.getOrCreateContext())
-      .flatMap(session -> toVertxFuture(session.executeAsync(statement), vertx.getContext()))
+      .flatMap(session -> Future.fromCompletionStage(session.executeAsync(statement), vertx.getContext()))
       .map(rs -> {
         ResultSet resultSet = new ResultSetImpl(rs, vertx);
         return new CassandraRowStreamImpl(vertx.getContext(), resultSet);
@@ -224,7 +223,7 @@ public class CassandraClientImpl implements CassandraClient {
         if (next.refCount == 0) {
           if (holders.remove(clientName, current)) {
             if (current.session != null) {
-              return toVertxFuture(current.session.closeAsync(), context);
+              return Future.fromCompletionStage(current.session.closeAsync(), context);
             }
             break;
           }

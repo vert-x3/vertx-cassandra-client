@@ -29,52 +29,6 @@ import java.util.function.Function;
 class Util {
 
   /**
-   * Invokes the {@code handler} on a given {@code context} when the {@code listenableFuture} succeeds or fails.
-   */
-  static <T> void handleOnContext(CompletionStage<T> completionStage, Context context, Handler<AsyncResult<T>> handler) {
-    handleOnContext(completionStage, context, Function.identity(), handler);
-  }
-
-  /**
-   * Invokes the {@code handler} on a given {@code context} when the {@code listenableFuture} succeeds or fails.
-   */
-  static <I, O> void handleOnContext(CompletionStage<I> completionStage, Context context, Function<I, O> converter, Handler<AsyncResult<O>> handler) {
-    Objects.requireNonNull(completionStage, "completionStage must not be null");
-    Objects.requireNonNull(context, "context must not be null");
-    Objects.requireNonNull(converter, "converter must not be null");
-    Objects.requireNonNull(handler, "handler must not be null");
-    completionStage
-      .whenComplete((result, err) -> {
-        if (err != null) {
-          context.runOnContext(v -> handler.handle(Future.failedFuture(err)));
-        } else {
-          context.runOnContext(v -> handler.handle(Future.succeededFuture(converter.apply(result))));
-        }
-      });
-    }
-
-  /**
-   * Adapt {@link CompletionStage} to Vert.x {@link Future}.
-   * <p>
-   * The returned {@link Future} callbacks will be invoked on the provided {@code context}.
-   */
-  static <T> Future<T> toVertxFuture(CompletionStage<T> completionStage, ContextInternal context) {
-    Objects.requireNonNull(completionStage, "completionStage must not be null");
-    Objects.requireNonNull(context, "context must not be null");
-    Promise<T> promise = context.promise();
-    completionStage
-      .whenComplete((result, err) -> {
-        if (err != null) {
-          promise.fail(err);
-        } else {
-          promise.complete(result);
-        }
-      });
-    return promise.future();
-  }
-
-
-  /**
    * Set the {@code handler} on the given {@code future}, if the {@code handler} is not null.
    */
   static <T> void setHandler(Future<T> future, Handler<AsyncResult<T>> handler) {

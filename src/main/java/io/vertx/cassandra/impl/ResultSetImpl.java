@@ -86,13 +86,13 @@ public class ResultSetImpl implements ResultSet {
 
   @Override
   public Future<ResultSet> fetchNextPage() throws IllegalStateException {
-    ContextInternal ctx = (ContextInternal) vertx.getOrCreateContext();
-    Promise<ResultSet> promise = ctx.promise();
-    Util.handleOnContext(resultSetRef.get().fetchNextPage(), ctx, datastaxRS -> {
-      resultSetRef.set(datastaxRS);
-      return this;
-    }, promise);
-    return promise.future();
+    return Future.fromCompletionStage(
+      resultSetRef.get().fetchNextPage(),
+      vertx.getOrCreateContext())
+      .map(datastaxRS -> {
+        resultSetRef.set(datastaxRS);
+        return this;
+      });
   }
 
   @Override
@@ -109,7 +109,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     if (resultSetRef.get().hasMorePages()) {
-      Util.handleOnContext(resultSetRef.get().fetchNextPage(), context, ar -> {
+      Future.fromCompletionStage(resultSetRef.get().fetchNextPage(), context).setHandler(ar -> {
         if (ar.succeeded()) {
           resultSetRef.set(ar.result());
           loadMore(context, rows, handler);
