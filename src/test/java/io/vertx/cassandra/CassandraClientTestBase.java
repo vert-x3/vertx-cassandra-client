@@ -64,7 +64,7 @@ public abstract class CassandraClientTestBase {
   @Before
   public void setUp() {
     vertx = Vertx.vertx();
-    client = CassandraClient.createNonShared(vertx, createClientOptions());
+    client = CassandraClient.create(vertx, createClientOptions());
   }
 
   @After

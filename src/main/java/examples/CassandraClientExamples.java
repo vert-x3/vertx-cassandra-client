@@ -34,14 +34,14 @@ public class CassandraClientExamples {
       .addContactPoint("node1.address", 9142)
       .addContactPoint("node2.address", 9142)
       .addContactPoint("node3.address", 9142);
-    CassandraClient client = CassandraClient.createNonShared(vertx, options);
+    CassandraClient client = CassandraClient.create(vertx, options);
   }
 
   public void portAndKeyspace(Vertx vertx) {
     CassandraClientOptions options = new CassandraClientOptions()
       .addContactPoint("localhost", 9142)
       .setKeyspace("my_keyspace");
-    CassandraClient client = CassandraClient.createNonShared(vertx, options);
+    CassandraClient client = CassandraClient.create(vertx, options);
   }
 
   public void sharedClient(Vertx vertx) {
