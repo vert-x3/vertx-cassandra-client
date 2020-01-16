@@ -46,14 +46,12 @@
 
   <dependencies>
 
-    <!-- 3rd party -->
+    <!-- DataStax driver and components -->
     <dependency>
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-core</artifactId>
       <version>${datastax-driver.version}</version>
     </dependency>
-
-    <!-- DataStax driver and components -->
     <dependency>
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-mapper-runtime</artifactId>
@@ -65,11 +63,6 @@
       <artifactId>java-driver-query-builder</artifactId>
       <version>${datastax-driver.version}</version>
       <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
     </dependency>
 
     <!-- Vert.x dependencies -->
@@ -86,6 +79,13 @@
       <groupId>io.vertx</groupId>
       <artifactId>vertx-docgen</artifactId>
       <optional>true</optional>
+    </dependency>
+
+    <!-- Logging -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <!-- Testing purposes -->
