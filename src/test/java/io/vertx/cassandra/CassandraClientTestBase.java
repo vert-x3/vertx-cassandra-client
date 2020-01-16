@@ -16,11 +16,7 @@
 package io.vertx.cassandra;
 
 import com.datastax.driver.core.Row;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.cassandraunit.CQLDataLoader;
@@ -66,7 +62,7 @@ public abstract class CassandraClientTestBase {
 
   @Before
   public void setUp() {
-    client = CassandraClient.createNonShared(vertx, createClientOptions());
+    client = CassandraClient.create(vertx, createClientOptions());
   }
 
   @After
