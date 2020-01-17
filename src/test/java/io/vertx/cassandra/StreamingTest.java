@@ -15,9 +15,9 @@
  */
 package io.vertx.cassandra;
 
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.SimpleStatement;
-import com.datastax.driver.core.Statement;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.cql.Statement;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -38,8 +38,8 @@ public class StreamingTest extends CassandraClientTestBase {
   public void testReadStream(TestContext testContext) {
     initializeRandomStringKeyspace(50);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'A'";
-    Statement statement = new SimpleStatement(query)
-      .setFetchSize(5); // make sure data is not loaded at once from Cassandra
+    Statement statement = SimpleStatement.newInstance(query)
+      .setPageSize(5); // make sure data is not loaded at once from Cassandra
     Async async = testContext.async();
     client.queryStream(query, testContext.asyncAssertSuccess(stream -> {
       List<Row> items = Collections.synchronizedList(new ArrayList<>());

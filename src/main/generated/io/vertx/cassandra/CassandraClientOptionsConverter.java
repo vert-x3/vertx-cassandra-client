@@ -16,23 +16,16 @@ public class CassandraClientOptionsConverter {
     for (java.util.Map.Entry<String, Object> member : json) {
       switch (member.getKey()) {
         case "contactPoints":
-          if (member.getValue() instanceof JsonArray) {
-            java.util.ArrayList<java.lang.String> list =  new java.util.ArrayList<>();
-            ((Iterable<Object>)member.getValue()).forEach( item -> {
-              if (item instanceof String)
-                list.add((String)item);
+          if (member.getValue() instanceof JsonObject) {
+            ((Iterable<java.util.Map.Entry<String, Object>>)member.getValue()).forEach(entry -> {
+              if (entry.getValue() instanceof Number)
+                obj.addContactPoint(entry.getKey(), ((Number)entry.getValue()).intValue());
             });
-            obj.setContactPoints(list);
           }
           break;
         case "keyspace":
           if (member.getValue() instanceof String) {
             obj.setKeyspace((String)member.getValue());
-          }
-          break;
-        case "port":
-          if (member.getValue() instanceof Number) {
-            obj.setPort(((Number)member.getValue()).intValue());
           }
           break;
       }
@@ -44,11 +37,6 @@ public class CassandraClientOptionsConverter {
   }
 
   public static void toJson(CassandraClientOptions obj, java.util.Map<String, Object> json) {
-    if (obj.getContactPoints() != null) {
-      JsonArray array = new JsonArray();
-      obj.getContactPoints().forEach(item -> array.add(item));
-      json.put("contactPoints", array);
-    }
     if (obj.getKeyspace() != null) {
       json.put("keyspace", obj.getKeyspace());
     }
