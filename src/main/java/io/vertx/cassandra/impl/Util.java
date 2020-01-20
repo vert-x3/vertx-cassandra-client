@@ -15,45 +15,18 @@
  */
 package io.vertx.cassandra.impl;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import io.vertx.core.impl.ContextInternal;
 
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 /**
  * @author Pavel Drankou
  * @author Thomas Segismont
  */
 class Util {
-
-  /**
-   * Adapt {@link ListenableFuture} to Vert.x {@link Future}.
-   *
-   * The returned {@link Future} callbacks will be invoked on the provided {@code context}.
-   */
-  static <T> Future<T> toVertxFuture(ListenableFuture<T> listenableFuture, ContextInternal context) {
-    Objects.requireNonNull(listenableFuture, "listenableFuture must not be null");
-    Objects.requireNonNull(context, "context must not be null");
-    Promise<T> promise = context.promise();
-    Futures.addCallback(listenableFuture, new FutureCallback<T>() {
-      @Override
-      public void onSuccess(T result) {
-        promise.complete(result);
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        promise.fail(t);
-      }
-    });
-    return promise.future();
-  }
 
   /**
    * Set the {@code handler} on the given {@code future}, if the {@code handler} is not null.

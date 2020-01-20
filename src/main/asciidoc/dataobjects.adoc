@@ -12,14 +12,11 @@
 [frame="topbot"]
 |===
 ^|Name | Type ^| Description
-|[[contactPoints]]`@contactPoints`|`Array of String`|+++
-Set a list of hosts, where some of cluster nodes is located.
+|[[contactPoints]]`@contactPoints`|`Number (int)`|+++
+Adds a contact point to use for the initial connection to the cluster
 +++
 |[[keyspace]]`@keyspace`|`String`|+++
 Set the keyspace to use when creating the Cassandra session. Defaults to <code>null</code>.
-+++
-|[[port]]`@port`|`Number (int)`|+++
-Set which port should be used for all the hosts to connect to a cassandra service.
 +++
 |===
 

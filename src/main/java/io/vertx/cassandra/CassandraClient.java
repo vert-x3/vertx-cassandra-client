@@ -15,9 +15,9 @@
  */
 package io.vertx.cassandra;
 
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Statement;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.Statement;
 import io.vertx.cassandra.impl.CassandraClientImpl;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
@@ -46,10 +46,10 @@ public interface CassandraClient {
   String DEFAULT_SHARED_CLIENT_NAME = "DEFAULT";
 
   /**
-   * Like {@link CassandraClient#createNonShared(Vertx, CassandraClientOptions)} with default options.
+   * Like {@link CassandraClient#create(Vertx, CassandraClientOptions)} with default options.
    */
-  static CassandraClient createNonShared(Vertx vertx) {
-    return createNonShared(vertx, new CassandraClientOptions());
+  static CassandraClient create(Vertx vertx) {
+    return create(vertx, new CassandraClientOptions());
   }
 
   /**
@@ -57,12 +57,11 @@ public interface CassandraClient {
    * <p>
    * It is not recommended to create several non shared clients in an application.
    *
-   * @param vertx the Vert.x instance
+   * @param vertx   the Vert.x instance
    * @param options the options
-   *
    * @return the client
    */
-  static CassandraClient createNonShared(Vertx vertx, CassandraClientOptions options) {
+  static CassandraClient create(Vertx vertx, CassandraClientOptions options) {
     return new CassandraClientImpl(vertx, UUID.randomUUID().toString(), options);
   }
 

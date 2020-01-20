@@ -15,15 +15,14 @@
  */
 package examples;
 
-import com.datastax.driver.core.BatchStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.SimpleStatement;
-import io.vertx.cassandra.*;
+import com.datastax.oss.driver.api.core.cql.*;
+import io.vertx.cassandra.CassandraClient;
+import io.vertx.cassandra.CassandraClientOptions;
+import io.vertx.cassandra.CassandraRowStream;
+import io.vertx.cassandra.ResultSet;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerResponse;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -32,24 +31,24 @@ public class CassandraClientExamples {
 
   public void specifyingNodes(Vertx vertx) {
     CassandraClientOptions options = new CassandraClientOptions()
-      .addContactPoint("node1.address")
-      .addContactPoint("node2.address")
-      .addContactPoint("node3.address");
-    CassandraClient client = CassandraClient.createNonShared(vertx, options);
+      .addContactPoint("node1.address", 9142)
+      .addContactPoint("node2.address", 9142)
+      .addContactPoint("node3.address", 9142);
+    CassandraClient client = CassandraClient.create(vertx, options);
   }
 
   public void portAndKeyspace(Vertx vertx) {
     CassandraClientOptions options = new CassandraClientOptions()
-      .setPort(9142)
+      .addContactPoint("localhost", 9142)
       .setKeyspace("my_keyspace");
-    CassandraClient client = CassandraClient.createNonShared(vertx, options);
+    CassandraClient client = CassandraClient.create(vertx, options);
   }
 
   public void sharedClient(Vertx vertx) {
     CassandraClientOptions options = new CassandraClientOptions()
-      .addContactPoint("node1.address")
-      .addContactPoint("node2.address")
-      .addContactPoint("node3.address")
+      .addContactPoint("node1.address", 9142)
+      .addContactPoint("node2.address", 9142)
+      .addContactPoint("node3.address", 9142)
       .setKeyspace("my_keyspace");
     CassandraClient client = CassandraClient.createShared(vertx, "sharedClientName", options);
   }
@@ -59,31 +58,22 @@ public class CassandraClientExamples {
       if (execute.succeeded()) {
         ResultSet resultSet = execute.result();
 
-        resultSet.one(one -> {
-          if (one.succeeded()) {
-            Row row = one.result();
-            System.out.println("One row successfully fetched");
-          } else {
-            System.out.println("Unable to fetch a row");
-            one.cause().printStackTrace();
-          }
-        });
-
-        resultSet.fetchMoreResults(fetchMoreResults -> {
-          if (fetchMoreResults.succeeded()) {
-            int availableWithoutFetching = resultSet.getAvailableWithoutFetching();
-            System.out.println("Now we have " + availableWithoutFetching + " rows fetched, but not consumed!");
-            if (resultSet.isFullyFetched()) {
-              System.out.println("The result is fully fetched, we don't need to call this method for one more time!");
+        if (resultSet.remaining() != 0) {
+          Row row = resultSet.one();
+          System.out.println("One row successfully fetched");
+        } else if (!resultSet.hasMorePages()) {
+          System.out.println("No pages to fetch");
+        } else {
+          resultSet.fetchNextPage().setHandler(fetchMoreResults -> {
+            if (fetchMoreResults.succeeded()) {
+              int availableWithoutFetching = resultSet.remaining();
+              System.out.println("Now we have " + availableWithoutFetching + " rows fetched, but not consumed!");
             } else {
-              System.out.println("The result still does not fully fetched");
+              System.out.println("Unable to fetch more results");
+              fetchMoreResults.cause().printStackTrace();
             }
-          } else {
-            System.out.println("Unable to fetch more results");
-            fetchMoreResults.cause().printStackTrace();
-          }
-        });
-
+          });
+        }
       } else {
         System.out.println("Unable to execute the query");
         execute.cause().printStackTrace();
@@ -192,10 +182,10 @@ public class CassandraClientExamples {
   }
 
   public void batching(CassandraClient cassandraClient) {
-    BatchStatement batchStatement = new BatchStatement()
-      .add(new SimpleStatement("INSERT INTO NAMES (name) VALUES ('Pavel')"))
-      .add(new SimpleStatement("INSERT INTO NAMES (name) VALUES ('Thomas')"))
-      .add(new SimpleStatement("INSERT INTO NAMES (name) VALUES ('Julien')"));
+    BatchStatement batchStatement = BatchStatement.newInstance(BatchType.LOGGED)
+      .add(SimpleStatement.newInstance("INSERT INTO NAMES (name) VALUES ('Pavel')"))
+      .add(SimpleStatement.newInstance("INSERT INTO NAMES (name) VALUES ('Thomas')"))
+      .add(SimpleStatement.newInstance("INSERT INTO NAMES (name) VALUES ('Julien')"));
 
     cassandraClient.execute(batchStatement, result -> {
       if (result.succeeded()) {
@@ -207,27 +197,4 @@ public class CassandraClientExamples {
     });
   }
 
-  public class MappedClass {
-    public MappedClass(String name) {
-    }
-  }
-
-  public void objectMapper(CassandraClient cassandraClient) {
-    MappingManager mappingManager = MappingManager.create(cassandraClient);
-    Mapper<MappedClass> mapper = mappingManager.mapper(MappedClass.class);
-
-    MappedClass value = new MappedClass("foo");
-
-    mapper.save(value, handler -> {
-      // Entity saved
-    });
-
-    mapper.get(Collections.singletonList("foo"), handler -> {
-      // Entity loaded
-    });
-
-    mapper.delete(Collections.singletonList("foo"), handler -> {
-      // Entity deleted
-    });
-  }
 }

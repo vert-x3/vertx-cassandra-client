@@ -16,13 +16,13 @@
     <!--
     Update these properties in the vertx-lang-* modules too
      -->
-    <datastax-driver.minor.version>3.5</datastax-driver.minor.version>
-    <datastax-driver.version>${datastax-driver.minor.version}.0</datastax-driver.version>
+    <datastax-driver.version>4.2.2</datastax-driver.version>
     <junit.version>4.12</junit.version>
     <slf4j.version>1.7.21</slf4j.version>
     <guava.version>20.0</guava.version>
-    <cassandra-unit.version>3.3.0.2</cassandra-unit.version>
+    <cassandra-unit.version>4.2.2.0-SNAPSHOT</cassandra-unit.version>
     <logback.version>1.2.3</logback.version>
+    <vertx-completable-future.version>0.1.2</vertx-completable-future.version>
   </properties>
 
   <dependencyManagement>
@@ -46,48 +46,23 @@
 
   <dependencies>
 
-    <!-- 3rd party -->
+    <!-- DataStax driver and components -->
     <dependency>
-      <groupId>com.datastax.cassandra</groupId>
-      <artifactId>cassandra-driver-core</artifactId>
+      <groupId>com.datastax.oss</groupId>
+      <artifactId>java-driver-core</artifactId>
       <version>${datastax-driver.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
-      <groupId>com.datastax.cassandra</groupId>
-      <artifactId>cassandra-driver-mapping</artifactId>
+      <groupId>com.datastax.oss</groupId>
+      <artifactId>java-driver-mapper-runtime</artifactId>
       <version>${datastax-driver.version}</version>
       <optional>true</optional>
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-    <!-- Cassandra driver requires these dependencies: declare this dependency to force this module to use this one. These are the versions used by vert.x -->
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>${guava.version}</version>
+      <groupId>com.datastax.oss</groupId>
+      <artifactId>java-driver-query-builder</artifactId>
+      <version>${datastax-driver.version}</version>
+      <optional>true</optional>
     </dependency>
 
     <!-- Vert.x dependencies -->
@@ -106,22 +81,19 @@
       <optional>true</optional>
     </dependency>
 
+    <!-- Logging -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+
     <!-- Testing purposes -->
     <dependency>
       <groupId>org.cassandraunit</groupId>
       <artifactId>cassandra-unit</artifactId>
       <version>${cassandra-unit.version}</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -148,27 +120,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.bsc.maven</groupId>
-          <artifactId>maven-processor-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>generate-sources</id>
-              <configuration>
-                <optionMap>
-                  <datastax.driver.minor.version>${datastax-driver.minor.version}</datastax.driver.minor.version>
-                  <datastax.driver.version>${datastax-driver.version}</datastax.driver.version>
-                </optionMap>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-  </build>
-
 </project>

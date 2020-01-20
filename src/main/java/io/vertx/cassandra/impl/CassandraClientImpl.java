@@ -15,7 +15,13 @@
  */
 package io.vertx.cassandra.impl;
 
-import com.datastax.driver.core.*;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.session.Session;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
 import io.vertx.cassandra.CassandraRowStream;
@@ -32,7 +38,6 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 
 import static io.vertx.cassandra.impl.Util.setHandler;
-import static io.vertx.cassandra.impl.Util.toVertxFuture;
 
 /**
  * @author Pavel Drankou
@@ -82,7 +87,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public Future<List<Row>> executeWithFullFetch(String query) {
-    return executeWithFullFetch(new SimpleStatement(query));
+    return executeWithFullFetch(SimpleStatement.newInstance(query));
   }
 
   @Override
@@ -106,7 +111,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public Future<ResultSet> execute(String query) {
-    return execute(new SimpleStatement(query));
+    return execute(SimpleStatement.newInstance(query));
   }
 
   @Override
@@ -118,7 +123,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public <R> Future<R> execute(String query, Collector<Row, ?, R> collector) {
-    return execute(new SimpleStatement(query), collector);
+    return execute(SimpleStatement.newInstance(query), collector);
   }
 
   @Override
@@ -131,8 +136,8 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public Future<ResultSet> execute(Statement statement) {
     return getSession(vertx.getOrCreateContext())
-      .flatMap(session -> toVertxFuture(session.executeAsync(statement), vertx.getContext()))
-      .map(rs -> new ResultSetImpl(rs, vertx.getContext()));
+      .flatMap(session -> Future.fromCompletionStage(session.executeAsync(statement), vertx.getContext()))
+      .map(rs -> new ResultSetImpl(rs, vertx));
   }
 
   @Override
@@ -176,12 +181,12 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public Future<PreparedStatement> prepare(String query) {
     return getSession(vertx.getOrCreateContext())
-      .flatMap(session -> toVertxFuture(session.prepareAsync(query), vertx.getContext()));
+      .flatMap(session -> Future.fromCompletionStage(session.prepareAsync(query), vertx.getContext()));
   }
 
   @Override
   public CassandraClient queryStream(String sql, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler) {
-    return queryStream(new SimpleStatement(sql), rowStreamHandler);
+    return queryStream(SimpleStatement.newInstance(sql), rowStreamHandler);
   }
 
   @Override
@@ -201,9 +206,9 @@ public class CassandraClientImpl implements CassandraClient {
   @Override
   public Future<CassandraRowStream> queryStream(Statement statement) {
     return getSession(vertx.getOrCreateContext())
-      .flatMap(session -> toVertxFuture(session.executeAsync(statement), vertx.getContext()))
+      .flatMap(session -> Future.fromCompletionStage(session.executeAsync(statement), vertx.getContext()))
       .map(rs -> {
-        ResultSet resultSet = new ResultSetImpl(rs, vertx.getContext());
+        ResultSet resultSet = new ResultSetImpl(rs, vertx);
         return new CassandraRowStreamImpl(vertx.getContext(), resultSet);
       });
   }
@@ -218,7 +223,7 @@ public class CassandraClientImpl implements CassandraClient {
         if (next.refCount == 0) {
           if (holders.remove(clientName, current)) {
             if (current.session != null) {
-              return toVertxFuture(current.session.closeAsync(), context);
+              return Future.fromCompletionStage(current.session.closeAsync(), context);
             }
             break;
           }
@@ -245,7 +250,7 @@ public class CassandraClientImpl implements CassandraClient {
     return false;
   }
 
-  synchronized Future<Session> getSession(ContextInternal context) {
+  synchronized Future<CqlSession> getSession(ContextInternal context) {
     if (closed) {
       return context.failedFuture("Client is closed");
     }
@@ -258,7 +263,7 @@ public class CassandraClientImpl implements CassandraClient {
     }, holder.connectionQueue);
   }
 
-  private void connect(Promise<Session> promise) {
+  private void connect(Promise<CqlSession> promise) {
     SessionHolder current = holders.get(clientName);
     if (current == null) {
       promise.fail("Client closed while connecting");
@@ -268,12 +273,8 @@ public class CassandraClientImpl implements CassandraClient {
       promise.complete(current.session);
       return;
     }
-    Cluster.Builder builder = options.dataStaxClusterBuilder();
-    if (builder.getContactPoints().isEmpty()) {
-      builder.addContactPoint(CassandraClientOptions.DEFAULT_HOST);
-    }
-    Cluster cluster = builder.build();
-    Session session = cluster.connect(options.getKeyspace());
+    CqlSessionBuilder builder = options.dataStaxClusterBuilder();
+    CqlSession session = builder.build();
     current = holders.compute(clientName, (k, h) -> h == null ? null : h.connected(session));
     if (current != null) {
       promise.complete(current.session);

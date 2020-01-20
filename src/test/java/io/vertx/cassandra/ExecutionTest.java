@@ -15,16 +15,13 @@
  */
 package io.vertx.cassandra;
 
-import com.datastax.driver.core.BatchStatement;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.SimpleStatement;
-import com.datastax.driver.core.Statement;
+
+import com.datastax.oss.driver.api.core.cql.*;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,9 +37,9 @@ public class ExecutionTest extends CassandraClientTestBase {
     initializeRandomStringKeyspace(1);
     String query = "select count(*) as cnt from random_strings.random_string_by_first_letter";
     client.execute(query, testContext.asyncAssertSuccess(resultSet -> {
-      resultSet.one(testContext.asyncAssertSuccess(row -> {
-        testContext.assertTrue(row.getLong("cnt") > 0);
-      }));
+      Row one = resultSet.one();
+      long cnt = one.getLong("cnt");
+      testContext.assertTrue(cnt > 0);
     }));
   }
 
@@ -50,69 +47,15 @@ public class ExecutionTest extends CassandraClientTestBase {
   public void simpleExecuteWithBigAmountOfFetches(TestContext testContext) {
     initializeRandomStringKeyspace(50);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
-    SimpleStatement statement = new SimpleStatement(query);
+    SimpleStatement statement = SimpleStatement.newInstance(query)
     // we would like to test that we are able to handle several fetches.
     // that is why we are setting a small fetch size
-    statement.setFetchSize(3);
+      .setPageSize(3);
     client.executeWithFullFetch(statement, testContext.asyncAssertSuccess(rows -> {
       for (Row row : rows) {
         String selectedString = row.getString(0);
         testContext.assertNotNull(selectedString);
       }
-    }));
-  }
-
-  @Test
-  public void fetchSeveralRowsWithoutFetchingAllOfThem(TestContext testContext) {
-    int amountToFetch = 20;
-    initializeRandomStringKeyspace(amountToFetch * 10);
-    String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
-    SimpleStatement statement = new SimpleStatement(query);
-    statement.setFetchSize(amountToFetch);
-    client.execute(statement, testContext.asyncAssertSuccess(rows -> {
-      rows.several(amountToFetch, listAsyncResult -> {
-        if (listAsyncResult.succeeded()) {
-          List<Row> result = listAsyncResult.result();
-          testContext.assertEquals(amountToFetch, result.size());
-          testContext.assertFalse(rows.isFullyFetched());
-        } else {
-          testContext.fail(listAsyncResult.cause());
-        }
-      });
-    }));
-  }
-
-  @Test
-  public void fetchSeveralRowsWhenAllInMemory(TestContext testContext) {
-    int severalRows = 20;
-    int resultedSetSize = severalRows * 10;
-    initializeRandomStringKeyspace(resultedSetSize);
-    String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
-    SimpleStatement statement = new SimpleStatement(query);
-    statement.setFetchSize(resultedSetSize);
-    client.execute(statement, testContext.asyncAssertSuccess(rows -> {
-      rows.fetchMoreResults(testContext.asyncAssertSuccess(voidAsyncResult -> {
-        testContext.assertTrue(rows.isFullyFetched());
-        rows.several(severalRows, testContext.asyncAssertSuccess(result -> {
-          testContext.assertEquals(severalRows, result.size());
-        }));
-      }));
-    }));
-  }
-
-  @Test
-  public void fetchSeveralRowsWhenResultedSetContainsLess(TestContext testContext) {
-    int severalRows = 20;
-    int resultedSetSize = 1;
-    initializeRandomStringKeyspace(resultedSetSize);
-    String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
-    SimpleStatement statement = new SimpleStatement(query);
-    client.execute(statement, testContext.asyncAssertSuccess(rows -> {
-        testContext.assertTrue(rows.isFullyFetched());
-        rows.several(severalRows, testContext.asyncAssertSuccess(result -> {
-          testContext.assertTrue(rows.isExhausted());
-          testContext.assertEquals(resultedSetSize, result.size());
-      }));
     }));
   }
 
@@ -128,10 +71,10 @@ public class ExecutionTest extends CassandraClientTestBase {
     );
     String insert = "INSERT INTO names.names_by_first_letter (first_letter, name) VALUES (?, ?)";
     client.prepare(insert, testContext.asyncAssertSuccess(prepared -> {
-      BatchStatement batch = new BatchStatement();
-      Stream.of("Paul", "Paulo", "Pavel")
-        .map(name -> prepared.bind(name.substring(0, 1), name))
-        .forEach(boundStatement -> batch.add(boundStatement));
+      BatchStatement batch = BatchStatement.newInstance(BatchType.LOGGED);
+      for (String name : Stream.of("Paul", "Paulo", "Pavel").collect(Collectors.toSet())) {
+        batch = batch.add(prepared.bind(name.substring(0, 1), name));
+      }
       client.execute(batch, testContext.asyncAssertSuccess(exec -> {
         String query = "select name from names.names_by_first_letter where first_letter = 'P'";
         client.execute(query, collector, testContext.asyncAssertSuccess(result -> {
