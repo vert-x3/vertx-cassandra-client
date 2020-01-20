@@ -17,6 +17,7 @@ package io.vertx.cassandra;
 
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.cql.SimpleStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -69,12 +70,12 @@ public class StreamingTest extends CassandraClientTestBase {
   public void streamFetchesDoesNotOverflowDefault512KbJVMStack(TestContext testContext) {
     int fetchSize = 100_000;
     initializeRandomStringKeyspace(5_000);
-    Statement query = new SimpleStatement(
+    final SimpleStatement query = new SimpleStatementBuilder(
       String.format(
         "select random_string from random_strings.random_string_by_first_letter limit %d",
         fetchSize
       )
-    ).setFetchSize(fetchSize);
+    ).setPageSize(fetchSize).build();
     Async async = testContext.async();
     client.queryStream(query, testContext.asyncAssertSuccess(stream -> {
       stream.endHandler(end -> async.countDown())
