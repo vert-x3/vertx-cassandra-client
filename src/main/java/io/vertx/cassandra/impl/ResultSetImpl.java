@@ -61,6 +61,11 @@ public class ResultSetImpl implements ResultSet {
   }
 
   @Override
+  public ExecutionInfo getExecutionInfo() {
+    return resultSetRef.get().getExecutionInfo();
+  }
+
+  @Override
   public int remaining() {
     return resultSetRef.get().remaining();
   }
