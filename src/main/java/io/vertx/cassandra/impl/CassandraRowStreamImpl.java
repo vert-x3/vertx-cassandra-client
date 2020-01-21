@@ -139,7 +139,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
     if (row != null) {
       inFlight++;
       if (internalQueue.write(row)) {
-        fetchRow();
+        context.runOnContext(v -> fetchRow());
       }
     } else {
       state = State.EXHAUSTED;
