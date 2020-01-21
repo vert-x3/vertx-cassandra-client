@@ -30,7 +30,7 @@
   </appender>
 
   <!-- cassandra-unit query execution -->
-  <logger name="org.cassandraunit" level="DEBUG" />
+  <logger name="org.cassandraunit" level="INFO" />
 
   <root level="INFO">
     <appender-ref ref="STDOUT"/>
