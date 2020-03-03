@@ -33,8 +33,9 @@ import java.util.stream.Stream;
 public class ExecutionTest extends CassandraClientTestBase {
 
   @Test
-  public void tableHaveSomeRows(TestContext testContext) {
-    initializeRandomStringKeyspace(1);
+  public void tableHaveSomeRows(TestContext testContext) throws Exception {
+    initializeRandomStringKeyspace();
+    insertRandomStrings(1);
     String query = "select count(*) as cnt from random_strings.random_string_by_first_letter";
     client.execute(query, testContext.asyncAssertSuccess(resultSet -> {
       Row one = resultSet.one();
@@ -44,12 +45,13 @@ public class ExecutionTest extends CassandraClientTestBase {
   }
 
   @Test
-  public void simpleExecuteWithBigAmountOfFetches(TestContext testContext) {
-    initializeRandomStringKeyspace(50);
+  public void simpleExecuteWithBigAmountOfFetches(TestContext testContext) throws Exception {
+    initializeRandomStringKeyspace();
+    insertRandomStrings(50);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
     SimpleStatement statement = SimpleStatement.newInstance(query)
-    // we would like to test that we are able to handle several fetches.
-    // that is why we are setting a small fetch size
+      // we would like to test that we are able to handle several fetches.
+      // that is why we are setting a small fetch size
       .setPageSize(3);
     client.executeWithFullFetch(statement, testContext.asyncAssertSuccess(rows -> {
       for (Row row : rows) {

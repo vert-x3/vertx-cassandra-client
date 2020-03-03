@@ -36,8 +36,9 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 public class StreamingTest extends CassandraClientTestBase {
 
   @Test
-  public void testReadStream(TestContext testContext) {
-    initializeRandomStringKeyspace(50);
+  public void testReadStream(TestContext testContext) throws Exception {
+    initializeRandomStringKeyspace();
+    insertRandomStrings(50);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'A'";
     Statement statement = SimpleStatement.newInstance(query)
       .setPageSize(5); // make sure data is not loaded at once from Cassandra
@@ -67,9 +68,10 @@ public class StreamingTest extends CassandraClientTestBase {
   }
 
   @Test
-  public void streamFetchesDoesNotOverflowDefault512KbJVMStack(TestContext testContext) {
+  public void streamFetchesDoesNotOverflowDefault512KbJVMStack(TestContext testContext) throws Exception {
     int fetchSize = 100_000;
-    initializeRandomStringKeyspace(5_000);
+    initializeRandomStringKeyspace();
+    insertRandomStrings(5_000);
     final SimpleStatement query = new SimpleStatementBuilder(
       String.format(
         "select random_string from random_strings.random_string_by_first_letter limit %d",
@@ -85,8 +87,9 @@ public class StreamingTest extends CassandraClientTestBase {
   }
 
   @Test
-  public void emptyStream(TestContext testContext) {
-    initializeRandomStringKeyspace(1);
+  public void emptyStream(TestContext testContext) throws Exception {
+    initializeRandomStringKeyspace();
+    insertRandomStrings(1);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = '$'";
     Async async = testContext.async();
     client.queryStream(query, testContext.asyncAssertSuccess(stream -> {

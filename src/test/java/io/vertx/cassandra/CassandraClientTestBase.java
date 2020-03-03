@@ -15,13 +15,13 @@
  */
 package io.vertx.cassandra;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Row;
 import io.vertx.core.*;
+import io.vertx.core.impl.VertxInternal;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.cassandraunit.CQLDataLoader;
-import org.cassandraunit.dataset.CQLDataSet;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.After;
 import org.junit.Before;
@@ -29,12 +29,13 @@ import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 import static io.vertx.cassandra.CassandraClientOptions.DEFAULT_HOST;
-import static java.util.stream.Collectors.toList;
 
 /**
  * @author Pavel Drankou
@@ -47,8 +48,8 @@ public abstract class CassandraClientTestBase {
 
   private final AtomicReference<Context> capturedContext = new AtomicReference<>();
 
-  protected Vertx vertx;
-  protected CQLDataLoader cqlDataLoader = new CQLDataLoader(EmbeddedCassandraServerHelper.getSession());
+  protected VertxInternal vertx;
+  protected CqlSession embeddedServerSession = EmbeddedCassandraServerHelper.getSession();
   protected CassandraClient client;
 
   @BeforeClass
@@ -63,7 +64,7 @@ public abstract class CassandraClientTestBase {
 
   @Before
   public void setUp() {
-    vertx = Vertx.vertx();
+    vertx = (VertxInternal) Vertx.vertx();
     client = CassandraClient.create(vertx, createClientOptions());
   }
 
@@ -82,12 +83,34 @@ public abstract class CassandraClientTestBase {
     return cassandraClientOptions.addContactPoint(InetSocketAddress.createUnresolved(DEFAULT_HOST, NATIVE_TRANSPORT_PORT));
   }
 
-  protected void initializeRandomStringKeyspace(int rowsPerLetter) {
-    cqlDataLoader.load(new RandomStringsDataSet(rowsPerLetter));
+  protected void initializeRandomStringKeyspace() {
+    initializeKeyspace("random_strings");
+    embeddedServerSession.execute("create table random_strings.random_string_by_first_letter (first_letter text, random_string text, primary key (first_letter, random_string))");
   }
 
   protected void initializeNamesKeyspace() {
-    cqlDataLoader.load(new NamesDataSet());
+    initializeKeyspace("names");
+    embeddedServerSession.execute("create table names.names_by_first_letter (first_letter text, name text, primary key (first_letter, name))");
+  }
+
+  private void initializeKeyspace(String keyspace) {
+    embeddedServerSession.execute("drop keyspace if exists " + keyspace);
+    embeddedServerSession.execute("create keyspace if not exists " + keyspace + " WITH replication={'class' : 'SimpleStrategy', 'replication_factor':1} AND durable_writes = false");
+  }
+
+  protected void insertRandomStrings(int rowsPerLetter) throws Exception {
+    List<CompletableFuture<?>> futures = new ArrayList<>();
+    for (char c = 'A'; c <= 'Z'; c++) {
+      for (int i = 0; i < rowsPerLetter; i++) {
+        String randomString = UUID.randomUUID().toString();
+        String statement = String.format("INSERT INTO random_strings.random_string_by_first_letter (first_letter, random_string) VALUES ('%s', '%s%s')", c, c, randomString);
+        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+          embeddedServerSession.execute(statement);
+        }, vertx.getWorkerPool());
+        futures.add(future);
+      }
+    }
+    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
   }
 
   protected void checkContext(TestContext testContext) {
@@ -108,65 +131,5 @@ public abstract class CassandraClientTestBase {
         handler.handle(Future.failedFuture(ar.cause()));
       }
     });
-  }
-
-  private static class RandomStringsDataSet implements CQLDataSet {
-
-    final int rowsPerLetter;
-
-    RandomStringsDataSet(int rowsPerLetter) {
-      this.rowsPerLetter = rowsPerLetter;
-    }
-
-    @Override
-    public List<String> getCQLStatements() {
-      Stream.Builder<String> builder = Stream.builder();
-      builder.add("create table random_strings.random_string_by_first_letter (first_letter text, random_string text, primary key (first_letter, random_string));");
-      for (char c = 'A'; c <= 'Z'; c++) {
-        for (int i = 0; i < rowsPerLetter; i++) {
-          String randomString = UUID.randomUUID().toString();
-          String statement = String.format("INSERT INTO random_strings.random_string_by_first_letter (first_letter, random_string) VALUES ('%s', '%s')", c, c + randomString);
-          builder.add(statement);
-        }
-      }
-      return builder.build().collect(toList());
-    }
-
-    @Override
-    public String getKeyspaceName() {
-      return "random_strings";
-    }
-
-    @Override
-    public boolean isKeyspaceCreation() {
-      return true;
-    }
-
-    @Override
-    public boolean isKeyspaceDeletion() {
-      return true;
-    }
-  }
-
-  private class NamesDataSet implements CQLDataSet {
-    @Override
-    public List<String> getCQLStatements() {
-      return Collections.singletonList("create table names.names_by_first_letter (first_letter text, name text, primary key (first_letter, name));");
-    }
-
-    @Override
-    public String getKeyspaceName() {
-      return "names";
-    }
-
-    @Override
-    public boolean isKeyspaceCreation() {
-      return true;
-    }
-
-    @Override
-    public boolean isKeyspaceDeletion() {
-      return true;
-    }
   }
 }
