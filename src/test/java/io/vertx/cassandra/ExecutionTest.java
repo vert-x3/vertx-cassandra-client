@@ -36,8 +36,9 @@ import java.util.stream.Stream;
 public class ExecutionTest extends CassandraClientTestBase {
 
   @Test
-  public void tableHaveSomeRows(TestContext testContext) {
-    initializeRandomStringKeyspace(1);
+  public void tableHaveSomeRows(TestContext testContext) throws Exception {
+    initializeRandomStringKeyspace();
+    insertRandomStrings(1);
     String query = "select count(*) as cnt from random_strings.random_string_by_first_letter";
     client.execute(query, testContext.asyncAssertSuccess(resultSet -> {
       resultSet.one(testContext.asyncAssertSuccess(row -> {
@@ -47,8 +48,9 @@ public class ExecutionTest extends CassandraClientTestBase {
   }
 
   @Test
-  public void simpleExecuteWithBigAmountOfFetches(TestContext testContext) {
-    initializeRandomStringKeyspace(50);
+  public void simpleExecuteWithBigAmountOfFetches(TestContext testContext) throws Exception {
+    initializeRandomStringKeyspace();
+    insertRandomStrings(50);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
     SimpleStatement statement = new SimpleStatement(query);
     // we would like to test that we are able to handle several fetches.
@@ -63,9 +65,10 @@ public class ExecutionTest extends CassandraClientTestBase {
   }
 
   @Test
-  public void fetchSeveralRowsWithoutFetchingAllOfThem(TestContext testContext) {
+  public void fetchSeveralRowsWithoutFetchingAllOfThem(TestContext testContext) throws Exception {
     int amountToFetch = 20;
-    initializeRandomStringKeyspace(amountToFetch * 10);
+    initializeRandomStringKeyspace();
+    insertRandomStrings(amountToFetch * 10);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
     SimpleStatement statement = new SimpleStatement(query);
     statement.setFetchSize(amountToFetch);
@@ -83,10 +86,11 @@ public class ExecutionTest extends CassandraClientTestBase {
   }
 
   @Test
-  public void fetchSeveralRowsWhenAllInMemory(TestContext testContext) {
+  public void fetchSeveralRowsWhenAllInMemory(TestContext testContext) throws Exception {
     int severalRows = 20;
     int resultedSetSize = severalRows * 10;
-    initializeRandomStringKeyspace(resultedSetSize);
+    initializeRandomStringKeyspace();
+    insertRandomStrings(resultedSetSize);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
     SimpleStatement statement = new SimpleStatement(query);
     statement.setFetchSize(resultedSetSize);
@@ -101,17 +105,18 @@ public class ExecutionTest extends CassandraClientTestBase {
   }
 
   @Test
-  public void fetchSeveralRowsWhenResultedSetContainsLess(TestContext testContext) {
+  public void fetchSeveralRowsWhenResultedSetContainsLess(TestContext testContext) throws Exception {
     int severalRows = 20;
     int resultedSetSize = 1;
-    initializeRandomStringKeyspace(resultedSetSize);
+    initializeRandomStringKeyspace();
+    insertRandomStrings(resultedSetSize);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'B'";
     SimpleStatement statement = new SimpleStatement(query);
     client.execute(statement, testContext.asyncAssertSuccess(rows -> {
-        testContext.assertTrue(rows.isFullyFetched());
-        rows.several(severalRows, testContext.asyncAssertSuccess(result -> {
-          testContext.assertTrue(rows.isExhausted());
-          testContext.assertEquals(resultedSetSize, result.size());
+      testContext.assertTrue(rows.isFullyFetched());
+      rows.several(severalRows, testContext.asyncAssertSuccess(result -> {
+        testContext.assertTrue(rows.isExhausted());
+        testContext.assertEquals(resultedSetSize, result.size());
       }));
     }));
   }

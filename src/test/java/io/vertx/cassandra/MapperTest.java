@@ -19,7 +19,6 @@ import com.datastax.driver.mapping.annotations.PartitionKey;
 import com.datastax.driver.mapping.annotations.Table;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.cassandraunit.dataset.CQLDataSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -34,7 +33,7 @@ public class MapperTest extends CassandraClientTestBase {
 
   @Test
   public void testSaveAndGet(TestContext context) {
-    cqlDataLoader.load(new MapperDataSet());
+    initializeMapperKeyspace();
     MappingManager manager = MappingManager.create(client);
     Mapper<Mapped> mapper = manager.mapper(Mapped.class);
     Mapped expected = new Mapped("foo", 1);
@@ -65,27 +64,5 @@ public class MapperTest extends CassandraClientTestBase {
     }
 
     Mapped() {}
-  }
-
-  private static class MapperDataSet implements CQLDataSet {
-    @Override
-    public List<String> getCQLStatements() {
-      return Collections.singletonList("create table mapper.mapper_test (name text, age int, primary key (name))");
-    }
-
-    @Override
-    public String getKeyspaceName() {
-      return "mapper";
-    }
-
-    @Override
-    public boolean isKeyspaceCreation() {
-      return true;
-    }
-
-    @Override
-    public boolean isKeyspaceDeletion() {
-      return true;
-    }
   }
 }

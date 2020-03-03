@@ -27,8 +27,9 @@ import org.junit.runner.RunWith;
 public class ThreadingCheckTest extends CassandraClientTestBase {
 
   @Test
-  public void checkStreamHandlers(TestContext testContext) {
-    initializeRandomStringKeyspace(1);
+  public void checkStreamHandlers(TestContext testContext) throws Exception {
+    initializeRandomStringKeyspace();
+    insertRandomStrings(1);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'A'";
     Async async = testContext.async(1);
     client.queryStream(query, testContext.asyncAssertSuccess(stream -> {
