@@ -64,7 +64,7 @@ public class CassandraClientExamples {
         } else if (!resultSet.hasMorePages()) {
           System.out.println("No pages to fetch");
         } else {
-          resultSet.fetchNextPage().setHandler(fetchMoreResults -> {
+          resultSet.fetchNextPage().onComplete(fetchMoreResults -> {
             if (fetchMoreResults.succeeded()) {
               int availableWithoutFetching = resultSet.remaining();
               System.out.println("Now we have " + availableWithoutFetching + " rows fetched, but not consumed!");

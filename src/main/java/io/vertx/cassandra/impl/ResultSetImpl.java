@@ -109,7 +109,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     if (resultSetRef.get().hasMorePages()) {
-      Future.fromCompletionStage(resultSetRef.get().fetchNextPage(), context).setHandler(ar -> {
+      Future.fromCompletionStage(resultSetRef.get().fetchNextPage(), context).onComplete(ar -> {
         if (ar.succeeded()) {
           resultSetRef.set(ar.result());
           loadMore(context, rows, handler);

@@ -123,13 +123,13 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
     if (state == State.STOPPED) {
       return;
     }
-  
+
     if (resultSet.remaining() > 0) {
       handleFetched(resultSet.one());
     } else {
       if (resultSet.hasMorePages()) {
         resultSet.fetchNextPage().map(rs -> resultSet.one())
-          .setHandler(event -> {
+          .onComplete(event -> {
             if (event.succeeded()) {
               handleFetched(event.result());
             } else {
