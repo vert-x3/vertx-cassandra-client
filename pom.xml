@@ -19,7 +19,7 @@
     <datastax-driver.version>4.2.2</datastax-driver.version>
     <junit.version>4.12</junit.version>
     <slf4j.version>1.7.21</slf4j.version>
-    <guava.version>20.0</guava.version>
+    <guava.version>25.1-jre</guava.version>
     <cassandra-unit.version>4.2.2.0-SNAPSHOT</cassandra-unit.version>
     <logback.version>1.2.3</logback.version>
     <vertx-completable-future.version>0.1.2</vertx-completable-future.version>
