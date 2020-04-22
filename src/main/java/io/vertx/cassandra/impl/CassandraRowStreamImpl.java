@@ -119,6 +119,11 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
     return this;
   }
 
+  @Override
+  public ResultSet resultSet() {
+    return this.resultSet;
+  }
+
   private synchronized void fetchRow() {
     if (state == State.STOPPED) {
       return;

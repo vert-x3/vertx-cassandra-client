@@ -63,4 +63,11 @@ public interface CassandraRowStream extends ReadStream<Row> {
   default void pipeTo(WriteStream<Row> dst, Handler<AsyncResult<Void>> handler) {
     ReadStream.super.pipeTo(dst, handler);
   }
+
+  /**
+   * Get the {@link ResultSet} this row stream is created from.
+   *
+   * @returns the resultSet
+   */
+  ResultSet resultSet();
 }
