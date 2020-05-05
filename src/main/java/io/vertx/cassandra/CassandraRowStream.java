@@ -18,8 +18,11 @@ package io.vertx.cassandra;
 import com.datastax.oss.driver.api.core.cql.Row;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.ReadStream;
+import io.vertx.core.streams.WriteStream;
 
 /**
  * A {@link ReadStream} for {@link Row} consumption.
@@ -48,4 +51,16 @@ public interface CassandraRowStream extends ReadStream<Row> {
 
   @Override
   CassandraRowStream fetch(long l);
+
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  @Override
+  default Future<Void> pipeTo(WriteStream<Row> dst) {
+    return ReadStream.super.pipeTo(dst);
+  }
+
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  @Override
+  default void pipeTo(WriteStream<Row> dst, Handler<AsyncResult<Void>> handler) {
+    ReadStream.super.pipeTo(dst, handler);
+  }
 }
