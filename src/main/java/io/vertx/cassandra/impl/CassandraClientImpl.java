@@ -51,6 +51,7 @@ public class CassandraClientImpl implements CassandraClient {
   private final String clientName;
   private final CassandraClientOptions options;
   private final Map<String, SessionHolder> holders;
+  private final ContextInternal creatingContext;
 
   private boolean closed;
 
@@ -61,12 +62,10 @@ public class CassandraClientImpl implements CassandraClient {
     this.vertx = (VertxInternal) vertx;
     this.clientName = clientName;
     this.options = options;
+    this.creatingContext = ((VertxInternal) vertx).getOrCreateContext();
     holders = vertx.sharedData().getLocalMap(HOLDERS_LOCAL_MAP_NAME);
     SessionHolder current = holders.compute(clientName, (k, h) -> h == null ? new SessionHolder() : h.increment());
-    Context context = Vertx.currentContext();
-    if (context != null && context.owner() == vertx) {
-      context.addCloseHook(this::close);
-    }
+    creatingContext.addCloseHook(this::close);
   }
 
   @Override
