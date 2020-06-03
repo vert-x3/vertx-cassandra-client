@@ -25,7 +25,6 @@ import io.vertx.core.http.HttpServerResponse;
 
 import java.util.List;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 public class CassandraClientExamples {
 
@@ -81,24 +80,17 @@ public class CassandraClientExamples {
     });
   }
 
-  public void executeAndCollect(CassandraClient cassandraClient) {
-    Collector<Row, ?, String> collector = Collectors.mapping(
-      row -> row.getString("last_name"),
-      Collectors.joining(",", "(", ")")
-    );
-
+  public void executeAndCollect(CassandraClient cassandraClient, Collector<Row, ?, String> listCollector) {
     // Run the query with the collector
-    cassandraClient.execute("SELECT * FROM users",
-      collector,
-      ar -> {
-        if (ar.succeeded()) {
-          // Get the string created by the collector
-          String list = ar.result();
-          System.out.println("Got " + list);
-        } else {
-          System.out.println("Failure: " + ar.cause().getMessage());
-        }
-      });
+    cassandraClient.execute("SELECT * FROM users", listCollector, ar -> {
+      if (ar.succeeded()) {
+        // Get the string created by the collector
+        String list = ar.result();
+        System.out.println("Got " + list);
+      } else {
+        System.out.println("Failure: " + ar.cause().getMessage());
+      }
+    });
   }
 
   public void streamingViaHttp(Vertx vertx, CassandraClient cassandraClient, HttpServerResponse response) {
