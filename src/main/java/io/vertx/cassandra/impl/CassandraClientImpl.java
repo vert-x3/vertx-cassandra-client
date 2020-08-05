@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.session.Session;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
@@ -239,6 +240,11 @@ public class CassandraClientImpl implements CassandraClient {
     Future<Void> future = close();
     setHandler(future, closeHandler);
     return this;
+  }
+
+  @Override
+  public Future<Metadata> getMetadata() {
+    return getSession(vertx.getOrCreateContext()).map(Session::getMetadata);
   }
 
   private synchronized boolean raiseCloseFlag() {
