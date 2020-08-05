@@ -17,6 +17,7 @@ package io.vertx.cassandra;
 
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import io.vertx.cassandra.impl.CassandraClientImpl;
 import io.vertx.codegen.annotations.Fluent;
@@ -231,6 +232,24 @@ public interface CassandraClient {
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   Future<PreparedStatement> prepare(String query);
+
+  /**
+   * Prepares the provided a {@link SimpleStatement}.
+   *
+   * @param resultHandler handler called when result of query preparation is present
+   * @param statement the statement to prepare
+   *
+   * @return current Cassandra client instance
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  @Fluent
+  CassandraClient prepare(SimpleStatement statement, Handler<AsyncResult<PreparedStatement>> resultHandler);
+
+  /**
+   * Like {@link #prepare(SimpleStatement, Handler)} but returns a {@code Future} of the asynchronous result.
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  Future<PreparedStatement> prepare(SimpleStatement statement);
 
   /**
    * Executes the given SQL <code>SELECT</code> statement which returns the results of the query as a read stream.
