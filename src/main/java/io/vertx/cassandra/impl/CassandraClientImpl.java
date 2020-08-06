@@ -243,7 +243,7 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
-  public Future<Metadata> getMetadata() {
+  public Future<Metadata> metadata() {
     return getSession(vertx.getOrCreateContext()).map(Session::getMetadata);
   }
 

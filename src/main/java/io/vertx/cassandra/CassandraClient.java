@@ -286,5 +286,5 @@ public interface CassandraClient {
    * Get {@link Metadata} for the session.
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  Future<Metadata> getMetadata();
+  Future<Metadata> metadata();
 }
