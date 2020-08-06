@@ -131,6 +131,7 @@ public class ResultSetImpl implements ResultSet {
   private void loadMore(Context context, List<Row> loaded, Handler<AsyncResult<List<Row>>> handler) {
     int availableWithoutFetching = resultSet.getAvailableWithoutFetching();
     List<Row> rows = new ArrayList<>(loaded.size() + availableWithoutFetching);
+    rows.addAll(loaded);
     for (int i = 0; i < availableWithoutFetching; i++) {
       rows.add(resultSet.one());
     }
