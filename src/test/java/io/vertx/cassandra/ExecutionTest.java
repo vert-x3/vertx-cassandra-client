@@ -100,4 +100,19 @@ public class ExecutionTest extends CassandraClientTestBase {
       }));
     }));
   }
+
+  @Test
+  public void preparedStatementsShouldWorkWithSimpleStatement(TestContext testContext) {
+    initializeNamesKeyspace();
+    SimpleStatement insert = SimpleStatement.newInstance("INSERT INTO names.names_by_first_letter (first_letter, name) VALUES (?, ?)");
+    client.prepare(insert, testContext.asyncAssertSuccess(prepared -> {
+      BoundStatement statement = prepared.bind("P", "Pavel");
+      client.execute(statement, testContext.asyncAssertSuccess(exec -> {
+        String select = "select NAME as n from names.names_by_first_letter where first_letter = 'P'";
+        client.executeWithFullFetch(select, testContext.asyncAssertSuccess(rows -> {
+          testContext.assertTrue(rows.get(0).getString("n").equals("Pavel"));
+        }));
+      }));
+    }));
+  }
 }
