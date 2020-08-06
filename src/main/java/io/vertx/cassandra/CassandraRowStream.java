@@ -15,6 +15,8 @@
  */
 package io.vertx.cassandra;
 
+import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.Row;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
@@ -65,9 +67,19 @@ public interface CassandraRowStream extends ReadStream<Row> {
   }
 
   /**
-   * Get the {@link ResultSet} this row stream is created from.
+   * Get the {@link ExectionInfo} provided by the backing {@link ResultSet} for this stream.
    *
-   * @returns the resultSet
+   * @returns the executionInfo
    */
-  ResultSet resultSet();
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  ExecutionInfo executionInfo();
+
+
+  /**
+   * Get the {@link ColumnDefinitions} provided by the backing {@link ResultSet} for this stream.
+   *
+   * @returns the columnDefinitions
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  ColumnDefinitions columnDefinitions();
 }
