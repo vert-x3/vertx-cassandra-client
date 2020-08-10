@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
 import io.vertx.cassandra.impl.CassandraClientImpl;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
@@ -299,4 +300,10 @@ public interface CassandraClient {
    */
   @Fluent
   CassandraClient close(Handler<AsyncResult<Void>> closeHandler);
+
+  /**
+   * Get {@link Metadata} for the session.
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  Future<Metadata> metadata();
 }
