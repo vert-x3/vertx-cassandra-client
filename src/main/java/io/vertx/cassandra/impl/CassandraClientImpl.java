@@ -184,6 +184,19 @@ public class CassandraClientImpl implements CassandraClient {
   }
 
   @Override
+  public CassandraClient prepare(SimpleStatement statement, Handler<AsyncResult<PreparedStatement>> resultHandler) {
+    Future<PreparedStatement> future = prepare(statement);
+    setHandler(future, resultHandler);
+    return this;
+  }
+
+  @Override
+  public Future<PreparedStatement> prepare(SimpleStatement statement) {
+    return getSession(vertx.getOrCreateContext())
+      .flatMap(session -> Future.fromCompletionStage(session.prepareAsync(statement), vertx.getContext()));
+  }
+
+  @Override
   public CassandraClient queryStream(String sql, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler) {
     return queryStream(SimpleStatement.newInstance(sql), rowStreamHandler);
   }
