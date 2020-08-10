@@ -15,6 +15,8 @@
  */
 package io.vertx.cassandra.impl;
 
+import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.Row;
 import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
@@ -117,6 +119,16 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
       internalQueue.fetch(l);
     }
     return this;
+  }
+
+  @Override
+  public ExecutionInfo executionInfo() {
+    return resultSet.getExecutionInfo();
+  }
+
+  @Override
+  public ColumnDefinitions columnDefinitions(){
+    return resultSet.getColumnDefinitions();
   }
 
   private synchronized void fetchRow() {
