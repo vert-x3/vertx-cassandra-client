@@ -53,6 +53,15 @@ public class CassandraClientOptions {
   }
 
   /**
+   * Copy constructor.
+   * @param other The other client to copy from.
+   */
+  public CassandraClientOptions(CassandraClientOptions other) {
+    this(other.dataStaxClusterBuilder());
+    this.setKeyspace(other.getKeyspace());
+  }
+
+  /**
    * Constructor using an existing {@link CqlSessionBuilder} instance.
    */
   public CassandraClientOptions(CqlSessionBuilder builder) {
