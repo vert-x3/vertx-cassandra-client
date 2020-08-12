@@ -23,7 +23,7 @@
     <cassandra-unit.version>4.2.2.0-SNAPSHOT</cassandra-unit.version>
     <logback.version>1.2.3</logback.version>
     <vertx-completable-future.version>0.1.2</vertx-completable-future.version>
-    
+
     <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
   </properties>
 
@@ -53,6 +53,17 @@
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-core</artifactId>
       <version>${datastax-driver.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hdrhistogram</groupId>
+          <artifactId>HdrHistogram</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.hdrhistogram</groupId>
+      <artifactId>HdrHistogram</artifactId>
+      <version>2.1.10</version>
     </dependency>
     <dependency>
       <groupId>com.datastax.oss</groupId>
