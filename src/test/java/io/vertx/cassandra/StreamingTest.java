@@ -98,4 +98,18 @@ public class StreamingTest extends CassandraClientTestBase {
         .handler(item -> testContext.fail());
     }));
   }
+
+  @Test
+  public void emptyStreamWithHandlerSetFirst(TestContext testContext) throws Exception {
+    initializeRandomStringKeyspace();
+    insertRandomStrings(1);
+    String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = '$'";
+    Async async = testContext.async();
+    client.queryStream(query, testContext.asyncAssertSuccess(stream -> {
+        stream.handler(item -> testContext.fail())
+          .endHandler(end -> async.countDown())
+          .exceptionHandler(testContext::fail);
+      })
+    );
+  }
 }
