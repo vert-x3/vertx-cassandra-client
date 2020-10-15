@@ -18,7 +18,7 @@
      -->
     <datastax-driver.minor.version>3.5</datastax-driver.minor.version>
     <datastax-driver.version>${datastax-driver.minor.version}.0</datastax-driver.version>
-    <junit.version>4.12</junit.version>
+    <junit.version>4.13.1</junit.version>
     <slf4j.version>1.7.21</slf4j.version>
     <guava.version>25.1-jre</guava.version>
     <cassandra-unit.version>3.3.0.2</cassandra-unit.version>
