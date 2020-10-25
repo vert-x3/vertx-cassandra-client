@@ -64,19 +64,18 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
 
   @Override
   public synchronized CassandraRowStream handler(Handler<Row> handler) {
-    Context ctx = context != Vertx.currentContext() ? context : Vertx.currentContext();
     if (state == State.STOPPED) {
       return this;
     }
     if (handler == null) {
       stop();
-      ctx.runOnContext(v -> handleEnd());
+      context.runOnContext(v -> handleEnd());
     } else {
       this.handler = handler;
       internalQueue.handler(this::handleRow);
       if (state == State.IDLE) {
         state = State.STARTED;
-        ctx.runOnContext(v -> fetchRow());
+        context.runOnContext(v -> fetchRow());
       }
     }
     return this;
