@@ -88,6 +88,11 @@ public interface ResultSet {
   boolean hasMorePages();
 
   /**
+   * Like {@link #fetchNextPage()} but with a direct callback.
+   */
+  void fetchNextPage(Handler<AsyncResult<ResultSet>> handler);
+
+  /**
    * @see AsyncResultSet#wasApplied()
    */
   Future<ResultSet> fetchNextPage() throws IllegalStateException;

@@ -85,6 +85,14 @@ public class ResultSetImpl implements ResultSet {
   }
 
   @Override
+  public void fetchNextPage(Handler<AsyncResult<ResultSet>> handler) {
+    Future<ResultSet> fut = fetchNextPage();
+    if (handler != null) {
+      fut.onComplete(handler);
+    }
+  }
+
+  @Override
   public Future<ResultSet> fetchNextPage() throws IllegalStateException {
     return Future.fromCompletionStage(
       resultSetRef.get().fetchNextPage(),
