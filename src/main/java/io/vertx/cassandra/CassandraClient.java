@@ -303,6 +303,14 @@ public interface CassandraClient {
 
   /**
    * Get {@link Metadata} for the session.
+   *
+   * @param handler the handler called backed with the metadata
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  void metadata(Handler<AsyncResult<Metadata>> handler);
+
+  /**
+   * Like {@link #metadata(Handler)} but returns a {@code Future} of the asynchronous result.
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   Future<Metadata> metadata();

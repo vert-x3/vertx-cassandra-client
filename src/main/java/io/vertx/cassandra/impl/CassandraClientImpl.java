@@ -260,6 +260,11 @@ public class CassandraClientImpl implements CassandraClient {
     return getSession(vertx.getOrCreateContext()).map(Session::getMetadata);
   }
 
+  @Override
+  public void metadata(Handler<AsyncResult<Metadata>> handler) {
+    metadata().onComplete(handler);
+  }
+
   private synchronized boolean raiseCloseFlag() {
     if (!closed) {
       closed = true;
