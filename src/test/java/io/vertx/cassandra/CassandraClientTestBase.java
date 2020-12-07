@@ -22,11 +22,11 @@ import io.vertx.core.impl.VertxInternal;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
-import org.testcontainers.containers.CassandraContainer;
-import org.testcontainers.utility.DockerImageName;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -44,23 +44,22 @@ import static io.vertx.cassandra.CassandraClientOptions.DEFAULT_HOST;
 @RunWith(VertxUnitRunner.class)
 public abstract class CassandraClientTestBase {
 
-  private static final int CASSANDRA_PORT;
-  private static final CassandraContainer CASSANDRA_CONTAINER;
-  protected static final CqlSession CQL_SESSION;
+  private static final int NATIVE_TRANSPORT_PORT = 9142;
 
   private final AtomicReference<Context> capturedContext = new AtomicReference<>();
 
   protected VertxInternal vertx;
+  protected CqlSession embeddedServerSession = EmbeddedCassandraServerHelper.getSession();
   protected CassandraClient client;
 
-  static {
-    CASSANDRA_CONTAINER = new CassandraContainer(DockerImageName.parse("cassandra:3.11").asCompatibleSubstituteFor("cassandra"));
-    CASSANDRA_CONTAINER.start();
-    CASSANDRA_PORT = CASSANDRA_CONTAINER.getMappedPort(CassandraContainer.CQL_PORT);
-    CQL_SESSION = CqlSession.builder()
-      .addContactPoint(new InetSocketAddress(CASSANDRA_CONTAINER.getHost(), CASSANDRA_PORT))
-      .withLocalDatacenter("datacenter1")
-      .build();
+  @BeforeClass
+  public static void startEmbeddedCassandra() throws Exception {
+    String version = System.getProperty("java.version");
+    // this statement can be removed only when this issue[https://github.com/jsevellec/cassandra-unit/issues/249] will be resolved
+    if (!version.startsWith("1.8")) {
+      throw new IllegalStateException("Only Java 8 is allowed for running tests. Your java version: " + version);
+    }
+    EmbeddedCassandraServerHelper.startEmbeddedCassandra();
   }
 
   @Before
@@ -74,28 +73,29 @@ public abstract class CassandraClientTestBase {
     final Async async = testContext.async();
     client.close(testContext.asyncAssertSuccess(close -> async.countDown()));
     async.await();
+    EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
     vertx.close(testContext.asyncAssertSuccess());
   }
 
   protected CassandraClientOptions createClientOptions() {
     CassandraClientOptions cassandraClientOptions = new CassandraClientOptions();
     cassandraClientOptions.dataStaxClusterBuilder().withLocalDatacenter("datacenter1");
-    return cassandraClientOptions.addContactPoint(InetSocketAddress.createUnresolved(DEFAULT_HOST, CASSANDRA_PORT));
+    return cassandraClientOptions.addContactPoint(InetSocketAddress.createUnresolved(DEFAULT_HOST, NATIVE_TRANSPORT_PORT));
   }
 
   protected void initializeRandomStringKeyspace() {
     initializeKeyspace("random_strings");
-    CQL_SESSION.execute("create table random_strings.random_string_by_first_letter (first_letter text, random_string text, primary key (first_letter, random_string))");
+    embeddedServerSession.execute("create table random_strings.random_string_by_first_letter (first_letter text, random_string text, primary key (first_letter, random_string))");
   }
 
   protected void initializeNamesKeyspace() {
     initializeKeyspace("names");
-    CQL_SESSION.execute("create table names.names_by_first_letter (first_letter text, name text, primary key (first_letter, name))");
+    embeddedServerSession.execute("create table names.names_by_first_letter (first_letter text, name text, primary key (first_letter, name))");
   }
 
   private void initializeKeyspace(String keyspace) {
-    CQL_SESSION.execute("drop keyspace if exists " + keyspace);
-    CQL_SESSION.execute("create keyspace if not exists " + keyspace + " WITH replication={'class' : 'SimpleStrategy', 'replication_factor':1} AND durable_writes = false");
+    embeddedServerSession.execute("drop keyspace if exists " + keyspace);
+    embeddedServerSession.execute("create keyspace if not exists " + keyspace + " WITH replication={'class' : 'SimpleStrategy', 'replication_factor':1} AND durable_writes = false");
   }
 
   protected void insertRandomStrings(int rowsPerLetter) throws Exception {
@@ -105,7 +105,7 @@ public abstract class CassandraClientTestBase {
         String randomString = UUID.randomUUID().toString();
         String statement = String.format("INSERT INTO random_strings.random_string_by_first_letter (first_letter, random_string) VALUES ('%s', '%s%s')", c, c, randomString);
         CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-          CQL_SESSION.execute(statement);
+          embeddedServerSession.execute(statement);
         }, vertx.getWorkerPool());
         futures.add(future);
       }

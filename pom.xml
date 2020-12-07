@@ -20,7 +20,7 @@
     <junit.version>4.13.1</junit.version>
     <slf4j.version>1.7.21</slf4j.version>
     <guava.version>25.1-jre</guava.version>
-    <testcontainers.version>1.15.0</testcontainers.version>
+    <cassandra-unit.version>4.3.1.0</cassandra-unit.version>
     <logback.version>1.2.3</logback.version>
     <vertx-completable-future.version>0.1.2</vertx-completable-future.version>
 
@@ -103,22 +103,10 @@
 
     <!-- Testing purposes -->
     <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers</artifactId>
-      <version>${testcontainers.version}</version>
+      <groupId>org.cassandraunit</groupId>
+      <artifactId>cassandra-unit</artifactId>
+      <version>${cassandra-unit.version}</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>cassandra</artifactId>
-      <version>${testcontainers.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>com.datastax.cassandra</groupId>
-          <artifactId>cassandra-driver-core</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
