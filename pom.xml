@@ -19,7 +19,7 @@
     <datastax-driver.version>4.9.0</datastax-driver.version>
     <junit.version>4.13.1</junit.version>
     <slf4j.version>1.7.21</slf4j.version>
-    <guava.version>25.1-jre</guava.version>
+    <guava.version>30.1.1-jre</guava.version>
     <testcontainers.version>1.15.2</testcontainers.version>
     <logback.version>1.2.3</logback.version>
     <vertx-completable-future.version>0.1.2</vertx-completable-future.version>
