@@ -22,10 +22,6 @@ Or, if you use Gradle:
 compile 'io.vertx:vertx-cassandra-client:${maven.version}'
 ----
 
-WARNING: The Cassandra client is not compatible with the Vert.x Dropwizard Metrics library.
-Both are using a different major version of the Dropwizard Metrics library and the Datastax Java driver https://github.com/datastax/java-driver/pull/943[won't upgrade] to the most recent version due to the drop of Java 7.
-The next major version (4.x) of the driver will use a more recent Dropwizard Metrics library  version.
-
 == Creating a client
 
 === Client options
