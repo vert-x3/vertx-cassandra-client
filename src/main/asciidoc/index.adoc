@@ -147,5 +147,5 @@ In case you'd like to execute several queries at once, you can use https://docs.
 ----
 
 ifeval::["$lang" == "java"]
-include::override/rxjava2.adoc[]
+include::override/rxjava3.adoc[]
 endif::[]
