@@ -5,5 +5,3 @@ image:https://github.com/vert-x3/vertx-cassandra-client/workflows/CI/badge.svg?b
 The Vert.x Cassandra client is an extension for interacting with http://cassandra.apache.org/[Apache Cassandra].
 
 The client is built on top of https://github.com/datastax/java-driver[DataStax Java Driver].
-
-WARNING: This module has Tech Preview status, this means the API can change between versions.
