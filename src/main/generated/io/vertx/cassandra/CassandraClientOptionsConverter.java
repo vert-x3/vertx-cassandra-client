@@ -29,6 +29,16 @@ public class CassandraClientOptionsConverter {
             obj.setKeyspace((String)member.getValue());
           }
           break;
+        case "password":
+          if (member.getValue() instanceof String) {
+            obj.setPassword((String)member.getValue());
+          }
+          break;
+        case "username":
+          if (member.getValue() instanceof String) {
+            obj.setUsername((String)member.getValue());
+          }
+          break;
       }
     }
   }
@@ -40,6 +50,12 @@ public class CassandraClientOptionsConverter {
   public static void toJson(CassandraClientOptions obj, java.util.Map<String, Object> json) {
     if (obj.getKeyspace() != null) {
       json.put("keyspace", obj.getKeyspace());
+    }
+    if (obj.getPassword() != null) {
+      json.put("password", obj.getPassword());
+    }
+    if (obj.getUsername() != null) {
+      json.put("username", obj.getUsername());
     }
   }
 }
