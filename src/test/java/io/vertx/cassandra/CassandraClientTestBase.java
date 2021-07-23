@@ -65,8 +65,12 @@ public abstract class CassandraClientTestBase {
 
   @Before
   public void setUp() {
-    vertx = (VertxInternal) Vertx.vertx();
+    vertx = (VertxInternal) Vertx.vertx(createVertxOptions());
     client = CassandraClient.create(vertx, createClientOptions());
+  }
+
+  protected VertxOptions createVertxOptions() {
+    return new VertxOptions();
   }
 
   @After

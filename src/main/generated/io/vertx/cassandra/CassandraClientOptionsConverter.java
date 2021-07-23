@@ -29,6 +29,11 @@ public class CassandraClientOptionsConverter {
             obj.setKeyspace((String)member.getValue());
           }
           break;
+        case "tracingPolicy":
+          if (member.getValue() instanceof String) {
+            obj.setTracingPolicy(io.vertx.core.tracing.TracingPolicy.valueOf((String)member.getValue()));
+          }
+          break;
       }
     }
   }
@@ -40,6 +45,9 @@ public class CassandraClientOptionsConverter {
   public static void toJson(CassandraClientOptions obj, java.util.Map<String, Object> json) {
     if (obj.getKeyspace() != null) {
       json.put("keyspace", obj.getKeyspace());
+    }
+    if (obj.getTracingPolicy() != null) {
+      json.put("tracingPolicy", obj.getTracingPolicy().name());
     }
   }
 }
