@@ -19,9 +19,9 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import io.vertx.codegen.annotations.DataObject;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.tracing.TracingPolicy;
 
 import java.net.InetSocketAddress;
-import java.util.List;
 
 /**
  * Eclipse Vert.x Cassandra client options.
@@ -44,6 +44,7 @@ public class CassandraClientOptions {
 
   private CqlSessionBuilder builder;
   private String keyspace;
+  private TracingPolicy tracingPolicy;
 
   /**
    * Default constructor.
@@ -59,6 +60,7 @@ public class CassandraClientOptions {
   public CassandraClientOptions(CassandraClientOptions other) {
     this(other.dataStaxClusterBuilder());
     this.setKeyspace(other.getKeyspace());
+    tracingPolicy = other.tracingPolicy;
   }
 
   /**
@@ -66,6 +68,7 @@ public class CassandraClientOptions {
    */
   public CassandraClientOptions(CqlSessionBuilder builder) {
     this.builder = builder;
+    this.tracingPolicy = TracingPolicy.PROPAGATE;
   }
 
   /**
@@ -134,6 +137,24 @@ public class CassandraClientOptions {
   public CassandraClientOptions setKeyspace(String keyspace) {
     this.keyspace = keyspace;
     builder.withKeyspace(keyspace);
+    return this;
+  }
+
+  /**
+   * @return the tracing policy
+   */
+  public TracingPolicy getTracingPolicy() {
+    return tracingPolicy;
+  }
+
+  /**
+   * Set the tracing policy for the client behavior when Vert.x has tracing enabled.
+   *
+   * @param tracingPolicy the tracing policy
+   * @return a reference to this, so the API can be used fluently
+   */
+  public CassandraClientOptions setTracingPolicy(TracingPolicy tracingPolicy) {
+    this.tracingPolicy = tracingPolicy;
     return this;
   }
 }

@@ -17,19 +17,20 @@ package io.vertx.cassandra.impl;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.session.Session;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
 import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
+import io.vertx.cassandra.impl.tracing.QueryRequest;
 import io.vertx.core.*;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
+import io.vertx.core.spi.tracing.SpanKind;
+import io.vertx.core.spi.tracing.TagExtractor;
+import io.vertx.core.spi.tracing.VertxTracer;
 
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 
 import static io.vertx.cassandra.impl.Util.setHandler;
+import static io.vertx.cassandra.impl.tracing.RequestTags.REQUEST_TAG_EXTRACTOR;
 
 /**
  * @author Pavel Drankou
@@ -49,6 +51,7 @@ public class CassandraClientImpl implements CassandraClient {
   static final String HOLDERS_LOCAL_MAP_NAME = "__vertx.cassandraClient.sessionHolders";
 
   final VertxInternal vertx;
+  private final VertxTracer tracer;
   private final String clientName;
   private final CassandraClientOptions options;
   private final Map<String, SessionHolder> holders;
@@ -61,6 +64,7 @@ public class CassandraClientImpl implements CassandraClient {
     Objects.requireNonNull(clientName, "clientName");
     Objects.requireNonNull(options, "options");
     this.vertx = (VertxInternal) vertx;
+    this.tracer = ((VertxInternal) vertx).tracer();
     this.clientName = clientName;
     this.options = options;
     this.creatingContext = ((VertxInternal) vertx).getOrCreateContext();
@@ -135,9 +139,35 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public Future<ResultSet> execute(Statement statement) {
-    return getSession(vertx.getOrCreateContext())
-      .flatMap(session -> Future.fromCompletionStage(session.executeAsync(statement), vertx.getContext()))
+    return executeInternal(statement)
       .map(rs -> new ResultSetImpl(rs, vertx));
+  }
+
+  private Future<AsyncResultSet> executeInternal(Statement statement) {
+    return getSession(vertx.getOrCreateContext())
+      .flatMap(session -> {
+        Object payload;
+        if (tracer != null) {
+          payload = sendRequest(session, statement);
+        } else {
+          payload = null;
+        }
+        Future<AsyncResultSet> future = Future.fromCompletionStage(session.executeAsync(statement), vertx.getContext());
+        if (tracer != null) {
+          future = future.onComplete(ar -> receiveResponse(payload, ar));
+        }
+        return future;
+      });
+  }
+
+  private Object sendRequest(CqlSession session, Statement statement) {
+    QueryRequest request = new QueryRequest(session, statement);
+    return tracer.sendRequest(vertx.getContext(), SpanKind.RPC, options.getTracingPolicy(), request, "Query", (k, v) -> {
+    }, REQUEST_TAG_EXTRACTOR);
+  }
+
+  private void receiveResponse(Object payload, AsyncResult<AsyncResultSet> asyncResult) {
+    tracer.receiveResponse(vertx.getContext(), null, payload, asyncResult.cause(), TagExtractor.empty());
   }
 
   @Override
@@ -218,8 +248,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public Future<CassandraRowStream> queryStream(Statement statement) {
-    return getSession(vertx.getOrCreateContext())
-      .flatMap(session -> Future.fromCompletionStage(session.executeAsync(statement), vertx.getContext()))
+    return executeInternal(statement)
       .map(rs -> {
         ResultSet resultSet = new ResultSetImpl(rs, vertx);
         return new CassandraRowStreamImpl(vertx.getContext(), resultSet);

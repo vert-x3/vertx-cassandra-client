@@ -22,6 +22,7 @@ import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.tracing.TracingPolicy;
 
 import java.util.List;
 import java.util.stream.Collector;
@@ -189,4 +190,8 @@ public class CassandraClientExamples {
     });
   }
 
+  public void tracing() {
+    CassandraClientOptions options = new CassandraClientOptions()
+      .setTracingPolicy(TracingPolicy.ALWAYS);
+  }
 }
