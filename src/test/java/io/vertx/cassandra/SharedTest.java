@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc.
+ * Copyright 2021 Red Hat, Inc.
  *
  * Red Hat licenses this file to you under the Apache License, version 2.0
  * (the "License"); you may not use this file except in compliance with the
@@ -16,8 +16,6 @@
 
 package io.vertx.cassandra;
 
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Promise;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
@@ -28,8 +26,6 @@ import java.util.regex.Pattern;
 
 @RunWith(VertxUnitRunner.class)
 public class SharedTest extends CassandraClientTestBase {
-
-  public static final String TEST_CLIENT_NAME = "TEST_CLIENT";
 
   private CassandraClient shared;
 
@@ -42,41 +38,16 @@ public class SharedTest extends CassandraClientTestBase {
 
   @Test
   public void testSharedClientNotClosed(TestContext testContext) {
-    client = CassandraClient.createShared(vertx, TEST_CLIENT_NAME, createClientOptions());
+    String clientName = randomClientName();
+    client = CassandraClient.createShared(vertx, clientName, createClientOptions());
     client.executeWithFullFetch("select release_version from system.local", testContext.asyncAssertSuccess(rows -> {
       String release_version = rows.iterator().next().getString("release_version");
       testContext.assertTrue(Pattern.compile("[0-9\\.]+").matcher(release_version).find());
-      vertx.deployVerticle(new SampleVerticle(createClientOptions(), false), testContext.asyncAssertSuccess(id -> {
+      vertx.deployVerticle(new VerticleWithCassandraClient(createClientOptions(), clientName, false, true), testContext.asyncAssertSuccess(id -> {
         vertx.undeploy(id, testContext.asyncAssertSuccess(v2 -> {
           testContext.assertTrue(client.isConnected());
         }));
       }));
     }));
-  }
-
-  private static class SampleVerticle extends AbstractVerticle {
-
-    final CassandraClientOptions options;
-    final boolean closeOnStop;
-    CassandraClient client;
-
-    SampleVerticle(CassandraClientOptions options, boolean closeOnStop) {
-      this.options = options;
-      this.closeOnStop = closeOnStop;
-    }
-
-    @Override
-    public void start() {
-      client = CassandraClient.createShared(vertx, TEST_CLIENT_NAME, options);
-    }
-
-    @Override
-    public void stop(Promise<Void> stopFuture) {
-      if (closeOnStop) {
-        client.close(stopFuture);
-      } else {
-        stopFuture.complete();
-      }
-    }
   }
 }

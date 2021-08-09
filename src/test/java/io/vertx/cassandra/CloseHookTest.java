@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc.
+ * Copyright 2021 Red Hat, Inc.
  *
  * Red Hat licenses this file to you under the Apache License, version 2.0
  * (the "License"); you may not use this file except in compliance with the
@@ -16,8 +16,6 @@
 
 package io.vertx.cassandra;
 
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Promise;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
@@ -28,8 +26,6 @@ import static org.junit.Assert.assertFalse;
 
 @RunWith(VertxUnitRunner.class)
 public class CloseHookTest extends CassandraClientTestBase {
-
-  private static final String TEST_CLIENT_NAME = "TEST_CLIENT";
 
   private CassandraClient shared;
 
@@ -42,10 +38,11 @@ public class CloseHookTest extends CassandraClientTestBase {
 
   @Test
   public void testClientClosedAfterUndeploy(TestContext testContext) {
-    VerticleWithCassandraClient verticle = new VerticleWithCassandraClient(createClientOptions(), false);
+    String clientName = randomClientName();
+    VerticleWithCassandraClient verticle = new VerticleWithCassandraClient(createClientOptions(), clientName, true, false);
     vertx.deployVerticle(verticle, testContext.asyncAssertSuccess(id -> {
       vertx.undeploy(id, testContext.asyncAssertSuccess(v -> {
-        CassandraClient client = CassandraClient.createShared(vertx, TEST_CLIENT_NAME, createClientOptions());
+        CassandraClient client = CassandraClient.createShared(vertx, clientName, createClientOptions());
         testContext.assertFalse(client.isConnected());
       }));
     }));
@@ -53,9 +50,10 @@ public class CloseHookTest extends CassandraClientTestBase {
 
   @Test
   public void testExternalSharedClientNotClosedAfterUndeploy(TestContext testContext) {
-    shared = CassandraClient.createShared(vertx, TEST_CLIENT_NAME, createClientOptions());
+    String clientName = randomClientName();
+    shared = CassandraClient.createShared(vertx, clientName, createClientOptions());
     assertFalse(shared.isConnected());
-    VerticleWithCassandraClient verticle = new VerticleWithCassandraClient(createClientOptions(), true);
+    VerticleWithCassandraClient verticle = new VerticleWithCassandraClient(createClientOptions(), clientName, true, true);
     vertx.deployVerticle(verticle, testContext.asyncAssertSuccess(id -> {
       testContext.assertTrue(shared.isConnected());
       vertx.undeploy(id, testContext.asyncAssertSuccess(v -> {
@@ -64,36 +62,4 @@ public class CloseHookTest extends CassandraClientTestBase {
     }));
   }
 
-  private static class VerticleWithCassandraClient extends AbstractVerticle {
-
-    final CassandraClientOptions options;
-    final boolean closeClientOnStop;
-    CassandraClient client;
-
-    VerticleWithCassandraClient(CassandraClientOptions options, boolean closeManuallyOnStop) {
-      this.options = options;
-      this.closeClientOnStop = closeManuallyOnStop;
-    }
-
-    @Override
-    public void start(Promise<Void> startFuture) {
-      client = CassandraClient.createShared(vertx, TEST_CLIENT_NAME, options);
-      getCassandraReleaseVersion(client, ar -> {
-        if (ar.succeeded()) {
-          startFuture.complete();
-        } else {
-          startFuture.fail(ar.cause());
-        }
-      });
-    }
-
-    @Override
-    public void stop(Promise<Void> stopFuture) throws Exception {
-      if (closeClientOnStop && client != null) {
-        client.close(stopFuture);
-      } else {
-        stopFuture.complete();
-      }
-    }
-  }
 }
