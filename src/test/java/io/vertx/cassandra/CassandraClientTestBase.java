@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc.
+ * Copyright 2021 Red Hat, Inc.
  *
  * Red Hat licenses this file to you under the Apache License, version 2.0
  * (the "License"); you may not use this file except in compliance with the
@@ -135,5 +135,9 @@ public abstract class CassandraClientTestBase {
         handler.handle(Future.failedFuture(ar.cause()));
       }
     });
+  }
+
+  protected static String randomClientName() {
+    return CassandraClient.class.getSimpleName() + "-" + UUID.randomUUID();
   }
 }
