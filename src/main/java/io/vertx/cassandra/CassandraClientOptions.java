@@ -42,8 +42,11 @@ public class CassandraClientOptions {
    */
   public static final String DEFAULT_HOST = "localhost";
 
-  private CqlSessionBuilder builder;
+  private final CqlSessionBuilder builder;
+
   private String keyspace;
+  private String username;
+  private String password;
   private TracingPolicy tracingPolicy;
 
   /**
@@ -137,6 +140,52 @@ public class CassandraClientOptions {
   public CassandraClientOptions setKeyspace(String keyspace) {
     this.keyspace = keyspace;
     builder.withKeyspace(keyspace);
+    return this;
+  }
+
+  /**
+   * @return the username if plaintext authentication is used
+   */
+  public String getUsername() {
+    return username;
+  }
+
+  /**
+   * Set the username for plaintext authentication. Defaults to {@code null}.
+   *
+   * @param username the username for plaintext authentication
+   * @return a reference to this, so the API can be used fluently
+   */
+  public CassandraClientOptions setUsername(String username) {
+    this.username = username;
+    setAuth();
+    return this;
+  }
+
+  private void setAuth() {
+    if (username == null || password == null) {
+      builder.withAuthProvider(null);
+    } else {
+      builder.withAuthCredentials(username, password);
+    }
+  }
+
+  /**
+   * @return the password if plaintext authentication is used
+   */
+  public String getPassword() {
+    return password;
+  }
+
+  /**
+   * Set the password for plaintext authentication. Defaults to {@code null}.
+   *
+   * @param password the username for plaintext authentication
+   * @return a reference to this, so the API can be used fluently
+   */
+  public CassandraClientOptions setPassword(String password) {
+    this.password = password;
+    setAuth();
     return this;
   }
 
