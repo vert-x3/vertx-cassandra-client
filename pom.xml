@@ -1,174 +1,322 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-
-  <parent>
-    <groupId>io.vertx</groupId>
-    <artifactId>vertx-ext-parent</artifactId>
-    <version>38</version>
-  </parent>
-
-  <artifactId>vertx-cassandra-client</artifactId>
-  <version>3.9.9-SNAPSHOT</version>
-
-  <properties>
-    <stack.version>3.9.9-SNAPSHOT</stack.version>
-    <!--
+      
+    <modelVersion>4.0.0</modelVersion>
+      
+    <parent>
+            
+        <groupId>io.vertx</groupId>
+            
+        <artifactId>vertx-ext-parent</artifactId>
+            
+        <version>38</version>
+          
+    </parent>
+      
+    <artifactId>vertx-cassandra-client</artifactId>
+      
+    <version>3.9.9</version>
+      
+    <properties>
+            
+        <stack.version>3.9.9</stack.version>
+            
+        <!--
     Update these properties in the vertx-lang-* modules too
      -->
-    <datastax-driver.minor.version>3.5</datastax-driver.minor.version>
-    <datastax-driver.version>${datastax-driver.minor.version}.0</datastax-driver.version>
-    <junit.version>4.13.1</junit.version>
-    <slf4j.version>1.7.21</slf4j.version>
-    <guava.version>25.1-jre</guava.version>
-    <cassandra-unit.version>3.3.0.2</cassandra-unit.version>
-    <logback.version>1.2.3</logback.version>
-  </properties>
-
-  <dependencyManagement>
+            
+        <datastax-driver.minor.version>3.5</datastax-driver.minor.version>
+            
+        <datastax-driver.version>${datastax-driver.minor.version}.0</datastax-driver.version>
+            
+        <junit.version>4.13.1</junit.version>
+            
+        <slf4j.version>1.7.21</slf4j.version>
+            
+        <guava.version>25.1-jre</guava.version>
+            
+        <cassandra-unit.version>3.3.0.2</cassandra-unit.version>
+            
+        <logback.version>1.2.3</logback.version>
+          
+    </properties>
+      
+    <dependencyManagement>
+            
+        <dependencies>
+                  
+            <dependency>
+                        
+                <groupId>io.vertx</groupId>
+                        
+                <artifactId>vertx-dependencies</artifactId>
+                        
+                <version>${stack.version}</version>
+                        
+                <type>pom</type>
+                        
+                <scope>import</scope>
+                      
+            </dependency>
+                
+        </dependencies>
+          
+    </dependencyManagement>
+      
+    <licenses>
+            
+        <license>
+                  
+            <name>The Apache License, Version 2.0</name>
+                  
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+                
+        </license>
+          
+    </licenses>
+      
     <dependencies>
-      <dependency>
-        <groupId>io.vertx</groupId>
-        <artifactId>vertx-dependencies</artifactId>
-        <version>${stack.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
+            
+        <!-- 3rd party -->
+            
+        <dependency>
+                  
+            <groupId>com.datastax.cassandra</groupId>
+                  
+            <artifactId>cassandra-driver-core</artifactId>
+                  
+            <version>${datastax-driver.version}</version>
+                  
+            <exclusions>
+                        
+                <exclusion>
+                              
+                    <groupId>org.slf4j</groupId>
+                              
+                    <artifactId>slf4j-api</artifactId>
+                            
+                </exclusion>
+                        
+                <exclusion>
+                              
+                    <groupId>com.google.guava</groupId>
+                              
+                    <artifactId>guava</artifactId>
+                            
+                </exclusion>
+                      
+            </exclusions>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>com.datastax.cassandra</groupId>
+                  
+            <artifactId>cassandra-driver-mapping</artifactId>
+                  
+            <version>${datastax-driver.version}</version>
+                  
+            <optional>true</optional>
+                  
+            <exclusions>
+                        
+                <exclusion>
+                              
+                    <groupId>org.slf4j</groupId>
+                              
+                    <artifactId>slf4j-api</artifactId>
+                            
+                </exclusion>
+                        
+                <exclusion>
+                              
+                    <groupId>com.google.guava</groupId>
+                              
+                    <artifactId>guava</artifactId>
+                            
+                </exclusion>
+                      
+            </exclusions>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>org.slf4j</groupId>
+                  
+            <artifactId>slf4j-api</artifactId>
+                  
+            <version>${slf4j.version}</version>
+                
+        </dependency>
+            
+        <!-- Cassandra driver requires these dependencies: declare this dependency to force this module to use this one. These are the versions used by vert.x -->
+            
+        <dependency>
+                  
+            <groupId>com.google.guava</groupId>
+                  
+            <artifactId>guava</artifactId>
+                  
+            <version>${guava.version}</version>
+                
+        </dependency>
+            
+        <!-- Vert.x dependencies -->
+            
+        <dependency>
+                  
+            <groupId>io.vertx</groupId>
+                  
+            <artifactId>vertx-core</artifactId>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>io.vertx</groupId>
+                  
+            <artifactId>vertx-codegen</artifactId>
+                  
+            <optional>true</optional>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>io.vertx</groupId>
+                  
+            <artifactId>vertx-docgen</artifactId>
+                  
+            <optional>true</optional>
+                
+        </dependency>
+            
+        <!-- Testing purposes -->
+            
+        <dependency>
+                  
+            <groupId>org.cassandraunit</groupId>
+                  
+            <artifactId>cassandra-unit</artifactId>
+                  
+            <version>${cassandra-unit.version}</version>
+                  
+            <scope>test</scope>
+                  
+            <exclusions>
+                        
+                <exclusion>
+                              
+                    <groupId>com.google.guava</groupId>
+                              
+                    <artifactId>guava</artifactId>
+                            
+                </exclusion>
+                        
+                <exclusion>
+                              
+                    <groupId>org.slf4j</groupId>
+                              
+                    <artifactId>slf4j-api</artifactId>
+                            
+                </exclusion>
+                      
+            </exclusions>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>io.vertx</groupId>
+                  
+            <artifactId>vertx-unit</artifactId>
+                  
+            <version>${stack.version}</version>
+                  
+            <scope>test</scope>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>junit</groupId>
+                  
+            <artifactId>junit</artifactId>
+                  
+            <version>${junit.version}</version>
+                  
+            <scope>test</scope>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>ch.qos.logback</groupId>
+                  
+            <artifactId>logback-classic</artifactId>
+                  
+            <version>${logback.version}</version>
+                  
+            <scope>test</scope>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>io.vertx</groupId>
+                  
+            <artifactId>vertx-core</artifactId>
+                  
+            <type>test-jar</type>
+                  
+            <scope>test</scope>
+                
+        </dependency>
+          
     </dependencies>
-  </dependencyManagement>
-
-  <licenses>
-    <license>
-      <name>The Apache License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-    </license>
-  </licenses>
-
-  <dependencies>
-
-    <!-- 3rd party -->
-    <dependency>
-      <groupId>com.datastax.cassandra</groupId>
-      <artifactId>cassandra-driver-core</artifactId>
-      <version>${datastax-driver.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>com.datastax.cassandra</groupId>
-      <artifactId>cassandra-driver-mapping</artifactId>
-      <version>${datastax-driver.version}</version>
-      <optional>true</optional>
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-    <!-- Cassandra driver requires these dependencies: declare this dependency to force this module to use this one. These are the versions used by vert.x -->
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>${guava.version}</version>
-    </dependency>
-
-    <!-- Vert.x dependencies -->
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-codegen</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-docgen</artifactId>
-      <optional>true</optional>
-    </dependency>
-
-    <!-- Testing purposes -->
-    <dependency>
-      <groupId>org.cassandraunit</groupId>
-      <artifactId>cassandra-unit</artifactId>
-      <version>${cassandra-unit.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-unit</artifactId>
-      <version>${stack.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-core</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-
-  <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.bsc.maven</groupId>
-          <artifactId>maven-processor-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>generate-sources</id>
-              <configuration>
-                <optionMap>
-                  <datastax.driver.minor.version>${datastax-driver.minor.version}</datastax.driver.minor.version>
-                  <datastax.driver.version>${datastax-driver.version}</datastax.driver.version>
-                </optionMap>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-  </build>
-
+      
+    <build>
+            
+        <pluginManagement>
+                  
+            <plugins>
+                        
+                <plugin>
+                              
+                    <groupId>org.bsc.maven</groupId>
+                              
+                    <artifactId>maven-processor-plugin</artifactId>
+                              
+                    <executions>
+                                    
+                        <execution>
+                                          
+                            <id>generate-sources</id>
+                                          
+                            <configuration>
+                                                
+                                <optionMap>
+                                                      
+                                    <datastax.driver.minor.version>${datastax-driver.minor.version}</datastax.driver.minor.version>
+                                                      
+                                    <datastax.driver.version>${datastax-driver.version}</datastax.driver.version>
+                                                    
+                                </optionMap>
+                                              
+                            </configuration>
+                                        
+                        </execution>
+                                  
+                    </executions>
+                            
+                </plugin>
+                      
+            </plugins>
+                
+        </pluginManagement>
+          
+    </build>
+    
 </project>
