@@ -9,10 +9,10 @@
   </parent>
 
   <artifactId>vertx-cassandra-client</artifactId>
-  <version>4.2.3</version>
+  <version>4.2.4-SNAPSHOT</version>
 
   <properties>
-    <stack.version>4.2.3</stack.version>
+    <stack.version>4.2.4-SNAPSHOT</stack.version>
     <!--
     Update these properties in the vertx-lang-* modules too
      -->
