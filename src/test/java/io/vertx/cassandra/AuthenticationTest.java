@@ -20,6 +20,8 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,6 +49,12 @@ public class AuthenticationTest {
     .withExposedPorts(CQL_PORT);
 
   private CassandraClient client;
+
+  @BeforeClass
+  public static void notMacOs(){
+    Assume.assumeFalse("Test is running on a non mac os machine",
+      System.getProperty("os.name").equals("Mac OS X"));
+  }
 
   @Test
   public void testAuthProvider(TestContext context) {
