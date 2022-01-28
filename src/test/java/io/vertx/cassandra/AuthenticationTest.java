@@ -52,8 +52,7 @@ public class AuthenticationTest {
 
   @BeforeClass
   public static void notMacOs(){
-    Assume.assumeFalse("Test is running on a non mac os machine",
-      System.getProperty("os.name").equals("Mac OS X"));
+    Assume.assumeFalse("Test does not work on a Mac OS", io.netty.util.internal.PlatformDependent.isOsx());
   }
 
   @Test
