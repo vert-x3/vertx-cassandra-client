@@ -18,7 +18,6 @@
      -->
     <datastax-driver.version>4.15.0</datastax-driver.version>
     <junit.version>4.13.1</junit.version>
-    <slf4j.version>1.7.21</slf4j.version>
     <testcontainers.version>1.15.2</testcontainers.version>
     <logback.version>1.2.3</logback.version>
 
@@ -96,7 +95,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
     </dependency>
 
     <!-- Testing purposes -->
