@@ -91,10 +91,9 @@ public interface CassandraClient {
   /**
    * Create a Cassandra client that shares its driver session with any other client having the same name.
    *
-   * @param vertx the Vert.x instance
-   * @param options the options
+   * @param vertx      the Vert.x instance
+   * @param options    the options
    * @param clientName the shared client name
-   *
    * @return the client
    */
   static CassandraClient createShared(Vertx vertx, String clientName, CassandraClientOptions options) {
@@ -110,12 +109,13 @@ public interface CassandraClient {
    * Execute the query and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is fully fetched.
-   * @param query the query to execute
-   *
+   * @param query         the query to execute
    * @return current Cassandra client instance
+   * @deprecated use {@link #executeWithFullFetch(String)} instead
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
+  @Deprecated
   CassandraClient executeWithFullFetch(String query, Handler<AsyncResult<List<Row>>> resultHandler);
 
   /**
@@ -128,12 +128,13 @@ public interface CassandraClient {
    * Execute the query and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is fully fetched.
-   * @param statement the statement to execute
-   *
+   * @param statement     the statement to execute
    * @return current Cassandra client instance
+   * @deprecated use {@link #executeWithFullFetch(Statement)} instead
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
+  @Deprecated
   CassandraClient executeWithFullFetch(Statement statement, Handler<AsyncResult<List<Row>>> resultHandler);
 
   /**
@@ -146,11 +147,12 @@ public interface CassandraClient {
    * Execute the query and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is present, but can be not fully fetched
-   * @param query the query to execute
-   *
+   * @param query         the query to execute
    * @return current Cassandra client instance
+   * @deprecated use {@link #execute(String)} instead
    */
   @Fluent
+  @Deprecated
   CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler);
 
   /**
@@ -161,15 +163,16 @@ public interface CassandraClient {
   /**
    * Execute a query and produce a result by applying a collector to result set rows.
    *
-   * @param query the query to execute
-   * @param collector the collector to use to produce a result
+   * @param query         the query to execute
+   * @param collector     the collector to use to produce a result
    * @param resultHandler the handler called when result of execution and collection is present
-   * @param <R> the result type
-   *
+   * @param <R>           the result type
    * @return current Cassandra client instance
+   * @deprecated use {@link #execute(String, Collector)} instead
    */
   @GenIgnore
   @Fluent
+  @Deprecated
   <R> CassandraClient execute(String query, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> resultHandler);
 
   /**
@@ -182,12 +185,13 @@ public interface CassandraClient {
    * Execute the statement and provide a handler for consuming results.
    *
    * @param resultHandler handler called when result of execution is present
-   * @param statement the statement to execute
-   *
+   * @param statement     the statement to execute
    * @return current Cassandra client instance
+   * @deprecated use {@link #execute(Statement)} instead
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
+  @Deprecated
   CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler);
 
   /**
@@ -199,15 +203,16 @@ public interface CassandraClient {
   /**
    * Execute a statement and produce a result by applying a collector to result set rows.
    *
-   * @param statement the statement to execute
-   * @param collector the collector to use to produce a result
+   * @param statement     the statement to execute
+   * @param collector     the collector to use to produce a result
    * @param resultHandler the handler called when result of execution and collection is present
-   * @param <R> the result type
-   *
+   * @param <R>           the result type
    * @return current Cassandra client instance
+   * @deprecated use {@link #execute(Statement, Collector)} instead
    */
   @GenIgnore
   @Fluent
+  @Deprecated
   <R> CassandraClient execute(Statement statement, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> resultHandler);
 
   /**
@@ -220,12 +225,13 @@ public interface CassandraClient {
    * Prepares the provided query string.
    *
    * @param resultHandler handler called when result of query preparation is present
-   * @param query the query to prepare
-   *
+   * @param query         the query to prepare
    * @return current Cassandra client instance
+   * @deprecated use {@link #prepare(String)} instead
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
+  @Deprecated
   CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler);
 
   /**
@@ -238,12 +244,13 @@ public interface CassandraClient {
    * Prepares the provided a {@link SimpleStatement}.
    *
    * @param resultHandler handler called when result of query preparation is present
-   * @param statement the statement to prepare
-   *
+   * @param statement     the statement to prepare
    * @return current Cassandra client instance
+   * @deprecated use {@link #prepare(SimpleStatement)} instead
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
+  @Deprecated
   CassandraClient prepare(SimpleStatement statement, Handler<AsyncResult<PreparedStatement>> resultHandler);
 
   /**
@@ -255,12 +262,13 @@ public interface CassandraClient {
   /**
    * Executes the given SQL <code>SELECT</code> statement which returns the results of the query as a read stream.
    *
-   * @param sql the SQL to execute. For example <code>SELECT * FROM table ...</code>.
+   * @param sql              the SQL to execute. For example <code>SELECT * FROM table ...</code>.
    * @param rowStreamHandler the handler which is called once the operation completes. It will return an instance of {@link CassandraRowStream}.
-   *
    * @return current Cassandra client instance
+   * @deprecated use {@link #queryStream(String)} instead
    */
   @Fluent
+  @Deprecated
   CassandraClient queryStream(String sql, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler);
 
   /**
@@ -271,13 +279,14 @@ public interface CassandraClient {
   /**
    * Executes the given SQL statement which returns the results of the query as a read stream.
    *
-   * @param statement the statement to execute.
+   * @param statement        the statement to execute.
    * @param rowStreamHandler the handler which is called once the operation completes. It will return an instance of {@link CassandraRowStream}.
-   *
    * @return current Cassandra client instance
+   * @deprecated use {@link #queryStream(Statement)} instead
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
+  @Deprecated
   CassandraClient queryStream(Statement statement, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler);
 
   /**
@@ -295,18 +304,21 @@ public interface CassandraClient {
    * Closes this client.
    *
    * @param closeHandler handler called when client is closed
-   *
    * @return current Cassandra client instance
+   * @deprecated use {@link #close()} instead
    */
   @Fluent
+  @Deprecated
   CassandraClient close(Handler<AsyncResult<Void>> closeHandler);
 
   /**
    * Get {@link Metadata} for the session.
    *
    * @param handler the handler called backed with the metadata
+   * @deprecated use {@link #metadata()} instead
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  @Deprecated
   void metadata(Handler<AsyncResult<Metadata>> handler);
 
   /**

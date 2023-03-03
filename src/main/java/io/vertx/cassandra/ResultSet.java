@@ -44,13 +44,15 @@ public interface ResultSet {
   Future<List<Row>> all();
 
   /**
-   * The method should <strong>not</strong> be used concurrently with others like {@link #fetchNextPage()} or {@link #one(Handler)}.
+   * The method should <strong>not</strong> be used concurrently with others like {@link #fetchNextPage()} or {@link #one()}.
    * This may lead to unexpected result.
    *
    * @param handler handler called when all the rows is fetched
+   * @deprecated use {@link #all()} instead
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   @Fluent
+  @Deprecated
   ResultSet all(Handler<AsyncResult<List<Row>>> handler);
 
   /**
@@ -89,7 +91,10 @@ public interface ResultSet {
 
   /**
    * Like {@link #fetchNextPage()} but with a direct callback.
+   *
+   * @deprecated use {@link #fetchNextPage()} instead
    */
+  @Deprecated
   void fetchNextPage(Handler<AsyncResult<ResultSet>> handler);
 
   /**
