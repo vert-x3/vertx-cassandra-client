@@ -32,7 +32,7 @@ public class ThreadingCheckTest extends CassandraClientTestBase {
     insertRandomStrings(1);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'A'";
     Async async = testContext.async(1);
-    client.queryStream(query, testContext.asyncAssertSuccess(stream -> {
+    client.queryStream(query).onComplete(testContext.asyncAssertSuccess(stream -> {
       checkContext(testContext);
       stream.endHandler(end -> {
         checkContext(testContext);
@@ -45,13 +45,13 @@ public class ThreadingCheckTest extends CassandraClientTestBase {
   public void checkPrepareAndQueryHandlers(TestContext testContext) {
     initializeNamesKeyspace();
     String insert = "INSERT INTO names.names_by_first_letter (first_letter, name) VALUES (?, ?)";
-    client.prepare(insert, testContext.asyncAssertSuccess(prep -> {
+    client.prepare(insert).onComplete(testContext.asyncAssertSuccess(prep -> {
       checkContext(testContext);
       Statement statement = prep.bind("P", "Pavel");
-      client.execute(statement, testContext.asyncAssertSuccess(exec -> {
+      client.execute(statement).onComplete(testContext.asyncAssertSuccess(exec -> {
         checkContext(testContext);
         String select = "select NAME as n from names.names_by_first_letter where first_letter = 'P'";
-        client.executeWithFullFetch(select, testContext.asyncAssertSuccess(rows -> {
+        client.executeWithFullFetch(select).onComplete(testContext.asyncAssertSuccess(rows -> {
           checkContext(testContext);
           testContext.assertTrue(rows.iterator().next().getString("n").equals("Pavel"));
         }));

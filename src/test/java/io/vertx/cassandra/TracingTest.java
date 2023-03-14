@@ -89,7 +89,7 @@ public class TracingTest extends CassandraClientTestBase {
       }
     };
 
-    client.executeWithFullFetch(cql, ctx.asyncAssertSuccess(rows -> {
+    client.executeWithFullFetch(cql).onComplete(ctx.asyncAssertSuccess(rows -> {
       async.countDown();
     }));
   }
@@ -124,7 +124,7 @@ public class TracingTest extends CassandraClientTestBase {
       }
     };
 
-    client.executeWithFullFetch(cql, ctx.asyncAssertFailure(t -> async.countDown()));
+    client.executeWithFullFetch(cql).onComplete(ctx.asyncAssertFailure(t -> async.countDown()));
   }
 
   @Test
@@ -159,8 +159,8 @@ public class TracingTest extends CassandraClientTestBase {
       }
     };
 
-    client.prepare(cql, ctx.asyncAssertSuccess(ps -> {
-      client.execute(ps.bind("B"), ctx.asyncAssertSuccess(rs -> {
+    client.prepare(cql).onComplete(ctx.asyncAssertSuccess(ps -> {
+      client.execute(ps.bind("B")).onComplete(ctx.asyncAssertSuccess(rs -> {
         async.countDown();
       }));
     }));

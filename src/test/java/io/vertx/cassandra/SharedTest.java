@@ -32,7 +32,7 @@ public class SharedTest extends CassandraClientTestBase {
   @After
   public void closeShared(TestContext testContext) {
     if (shared != null) {
-      shared.close(testContext.asyncAssertSuccess());
+      shared.close().onComplete(testContext.asyncAssertSuccess());
     }
   }
 
@@ -40,11 +40,12 @@ public class SharedTest extends CassandraClientTestBase {
   public void testSharedClientNotClosed(TestContext testContext) {
     String clientName = randomClientName();
     client = CassandraClient.createShared(vertx, clientName, createClientOptions());
-    client.executeWithFullFetch("select release_version from system.local", testContext.asyncAssertSuccess(rows -> {
+    client.executeWithFullFetch("select release_version from system.local").onComplete(testContext.asyncAssertSuccess(rows -> {
       String release_version = rows.iterator().next().getString("release_version");
       testContext.assertTrue(Pattern.compile("[0-9\\.]+").matcher(release_version).find());
-      vertx.deployVerticle(new VerticleWithCassandraClient(createClientOptions(), clientName, false, true), testContext.asyncAssertSuccess(id -> {
-        vertx.undeploy(id, testContext.asyncAssertSuccess(v2 -> {
+      vertx.deployVerticle(new VerticleWithCassandraClient(createClientOptions(), clientName, false, true))
+        .onComplete(testContext.asyncAssertSuccess(id -> {
+        vertx.undeploy(id).onComplete(testContext.asyncAssertSuccess(v2 -> {
           testContext.assertTrue(client.isConnected());
         }));
       }));

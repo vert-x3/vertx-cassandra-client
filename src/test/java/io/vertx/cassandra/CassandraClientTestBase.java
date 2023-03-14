@@ -76,9 +76,9 @@ public abstract class CassandraClientTestBase {
   @After
   public void tearDown(TestContext testContext) {
     final Async async = testContext.async();
-    client.close(testContext.asyncAssertSuccess(close -> async.countDown()));
+    client.close().onComplete(testContext.asyncAssertSuccess(close -> async.countDown()));
     async.await();
-    vertx.close(testContext.asyncAssertSuccess());
+    vertx.close().onComplete(testContext.asyncAssertSuccess());
   }
 
   protected CassandraClientOptions createClientOptions() {
@@ -127,7 +127,8 @@ public abstract class CassandraClientTestBase {
   }
 
   protected static void getCassandraReleaseVersion(CassandraClient client, Handler<AsyncResult<String>> handler) {
-    client.executeWithFullFetch("select release_version from system.local", ar -> {
+    client.executeWithFullFetch("select release_version from system.local")
+      .onComplete(ar -> {
       if (ar.succeeded()) {
         List<Row> result = ar.result();
         handler.handle(Future.succeededFuture(result.iterator().next().getString("release_version")));

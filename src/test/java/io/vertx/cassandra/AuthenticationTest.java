@@ -63,7 +63,7 @@ public class AuthenticationTest {
       .setPassword("cassandra");
     options.dataStaxClusterBuilder().withLocalDatacenter("datacenter1");
     client = CassandraClient.createShared(vertx.vertx(), options);
-    client.executeWithFullFetch("select release_version from system.local", context.asyncAssertSuccess(result -> {
+    client.executeWithFullFetch("select release_version from system.local").onComplete(context.asyncAssertSuccess(result -> {
       context.verify(unused -> {
         assertThat(result.iterator().next().getString("release_version"), startsWith("3.11"));
       });
@@ -73,7 +73,7 @@ public class AuthenticationTest {
   @After
   public void tearDown(TestContext context) {
     if (client != null) {
-      client.close(context.asyncAssertSuccess());
+      client.close().onComplete(context.asyncAssertSuccess());
     }
   }
 }
