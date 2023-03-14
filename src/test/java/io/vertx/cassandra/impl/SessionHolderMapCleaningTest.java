@@ -31,9 +31,9 @@ public class SessionHolderMapCleaningTest extends VertxTestBase {
   public void testMapCleaned() {
     LocalMap<String, SessionHolder> holders = vertx.sharedData().getLocalMap(CassandraClientImpl.HOLDERS_LOCAL_MAP_NAME);
     int instances = 5;
-    vertx.deployVerticle(() -> new SampleVerticle(), new DeploymentOptions().setInstances(instances), onSuccess(id -> {
+    vertx.deployVerticle(() -> new SampleVerticle(), new DeploymentOptions().setInstances(instances)).onComplete(onSuccess(id -> {
       assertEquals(instances, holders.get(CLIENT_NAME).refCount);
-      vertx.undeploy(id, onSuccess(v -> {
+      vertx.undeploy(id).onComplete(onSuccess(v -> {
         assertEquals(0, holders.size());
         testComplete();
       }));

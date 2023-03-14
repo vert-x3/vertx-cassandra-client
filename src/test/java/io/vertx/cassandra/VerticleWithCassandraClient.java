@@ -54,7 +54,7 @@ public class VerticleWithCassandraClient extends AbstractVerticle {
   @Override
   public void stop(Promise<Void> stopFuture) {
     if (closeOnStop && client != null) {
-      client.close(stopFuture);
+      client.close().onComplete(stopFuture);
     } else {
       stopFuture.complete();
     }

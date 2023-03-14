@@ -32,7 +32,7 @@ public class CloseHookTest extends CassandraClientTestBase {
   @After
   public void closeSharedClient(TestContext testContext) {
     if (shared != null) {
-      shared.close(testContext.asyncAssertSuccess());
+      shared.close().onComplete(testContext.asyncAssertSuccess());
     }
   }
 
@@ -40,8 +40,8 @@ public class CloseHookTest extends CassandraClientTestBase {
   public void testClientClosedAfterUndeploy(TestContext testContext) {
     String clientName = randomClientName();
     VerticleWithCassandraClient verticle = new VerticleWithCassandraClient(createClientOptions(), clientName, true, false);
-    vertx.deployVerticle(verticle, testContext.asyncAssertSuccess(id -> {
-      vertx.undeploy(id, testContext.asyncAssertSuccess(v -> {
+    vertx.deployVerticle(verticle).onComplete(testContext.asyncAssertSuccess(id -> {
+      vertx.undeploy(id).onComplete(testContext.asyncAssertSuccess(v -> {
         CassandraClient client = CassandraClient.createShared(vertx, clientName, createClientOptions());
         testContext.assertFalse(client.isConnected());
       }));
@@ -54,9 +54,9 @@ public class CloseHookTest extends CassandraClientTestBase {
     shared = CassandraClient.createShared(vertx, clientName, createClientOptions());
     assertFalse(shared.isConnected());
     VerticleWithCassandraClient verticle = new VerticleWithCassandraClient(createClientOptions(), clientName, true, true);
-    vertx.deployVerticle(verticle, testContext.asyncAssertSuccess(id -> {
+    vertx.deployVerticle(verticle).onComplete(testContext.asyncAssertSuccess(id -> {
       testContext.assertTrue(shared.isConnected());
-      vertx.undeploy(id, testContext.asyncAssertSuccess(v -> {
+      vertx.undeploy(id).onComplete(testContext.asyncAssertSuccess(v -> {
         testContext.assertTrue(shared.isConnected());
       }));
     }));

@@ -43,7 +43,7 @@ public class StreamingTest extends CassandraClientTestBase {
     Statement statement = SimpleStatement.newInstance(query)
       .setPageSize(5); // make sure data is not loaded at once from Cassandra
     Async async = testContext.async();
-    client.queryStream(query, testContext.asyncAssertSuccess(stream -> {
+    client.queryStream(query).onComplete(testContext.asyncAssertSuccess(stream -> {
       List<Row> items = Collections.synchronizedList(new ArrayList<>());
       AtomicInteger idx = new AtomicInteger();
       long pause = 500;
@@ -79,7 +79,7 @@ public class StreamingTest extends CassandraClientTestBase {
       )
     ).setPageSize(fetchSize).build();
     Async async = testContext.async();
-    client.queryStream(query, testContext.asyncAssertSuccess(stream -> {
+    client.queryStream(query).onComplete(testContext.asyncAssertSuccess(stream -> {
       stream.endHandler(end -> async.countDown())
         .exceptionHandler(testContext::fail)
         .handler(item -> {});
@@ -92,7 +92,7 @@ public class StreamingTest extends CassandraClientTestBase {
     insertRandomStrings(1);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = '$'";
     Async async = testContext.async();
-    client.queryStream(query, testContext.asyncAssertSuccess(stream -> {
+    client.queryStream(query).onComplete(testContext.asyncAssertSuccess(stream -> {
       stream.endHandler(end -> async.countDown())
         .exceptionHandler(testContext::fail)
         .handler(item -> testContext.fail());
@@ -105,7 +105,7 @@ public class StreamingTest extends CassandraClientTestBase {
     insertRandomStrings(1);
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = '$'";
     Async async = testContext.async();
-    client.queryStream(query, testContext.asyncAssertSuccess(stream -> {
+    client.queryStream(query).onComplete(testContext.asyncAssertSuccess(stream -> {
         stream.handler(item -> testContext.fail())
           .endHandler(end -> async.countDown())
           .exceptionHandler(testContext::fail);

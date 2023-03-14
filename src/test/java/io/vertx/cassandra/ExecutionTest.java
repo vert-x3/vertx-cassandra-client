@@ -37,7 +37,7 @@ public class ExecutionTest extends CassandraClientTestBase {
     initializeRandomStringKeyspace();
     insertRandomStrings(1);
     String query = "select count(*) as cnt from random_strings.random_string_by_first_letter";
-    client.execute(query, testContext.asyncAssertSuccess(resultSet -> {
+    client.execute(query).onComplete(testContext.asyncAssertSuccess(resultSet -> {
       Row one = resultSet.one();
       long cnt = one.getLong("cnt");
       testContext.assertTrue(cnt > 0);
@@ -53,7 +53,7 @@ public class ExecutionTest extends CassandraClientTestBase {
       // we would like to test that we are able to handle several fetches.
       // that is why we are setting a small fetch size
       .setPageSize(3);
-    client.executeWithFullFetch(statement, testContext.asyncAssertSuccess(rows -> {
+    client.executeWithFullFetch(statement).onComplete(testContext.asyncAssertSuccess(rows -> {
       for (Row row : rows) {
         String selectedString = row.getString(0);
         testContext.assertNotNull(selectedString);
@@ -72,14 +72,14 @@ public class ExecutionTest extends CassandraClientTestBase {
       Collectors.joining(delimiter, prefix, suffix)
     );
     String insert = "INSERT INTO names.names_by_first_letter (first_letter, name) VALUES (?, ?)";
-    client.prepare(insert, testContext.asyncAssertSuccess(prepared -> {
+    client.prepare(insert).onComplete(testContext.asyncAssertSuccess(prepared -> {
       BatchStatement batch = BatchStatement.newInstance(BatchType.LOGGED);
       for (String name : Stream.of("Paul", "Paulo", "Pavel").collect(Collectors.toSet())) {
         batch = batch.add(prepared.bind(name.substring(0, 1), name));
       }
-      client.execute(batch, testContext.asyncAssertSuccess(exec -> {
+      client.execute(batch).onComplete(testContext.asyncAssertSuccess(exec -> {
         String query = "select name from names.names_by_first_letter where first_letter = 'P'";
-        client.execute(query, collector, testContext.asyncAssertSuccess(result -> {
+        client.execute(query, collector).onComplete(testContext.asyncAssertSuccess(result -> {
           testContext.assertEquals(result, "(Paul,Paulo,Pavel)");
         }));
       }));
@@ -90,11 +90,11 @@ public class ExecutionTest extends CassandraClientTestBase {
   public void preparedStatementsShouldWork(TestContext testContext) {
     initializeNamesKeyspace();
     String insert = "INSERT INTO names.names_by_first_letter (first_letter, name) VALUES (?, ?)";
-    client.prepare(insert, testContext.asyncAssertSuccess(prepared -> {
+    client.prepare(insert).onComplete(testContext.asyncAssertSuccess(prepared -> {
       Statement statement = prepared.bind("P", "Pavel");
-      client.execute(statement, testContext.asyncAssertSuccess(exec -> {
+      client.execute(statement).onComplete(testContext.asyncAssertSuccess(exec -> {
         String select = "select NAME as n from names.names_by_first_letter where first_letter = 'P'";
-        client.executeWithFullFetch(select, testContext.asyncAssertSuccess(rows -> {
+        client.executeWithFullFetch(select).onComplete(testContext.asyncAssertSuccess(rows -> {
           testContext.assertTrue(rows.get(0).getString("n").equals("Pavel"));
         }));
       }));
@@ -105,11 +105,11 @@ public class ExecutionTest extends CassandraClientTestBase {
   public void preparedStatementsShouldWorkWithSimpleStatement(TestContext testContext) {
     initializeNamesKeyspace();
     SimpleStatement insert = SimpleStatement.newInstance("INSERT INTO names.names_by_first_letter (first_letter, name) VALUES (?, ?)");
-    client.prepare(insert, testContext.asyncAssertSuccess(prepared -> {
+    client.prepare(insert).onComplete(testContext.asyncAssertSuccess(prepared -> {
       BoundStatement statement = prepared.bind("P", "Pavel");
-      client.execute(statement, testContext.asyncAssertSuccess(exec -> {
+      client.execute(statement).onComplete(testContext.asyncAssertSuccess(exec -> {
         String select = "select NAME as n from names.names_by_first_letter where first_letter = 'P'";
-        client.executeWithFullFetch(select, testContext.asyncAssertSuccess(rows -> {
+        client.executeWithFullFetch(select).onComplete(testContext.asyncAssertSuccess(rows -> {
           testContext.assertTrue(rows.get(0).getString("n").equals("Pavel"));
         }));
       }));

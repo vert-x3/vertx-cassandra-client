@@ -54,7 +54,8 @@ public class CassandraClientExamples {
   }
 
   public void lowLevelQuerying(CassandraClient cassandraClient) {
-    cassandraClient.execute("SELECT * FROM my_keyspace.my_table where my_key = 'my_value'", execute -> {
+    cassandraClient.execute("SELECT * FROM my_keyspace.my_table where my_key = 'my_value'")
+      .onComplete(execute -> {
       if (execute.succeeded()) {
         ResultSet resultSet = execute.result();
 
@@ -83,19 +84,21 @@ public class CassandraClientExamples {
 
   public void executeAndCollect(CassandraClient cassandraClient, Collector<Row, ?, String> listCollector) {
     // Run the query with the collector
-    cassandraClient.execute("SELECT * FROM users", listCollector, ar -> {
-      if (ar.succeeded()) {
-        // Get the string created by the collector
-        String list = ar.result();
-        System.out.println("Got " + list);
-      } else {
-        System.out.println("Failure: " + ar.cause().getMessage());
-      }
-    });
+    cassandraClient.execute("SELECT * FROM users", listCollector)
+      .onComplete(ar -> {
+        if (ar.succeeded()) {
+          // Get the string created by the collector
+          String list = ar.result();
+          System.out.println("Got " + list);
+        } else {
+          System.out.println("Failure: " + ar.cause().getMessage());
+        }
+      });
   }
 
   public void streamingViaHttp(Vertx vertx, CassandraClient cassandraClient, HttpServerResponse response) {
-    cassandraClient.queryStream("SELECT my_string_col FROM my_keyspace.my_table where my_key = 'my_value'", queryStream -> {
+    cassandraClient.queryStream("SELECT my_string_col FROM my_keyspace.my_table where my_key = 'my_value'")
+      .onComplete(queryStream -> {
       if (queryStream.succeeded()) {
         CassandraRowStream stream = queryStream.result();
 
@@ -126,7 +129,8 @@ public class CassandraClientExamples {
   }
 
   public void fetchAll(CassandraClient cassandraClient) {
-    cassandraClient.executeWithFullFetch("SELECT * FROM my_keyspace.my_table where my_key = 'my_value'", executeWithFullFetch -> {
+    cassandraClient.executeWithFullFetch("SELECT * FROM my_keyspace.my_table where my_key = 'my_value'")
+      .onComplete(executeWithFullFetch -> {
       if (executeWithFullFetch.succeeded()) {
         List<Row> rows = executeWithFullFetch.result();
         for (Row row : rows) {
@@ -140,38 +144,42 @@ public class CassandraClientExamples {
   }
 
   public void prepareQuery(CassandraClient cassandraClient) {
-    cassandraClient.prepare("SELECT * FROM my_keyspace.my_table where my_key = ? ", preparedStatementResult -> {
-      if (preparedStatementResult.succeeded()) {
-        System.out.println("The query has successfully been prepared");
-        PreparedStatement preparedStatement = preparedStatementResult.result();
-        // now you can use this PreparedStatement object for the next queries
-      } else {
-        System.out.println("Unable to prepare the query");
-        preparedStatementResult.cause().printStackTrace();
-      }
-    });
+    cassandraClient.prepare("SELECT * FROM my_keyspace.my_table where my_key = ? ")
+      .onComplete(preparedStatementResult -> {
+        if (preparedStatementResult.succeeded()) {
+          System.out.println("The query has successfully been prepared");
+          PreparedStatement preparedStatement = preparedStatementResult.result();
+          // now you can use this PreparedStatement object for the next queries
+        } else {
+          System.out.println("Unable to prepare the query");
+          preparedStatementResult.cause().printStackTrace();
+        }
+      });
   }
 
   public void usingPreparedStatementFuture(CassandraClient cassandraClient, PreparedStatement preparedStatement) {
     // You can execute you prepared statement using any way to execute queries.
 
     // Low level fetch API
-    cassandraClient.execute(preparedStatement.bind("my_value"), done -> {
-      ResultSet results = done.result();
-      // handle results here
-    });
+    cassandraClient.execute(preparedStatement.bind("my_value"))
+      .onComplete(done -> {
+        ResultSet results = done.result();
+        // handle results here
+      });
 
     // Bulk fetching API
-    cassandraClient.executeWithFullFetch(preparedStatement.bind("my_value"), done -> {
-      List<Row> results = done.result();
-      // handle results here
-    });
+    cassandraClient.executeWithFullFetch(preparedStatement.bind("my_value"))
+      .onComplete(done -> {
+        List<Row> results = done.result();
+        // handle results here
+      });
 
     // Streaming API
-    cassandraClient.queryStream(preparedStatement.bind("my_value"), done -> {
-      CassandraRowStream results = done.result();
-      // handle results here
-    });
+    cassandraClient.queryStream(preparedStatement.bind("my_value"))
+      .onComplete(done -> {
+        CassandraRowStream results = done.result();
+        // handle results here
+      });
   }
 
   public void batching(CassandraClient cassandraClient) {
@@ -180,14 +188,16 @@ public class CassandraClientExamples {
       .add(SimpleStatement.newInstance("INSERT INTO NAMES (name) VALUES ('Thomas')"))
       .add(SimpleStatement.newInstance("INSERT INTO NAMES (name) VALUES ('Julien')"));
 
-    cassandraClient.execute(batchStatement, result -> {
-      if (result.succeeded()) {
-        System.out.println("The given batch executed successfully");
-      } else {
-        System.out.println("Unable to execute the batch");
-        result.cause().printStackTrace();
-      }
-    });
+    cassandraClient
+      .execute(batchStatement)
+      .onComplete(result -> {
+        if (result.succeeded()) {
+          System.out.println("The given batch executed successfully");
+        } else {
+          System.out.println("Unable to execute the batch");
+          result.cause().printStackTrace();
+        }
+      });
   }
 
   public void tracing() {
