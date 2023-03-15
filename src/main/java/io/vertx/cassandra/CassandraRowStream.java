@@ -60,13 +60,6 @@ public interface CassandraRowStream extends ReadStream<Row> {
     return ReadStream.super.pipeTo(dst);
   }
 
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  @Override
-  @Deprecated
-  default void pipeTo(WriteStream<Row> dst, Handler<AsyncResult<Void>> handler) {
-    ReadStream.super.pipeTo(dst, handler);
-  }
-
   /**
    * Get the {@link ExecutionInfo} provided by the backing {@link ResultSet} for this stream.
    *
