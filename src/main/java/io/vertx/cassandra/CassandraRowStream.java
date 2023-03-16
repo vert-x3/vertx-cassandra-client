@@ -23,6 +23,7 @@ import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.streams.Pipe;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.WriteStream;
 
@@ -76,4 +77,11 @@ public interface CassandraRowStream extends ReadStream<Row> {
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   ColumnDefinitions columnDefinitions();
+
+  // Temporari work around
+  @GenIgnore
+  @Override
+  default Pipe<Row> pipe() {
+    return ReadStream.super.pipe();
+  }
 }
