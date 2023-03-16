@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@ModuleGen(name = "vertx-cassandra", groupPackage = "io.vertx", checkCallbackDeprecation = true)
+@ModuleGen(name = "vertx-cassandra", groupPackage = "io.vertx", useFutures = true)
 package io.vertx.cassandra;
 
 import io.vertx.codegen.annotations.ModuleGen;

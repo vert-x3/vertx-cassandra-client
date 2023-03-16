@@ -21,12 +21,9 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import io.vertx.cassandra.impl.CassandraClientImpl;
-import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 import java.util.List;
@@ -108,18 +105,8 @@ public interface CassandraClient {
   /**
    * Execute the query and provide a handler for consuming results.
    *
-   * @param resultHandler handler called when result of execution is fully fetched.
    * @param query         the query to execute
-   * @return current Cassandra client instance
-   * @deprecated use {@link #executeWithFullFetch(String)} instead
-   */
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  @Fluent
-  @Deprecated
-  CassandraClient executeWithFullFetch(String query, Handler<AsyncResult<List<Row>>> resultHandler);
-
-  /**
-   * Like {@link #executeWithFullFetch(String, Handler)} but returns a {@code Future} of the asynchronous result.
+   * @return a future of the result
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   Future<List<Row>> executeWithFullFetch(String query);
@@ -127,18 +114,8 @@ public interface CassandraClient {
   /**
    * Execute the query and provide a handler for consuming results.
    *
-   * @param resultHandler handler called when result of execution is fully fetched.
    * @param statement     the statement to execute
-   * @return current Cassandra client instance
-   * @deprecated use {@link #executeWithFullFetch(Statement)} instead
-   */
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  @Fluent
-  @Deprecated
-  CassandraClient executeWithFullFetch(Statement statement, Handler<AsyncResult<List<Row>>> resultHandler);
-
-  /**
-   * Like {@link #executeWithFullFetch(Statement, Handler)} but returns a {@code Future} of the asynchronous result.
+   * @return a future of the result
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   Future<List<Row>> executeWithFullFetch(Statement statement);
@@ -146,17 +123,8 @@ public interface CassandraClient {
   /**
    * Execute the query and provide a handler for consuming results.
    *
-   * @param resultHandler handler called when result of execution is present, but can be not fully fetched
    * @param query         the query to execute
-   * @return current Cassandra client instance
-   * @deprecated use {@link #execute(String)} instead
-   */
-  @Fluent
-  @Deprecated
-  CassandraClient execute(String query, Handler<AsyncResult<ResultSet>> resultHandler);
-
-  /**
-   * Like {@link #execute(String, Handler)} but returns a {@code Future} of the asynchronous result.
+   * @return a future of the result
    */
   Future<ResultSet> execute(String query);
 
@@ -165,18 +133,8 @@ public interface CassandraClient {
    *
    * @param query         the query to execute
    * @param collector     the collector to use to produce a result
-   * @param resultHandler the handler called when result of execution and collection is present
    * @param <R>           the result type
-   * @return current Cassandra client instance
-   * @deprecated use {@link #execute(String, Collector)} instead
-   */
-  @GenIgnore
-  @Fluent
-  @Deprecated
-  <R> CassandraClient execute(String query, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> resultHandler);
-
-  /**
-   * Like {@link #execute(String, Collector, Handler)} but returns a {@code Future} of the asynchronous result.
+   * @return a future of the result
    */
   @GenIgnore
   <R> Future<R> execute(String query, Collector<Row, ?, R> collector);
@@ -184,18 +142,8 @@ public interface CassandraClient {
   /**
    * Execute the statement and provide a handler for consuming results.
    *
-   * @param resultHandler handler called when result of execution is present
    * @param statement     the statement to execute
-   * @return current Cassandra client instance
-   * @deprecated use {@link #execute(Statement)} instead
-   */
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  @Fluent
-  @Deprecated
-  CassandraClient execute(Statement statement, Handler<AsyncResult<ResultSet>> resultHandler);
-
-  /**
-   * Like {@link #execute(Statement, Handler)} but returns a {@code Future} of the asynchronous result.
+   * @return a future of the result
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   Future<ResultSet> execute(Statement statement);
@@ -205,18 +153,8 @@ public interface CassandraClient {
    *
    * @param statement     the statement to execute
    * @param collector     the collector to use to produce a result
-   * @param resultHandler the handler called when result of execution and collection is present
    * @param <R>           the result type
-   * @return current Cassandra client instance
-   * @deprecated use {@link #execute(Statement, Collector)} instead
-   */
-  @GenIgnore
-  @Fluent
-  @Deprecated
-  <R> CassandraClient execute(Statement statement, Collector<Row, ?, R> collector, Handler<AsyncResult<R>> resultHandler);
-
-  /**
-   * Like {@link #execute(Statement, Collector, Handler)} but returns a {@code Future} of the asynchronous result.
+   * @return a future of the result
    */
   @GenIgnore
   <R> Future<R> execute(Statement statement, Collector<Row, ?, R> collector);
@@ -224,18 +162,8 @@ public interface CassandraClient {
   /**
    * Prepares the provided query string.
    *
-   * @param resultHandler handler called when result of query preparation is present
    * @param query         the query to prepare
-   * @return current Cassandra client instance
-   * @deprecated use {@link #prepare(String)} instead
-   */
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  @Fluent
-  @Deprecated
-  CassandraClient prepare(String query, Handler<AsyncResult<PreparedStatement>> resultHandler);
-
-  /**
-   * Like {@link #prepare(String, Handler)} but returns a {@code Future} of the asynchronous result.
+   * @return a future of the result
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   Future<PreparedStatement> prepare(String query);
@@ -243,18 +171,8 @@ public interface CassandraClient {
   /**
    * Prepares the provided a {@link SimpleStatement}.
    *
-   * @param resultHandler handler called when result of query preparation is present
    * @param statement     the statement to prepare
-   * @return current Cassandra client instance
-   * @deprecated use {@link #prepare(SimpleStatement)} instead
-   */
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  @Fluent
-  @Deprecated
-  CassandraClient prepare(SimpleStatement statement, Handler<AsyncResult<PreparedStatement>> resultHandler);
-
-  /**
-   * Like {@link #prepare(SimpleStatement, Handler)} but returns a {@code Future} of the asynchronous result.
+   * @return a future of the result
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   Future<PreparedStatement> prepare(SimpleStatement statement);
@@ -263,16 +181,7 @@ public interface CassandraClient {
    * Executes the given SQL <code>SELECT</code> statement which returns the results of the query as a read stream.
    *
    * @param sql              the SQL to execute. For example <code>SELECT * FROM table ...</code>.
-   * @param rowStreamHandler the handler which is called once the operation completes. It will return an instance of {@link CassandraRowStream}.
-   * @return current Cassandra client instance
-   * @deprecated use {@link #queryStream(String)} instead
-   */
-  @Fluent
-  @Deprecated
-  CassandraClient queryStream(String sql, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler);
-
-  /**
-   * Like {@link #queryStream(String, Handler)} but returns a {@code Future} of the asynchronous result.
+   * @return a future of the result
    */
   Future<CassandraRowStream> queryStream(String sql);
 
@@ -280,49 +189,22 @@ public interface CassandraClient {
    * Executes the given SQL statement which returns the results of the query as a read stream.
    *
    * @param statement        the statement to execute.
-   * @param rowStreamHandler the handler which is called once the operation completes. It will return an instance of {@link CassandraRowStream}.
-   * @return current Cassandra client instance
-   * @deprecated use {@link #queryStream(Statement)} instead
-   */
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  @Fluent
-  @Deprecated
-  CassandraClient queryStream(Statement statement, Handler<AsyncResult<CassandraRowStream>> rowStreamHandler);
-
-  /**
-   * Like {@link #queryStream(Statement, Handler)} but returns a {@code Future} of the asynchronous result.
+   * @return a future of the result
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   Future<CassandraRowStream> queryStream(Statement statement);
 
   /**
-   * Like {@link #close(Handler)} but returns a {@code Future} of the asynchronous result.
+   * Closes this client.
+   *
+   * @return a future of the result
    */
   Future<Void> close();
 
   /**
-   * Closes this client.
-   *
-   * @param closeHandler handler called when client is closed
-   * @return current Cassandra client instance
-   * @deprecated use {@link #close()} instead
-   */
-  @Fluent
-  @Deprecated
-  CassandraClient close(Handler<AsyncResult<Void>> closeHandler);
-
-  /**
    * Get {@link Metadata} for the session.
    *
-   * @param handler the handler called backed with the metadata
-   * @deprecated use {@link #metadata()} instead
-   */
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  @Deprecated
-  void metadata(Handler<AsyncResult<Metadata>> handler);
-
-  /**
-   * Like {@link #metadata(Handler)} but returns a {@code Future} of the asynchronous result.
+   * @return a future of the result
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   Future<Metadata> metadata();

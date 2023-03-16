@@ -42,15 +42,9 @@ public class ResultSetImpl implements ResultSet {
   }
 
   @Override
-  public ResultSet all(Handler<AsyncResult<List<Row>>> handler) {
-    loadMore(vertx.getOrCreateContext(), Collections.emptyList(), handler);
-    return this;
-  }
-
-  @Override
   public Future<List<Row>> all() {
     Promise<List<Row>> promise = Promise.promise();
-    all(promise);
+    loadMore(vertx.getOrCreateContext(), Collections.emptyList(), promise);
     return promise.future();
   }
 
@@ -82,14 +76,6 @@ public class ResultSetImpl implements ResultSet {
   @Override
   public boolean hasMorePages() {
     return resultSetRef.get().hasMorePages();
-  }
-
-  @Override
-  public void fetchNextPage(Handler<AsyncResult<ResultSet>> handler) {
-    Future<ResultSet> fut = fetchNextPage();
-    if (handler != null) {
-      fut.onComplete(handler);
-    }
   }
 
   @Override
