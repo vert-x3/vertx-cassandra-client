@@ -233,32 +233,28 @@ public class CassandraClientImpl implements CassandraClient {
     if (holder.session != null) {
       return context.succeededFuture(holder.session);
     }
-    return context.executeBlocking(promise -> {
-      connect(promise);
-    }, holder.connectionQueue);
+    return context.executeBlocking(this::connect, holder.connectionQueue);
   }
 
-  private void connect(Promise<CqlSession> promise) {
+  private CqlSession connect() {
     SessionHolder current = holders.get(clientName);
     if (current == null) {
-      promise.fail("Client closed while connecting");
-      return;
+      throw new VertxException("Client closed while connecting", true);
     }
     if (current.session != null) {
-      promise.complete(current.session);
-      return;
+      return current.session;
     }
     CqlSessionBuilder builder = options.dataStaxClusterBuilder();
     CqlSession session = builder.build();
     current = holders.compute(clientName, (k, h) -> h == null ? null : h.connected(session));
     if (current != null) {
-      promise.complete(current.session);
+      return current.session;
     } else {
       try {
         session.close();
       } catch (Exception ignored) {
       }
-      promise.fail("Client closed while connecting");
+      throw new VertxException("Client closed while connecting", true);
     }
   }
 }
