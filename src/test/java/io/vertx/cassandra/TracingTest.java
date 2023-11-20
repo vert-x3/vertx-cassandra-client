@@ -18,6 +18,7 @@ package io.vertx.cassandra;
 
 import io.vertx.cassandra.impl.tracing.QueryRequest;
 import io.vertx.core.Context;
+import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
@@ -37,9 +38,10 @@ public class TracingTest extends CassandraClientTestBase {
   VertxTracer tracer;
 
   @Override
-  protected VertxOptions createVertxOptions() {
-    TracingOptions tracingOptions = new TracingOptions()
-      .setFactory(options -> new VertxTracer() {
+  protected Vertx createVertx(VertxOptions options) {
+    return Vertx.builder()
+      .with(options)
+      .withTracer(o -> new VertxTracer() {
         @Override
         public Object sendRequest(Context context, SpanKind kind, TracingPolicy policy, Object request, String operation, BiConsumer headers, TagExtractor tagExtractor) {
           return tracer.sendRequest(context, kind, policy, request, operation, headers, tagExtractor);
@@ -49,8 +51,8 @@ public class TracingTest extends CassandraClientTestBase {
         public void receiveResponse(Context context, Object response, Object payload, Throwable failure, TagExtractor tagExtractor) {
           tracer.receiveResponse(context, response, payload, failure, tagExtractor);
         }
-      });
-    return super.createVertxOptions().setTracingOptions(tracingOptions);
+      })
+      .build();
   }
 
   @Override
