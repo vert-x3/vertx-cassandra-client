@@ -18,6 +18,7 @@ package io.vertx.cassandra;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import io.vertx.codegen.annotations.DataObject;
+import io.vertx.codegen.annotations.JsonGen;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.tracing.TracingPolicy;
 
@@ -29,7 +30,8 @@ import java.net.InetSocketAddress;
  * @author Pavel Drankou
  * @author Thomas Segismont
  */
-@DataObject(generateConverter = true)
+@DataObject
+@JsonGen(publicConverter = false)
 public class CassandraClientOptions {
 
   /**
