@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The Vert.x Community.
+ * Copyright 2024 The Vert.x Community.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import io.vertx.core.streams.impl.InboundBuffer;
 
 /**
@@ -37,18 +36,19 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
 
   private final Context context;
   private final ResultSet resultSet;
-  private final InboundBuffer<Row> internalQueue;
+  private final InboundBuffer<StreamItem> internalQueue;
 
   private State state;
   private int inFlight;
   private Handler<Row> handler;
   private Handler<Throwable> exceptionHandler;
   private Handler<Void> endHandler;
+  private StreamItem currentItem;
 
   public CassandraRowStreamImpl(Context context, ResultSet resultSet) {
     this.context = context;
     this.resultSet = resultSet;
-    internalQueue = new InboundBuffer<Row>(context)
+    internalQueue = new InboundBuffer<StreamItem>(context)
       .exceptionHandler(this::handleException)
       .drainHandler(v -> fetchRow());
     state = State.IDLE;
@@ -114,13 +114,13 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   }
 
   @Override
-  public ExecutionInfo executionInfo() {
-    return resultSet.getExecutionInfo();
+  public synchronized ExecutionInfo executionInfo() {
+    return currentItem == null ? resultSet.getExecutionInfo() : currentItem.executionInfo;
   }
 
   @Override
-  public ColumnDefinitions columnDefinitions(){
-    return resultSet.getColumnDefinitions();
+  public synchronized ColumnDefinitions columnDefinitions() {
+    return currentItem == null ? resultSet.getColumnDefinitions() : currentItem.columnDefinitions;
   }
 
   private synchronized void fetchRow() {
@@ -153,7 +153,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
     }
     if (row != null) {
       inFlight++;
-      if (internalQueue.write(row)) {
+      if (internalQueue.write(new StreamItem(resultSet, row))) {
         context.runOnContext(v -> fetchRow());
       }
     } else {
@@ -165,14 +165,15 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
     }
   }
 
-  private void handleRow(Row row) {
+  private void handleRow(StreamItem streamItem) {
     synchronized (this) {
       if (state == State.STOPPED) {
         return;
       }
       inFlight--;
+      currentItem = streamItem;
     }
-    handler.handle(row);
+    handler.handle(streamItem.row);
     synchronized (this) {
       if (state == State.EXHAUSTED && inFlight == 0) {
         stop();
@@ -209,5 +210,17 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   private synchronized void stop() {
     state = State.STOPPED;
     internalQueue.handler(null).drainHandler(null);
+  }
+
+  private static class StreamItem {
+    public final ExecutionInfo executionInfo;
+    public final ColumnDefinitions columnDefinitions;
+    public final Row row;
+
+    StreamItem(ResultSet resultSet, Row row) {
+      this.executionInfo = resultSet.getExecutionInfo();
+      this.columnDefinitions = resultSet.getColumnDefinitions();
+      this.row = row;
+    }
   }
 }
