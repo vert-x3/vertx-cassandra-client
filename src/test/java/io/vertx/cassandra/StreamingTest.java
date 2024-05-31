@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc.
+ * Copyright 2024 Red Hat, Inc.
  *
  * Red Hat licenses this file to you under the Apache License, version 2.0
  * (the "License"); you may not use this file except in compliance with the
@@ -15,46 +15,60 @@
  */
 package io.vertx.cassandra;
 
+import com.datastax.oss.driver.api.core.cql.PagingState;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.SimpleStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.Statement;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.junit.Assert.*;
 
-@RunWith(VertxUnitRunner.class)
 public class StreamingTest extends CassandraClientTestBase {
 
   @Test
   public void testReadStream(TestContext testContext) throws Exception {
     initializeRandomStringKeyspace();
-    insertRandomStrings(50);
+    insertRandomStrings(63);
+
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = 'A'";
-    Statement statement = SimpleStatement.newInstance(query)
+    SimpleStatement statement = SimpleStatement.newInstance(query)
       .setPageSize(5); // make sure data is not loaded at once from Cassandra
+
     Async async = testContext.async();
-    client.queryStream(query).onComplete(testContext.asyncAssertSuccess(stream -> {
-      List<Row> items = Collections.synchronizedList(new ArrayList<>());
-      AtomicInteger idx = new AtomicInteger();
+
+    List<Row> items = Collections.synchronizedList(new ArrayList<>());
+    List<PagingState> pagingStates = Collections.synchronizedList(new ArrayList<>());
+    AtomicInteger idx = new AtomicInteger();
+
+    client.queryStream(statement).onComplete(testContext.asyncAssertSuccess(stream -> {
       long pause = 500;
       long start = System.nanoTime();
-      stream.endHandler(end -> {
+      stream.endHandler(end -> testContext.verify(v -> {
         long duration = NANOSECONDS.toMillis(System.nanoTime() - start);
-        testContext.assertTrue(duration >= 5 * pause);
+        assertTrue(duration >= 5 * pause);
+        for (int i = 1; i < pagingStates.size(); i++) {
+          if (i >= 60) {
+            assertNull(pagingStates.get(i));
+          } else if (i % 5 == 0) {
+            assertFalse(Arrays.equals(pagingStates.get(i).toBytes(), pagingStates.get(i - 1).toBytes()));
+          } else {
+            assertArrayEquals(pagingStates.get(i).toBytes(), pagingStates.get(i - 1).toBytes());
+          }
+        }
         async.countDown();
-      }).exceptionHandler(testContext::fail).handler(item -> {
+      })).exceptionHandler(testContext::fail).handler(item -> {
         items.add(item);
         int j = idx.getAndIncrement();
+        pagingStates.add(stream.executionInfo().getSafePagingState());
         if (j == 3 || j == 16 || j == 21 || j == 38 || j == 47) {
           stream.pause();
           int emitted = items.size();
@@ -93,6 +107,7 @@ public class StreamingTest extends CassandraClientTestBase {
     String query = "select random_string from random_strings.random_string_by_first_letter where first_letter = '$'";
     Async async = testContext.async();
     client.queryStream(query).onComplete(testContext.asyncAssertSuccess(stream -> {
+      testContext.assertNotNull(stream.columnDefinitions());
       stream.endHandler(end -> async.countDown())
         .exceptionHandler(testContext::fail)
         .handler(item -> testContext.fail());
