@@ -1,144 +1,262 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-
-  <parent>
-    <groupId>io.vertx</groupId>
-    <artifactId>vertx-ext-parent</artifactId>
-    <version>38</version>
-  </parent>
-
-  <artifactId>vertx-cassandra-client</artifactId>
-  <version>4.5.10-SNAPSHOT</version>
-
-  <properties>
-    <stack.version>4.5.10-SNAPSHOT</stack.version>
-    <!--
+      
+    <modelVersion>4.0.0</modelVersion>
+      
+    <parent>
+            
+        <groupId>io.vertx</groupId>
+            
+        <artifactId>vertx-ext-parent</artifactId>
+            
+        <version>38</version>
+          
+    </parent>
+      
+    <artifactId>vertx-cassandra-client</artifactId>
+      
+    <version>4.5.10</version>
+      
+    <properties>
+            
+        <stack.version>4.5.10</stack.version>
+            
+        <!--
     Update these properties in the vertx-lang-* modules too
      -->
-    <datastax-driver.version>4.15.0</datastax-driver.version>
-    <junit.version>4.13.1</junit.version>
-    <testcontainers.version>1.15.2</testcontainers.version>
-    <logback.version>1.2.3</logback.version>
-
-    <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
-  </properties>
-
-  <dependencyManagement>
+            
+        <datastax-driver.version>4.15.0</datastax-driver.version>
+            
+        <junit.version>4.13.1</junit.version>
+            
+        <testcontainers.version>1.15.2</testcontainers.version>
+            
+        <logback.version>1.2.3</logback.version>
+            
+        <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
+          
+    </properties>
+      
+    <dependencyManagement>
+            
+        <dependencies>
+                  
+            <dependency>
+                        
+                <groupId>io.vertx</groupId>
+                        
+                <artifactId>vertx-dependencies</artifactId>
+                        
+                <version>${stack.version}</version>
+                        
+                <type>pom</type>
+                        
+                <scope>import</scope>
+                      
+            </dependency>
+                
+        </dependencies>
+          
+    </dependencyManagement>
+      
+    <licenses>
+            
+        <license>
+                  
+            <name>The Apache License, Version 2.0</name>
+                  
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+                
+        </license>
+          
+    </licenses>
+      
     <dependencies>
-      <dependency>
-        <groupId>io.vertx</groupId>
-        <artifactId>vertx-dependencies</artifactId>
-        <version>${stack.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
+            
+        <!-- DataStax driver and components -->
+            
+        <dependency>
+                  
+            <groupId>com.datastax.oss</groupId>
+                  
+            <artifactId>java-driver-core</artifactId>
+                  
+            <version>${datastax-driver.version}</version>
+                  
+            <exclusions>
+                        
+                <exclusion>
+                              
+                    <groupId>org.hdrhistogram</groupId>
+                              
+                    <artifactId>HdrHistogram</artifactId>
+                            
+                </exclusion>
+                      
+            </exclusions>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>org.hdrhistogram</groupId>
+                  
+            <artifactId>HdrHistogram</artifactId>
+                  
+            <version>2.1.12</version>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>com.datastax.oss</groupId>
+                  
+            <artifactId>java-driver-mapper-runtime</artifactId>
+                  
+            <version>${datastax-driver.version}</version>
+                  
+            <optional>true</optional>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>com.datastax.oss</groupId>
+                  
+            <artifactId>java-driver-query-builder</artifactId>
+                  
+            <version>${datastax-driver.version}</version>
+                  
+            <optional>true</optional>
+                
+        </dependency>
+            
+        <!-- Vert.x dependencies -->
+            
+        <dependency>
+                  
+            <groupId>io.vertx</groupId>
+                  
+            <artifactId>vertx-core</artifactId>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>io.vertx</groupId>
+                  
+            <artifactId>vertx-codegen</artifactId>
+                  
+            <optional>true</optional>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>io.vertx</groupId>
+                  
+            <artifactId>vertx-docgen</artifactId>
+                  
+            <optional>true</optional>
+                
+        </dependency>
+            
+        <!-- Logging -->
+            
+        <dependency>
+                  
+            <groupId>org.slf4j</groupId>
+                  
+            <artifactId>slf4j-api</artifactId>
+                
+        </dependency>
+            
+        <!-- Testing purposes -->
+            
+        <dependency>
+                  
+            <groupId>org.testcontainers</groupId>
+                  
+            <artifactId>testcontainers</artifactId>
+                  
+            <version>${testcontainers.version}</version>
+                  
+            <scope>test</scope>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>org.testcontainers</groupId>
+                  
+            <artifactId>cassandra</artifactId>
+                  
+            <version>${testcontainers.version}</version>
+                  
+            <scope>test</scope>
+                  
+            <exclusions>
+                        
+                <exclusion>
+                              
+                    <groupId>com.datastax.cassandra</groupId>
+                              
+                    <artifactId>cassandra-driver-core</artifactId>
+                            
+                </exclusion>
+                      
+            </exclusions>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>io.vertx</groupId>
+                  
+            <artifactId>vertx-unit</artifactId>
+                  
+            <version>${stack.version}</version>
+                  
+            <scope>test</scope>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>junit</groupId>
+                  
+            <artifactId>junit</artifactId>
+                  
+            <version>${junit.version}</version>
+                  
+            <scope>test</scope>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>ch.qos.logback</groupId>
+                  
+            <artifactId>logback-classic</artifactId>
+                  
+            <version>${logback.version}</version>
+                  
+            <scope>test</scope>
+                
+        </dependency>
+            
+        <dependency>
+                  
+            <groupId>io.vertx</groupId>
+                  
+            <artifactId>vertx-core</artifactId>
+                  
+            <type>test-jar</type>
+                  
+            <scope>test</scope>
+                
+        </dependency>
+          
     </dependencies>
-  </dependencyManagement>
-
-  <licenses>
-    <license>
-      <name>The Apache License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-    </license>
-  </licenses>
-
-  <dependencies>
-
-    <!-- DataStax driver and components -->
-    <dependency>
-      <groupId>com.datastax.oss</groupId>
-      <artifactId>java-driver-core</artifactId>
-      <version>${datastax-driver.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.hdrhistogram</groupId>
-          <artifactId>HdrHistogram</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.hdrhistogram</groupId>
-      <artifactId>HdrHistogram</artifactId>
-      <version>2.1.12</version>
-    </dependency>
-    <dependency>
-      <groupId>com.datastax.oss</groupId>
-      <artifactId>java-driver-mapper-runtime</artifactId>
-      <version>${datastax-driver.version}</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>com.datastax.oss</groupId>
-      <artifactId>java-driver-query-builder</artifactId>
-      <version>${datastax-driver.version}</version>
-      <optional>true</optional>
-    </dependency>
-
-    <!-- Vert.x dependencies -->
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-codegen</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-docgen</artifactId>
-      <optional>true</optional>
-    </dependency>
-
-    <!-- Logging -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-
-    <!-- Testing purposes -->
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers</artifactId>
-      <version>${testcontainers.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>cassandra</artifactId>
-      <version>${testcontainers.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>com.datastax.cassandra</groupId>
-          <artifactId>cassandra-driver-core</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-unit</artifactId>
-      <version>${stack.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-core</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
+    
 </project>
