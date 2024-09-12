@@ -94,7 +94,7 @@ public class ResultSetImpl implements ResultSet {
     return resultSetRef.get().wasApplied();
   }
 
-  private void loadMore(Context context, List<Row> loaded, Handler<AsyncResult<List<Row>>> handler) {
+  private void loadMore(Context context, List<Row> loaded, Completable<List<Row>> handler) {
     int availableWithoutFetching = resultSetRef.get().remaining();
     List<Row> rows = new ArrayList<>(loaded.size() + availableWithoutFetching);
     rows.addAll(loaded);
@@ -109,13 +109,13 @@ public class ResultSetImpl implements ResultSet {
           loadMore(context, rows, handler);
         } else {
           if (handler != null) {
-            handler.handle(Future.failedFuture(ar.cause()));
+            handler.fail(ar.cause());
           }
         }
       });
     } else {
       if (handler != null) {
-        handler.handle(Future.succeededFuture(rows));
+        handler.succeed(rows);
       }
     }
   }
