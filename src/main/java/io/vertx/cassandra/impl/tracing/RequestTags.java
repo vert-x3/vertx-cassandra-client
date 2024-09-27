@@ -23,15 +23,15 @@ import java.util.function.Function;
 public enum RequestTags {
 
   // Generic
-  PEER_ADDRESS("peer.address", q -> q.address),
+  PEER_ADDRESS("network.peer.address", q -> q.address),
   SPAN_KIND("span.kind", q -> "client"),
 
   // DB
-  // See https://github.com/opentracing/specification/blob/master/semantic_conventions.md
+  // See https://opentelemetry.io/docs/specs/semconv/database/cassandra/
 
-  DB_INSTANCE("db.instance", q -> q.keyspace),
-  DB_STATEMENT("db.statement", q -> q.cql),
-  DB_TYPE("db.type", q -> "cassandra");
+  DB_NAMESPACE("db.namespace", q -> q.keyspace),
+  DB_QUERY_TEXT("db.query.text", q -> q.cql),
+  DB_SYSTEM("db.system", q -> "cassandra");
 
   final String name;
   final Function<QueryRequest, String> fn;
