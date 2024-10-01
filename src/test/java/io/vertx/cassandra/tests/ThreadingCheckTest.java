@@ -14,7 +14,7 @@
  * under the License.
  */
 
-package io.vertx.cassandra;
+package io.vertx.cassandra.tests;
 
 import com.datastax.oss.driver.api.core.cql.Statement;
 import io.vertx.ext.unit.Async;

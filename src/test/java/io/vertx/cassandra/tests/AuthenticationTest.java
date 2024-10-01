@@ -14,8 +14,10 @@
  * under the License.
  */
 
-package io.vertx.cassandra;
+package io.vertx.cassandra.tests;
 
+import io.vertx.cassandra.CassandraClient;
+import io.vertx.cassandra.CassandraClientOptions;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;

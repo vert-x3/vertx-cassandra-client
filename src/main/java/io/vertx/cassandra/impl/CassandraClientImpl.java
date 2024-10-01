@@ -47,7 +47,7 @@ import static io.vertx.cassandra.impl.tracing.RequestTags.REQUEST_TAG_EXTRACTOR;
  */
 public class CassandraClientImpl implements CassandraClient {
 
-  static final String HOLDERS_LOCAL_MAP_NAME = "__vertx.cassandraClient.sessionHolders";
+  public static final String HOLDERS_LOCAL_MAP_NAME = "__vertx.cassandraClient.sessionHolders";
 
   final VertxInternal vertx;
   private final VertxTracer tracer;

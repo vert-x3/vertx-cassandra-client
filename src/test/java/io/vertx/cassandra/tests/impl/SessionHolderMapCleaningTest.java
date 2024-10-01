@@ -14,9 +14,11 @@
  * under the License.
  */
 
-package io.vertx.cassandra.impl;
+package io.vertx.cassandra.tests.impl;
 
 import io.vertx.cassandra.CassandraClient;
+import io.vertx.cassandra.impl.CassandraClientImpl;
+import io.vertx.cassandra.impl.SessionHolder;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.shareddata.LocalMap;
@@ -32,7 +34,7 @@ public class SessionHolderMapCleaningTest extends VertxTestBase {
     LocalMap<String, SessionHolder> holders = vertx.sharedData().getLocalMap(CassandraClientImpl.HOLDERS_LOCAL_MAP_NAME);
     int instances = 5;
     vertx.deployVerticle(() -> new SampleVerticle(), new DeploymentOptions().setInstances(instances)).onComplete(onSuccess(id -> {
-      assertEquals(instances, holders.get(CLIENT_NAME).refCount);
+      assertEquals(instances, holders.get(CLIENT_NAME).refCount());
       vertx.undeploy(id).onComplete(onSuccess(v -> {
         assertEquals(0, holders.size());
         testComplete();
