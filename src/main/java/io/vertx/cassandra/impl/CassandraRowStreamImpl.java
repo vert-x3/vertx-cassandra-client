@@ -44,7 +44,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
   private Handler<Row> rowHandler;
   private Handler<Throwable> exceptionHandler;
   private Handler<Void> endHandler;
-  
+
   private ExecutionInfo executionInfo;
   private ColumnDefinitions columnDefinitions;
 
