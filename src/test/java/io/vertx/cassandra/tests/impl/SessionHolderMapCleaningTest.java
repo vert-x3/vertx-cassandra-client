@@ -21,26 +21,44 @@ import io.vertx.cassandra.impl.CassandraClientImpl;
 import io.vertx.cassandra.impl.SessionHolder;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Vertx;
 import io.vertx.core.shareddata.LocalMap;
-import io.vertx.test.core.VertxTestBase;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
-public class SessionHolderMapCleaningTest extends VertxTestBase {
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
+
+@RunWith(VertxUnitRunner.class)
+public class SessionHolderMapCleaningTest {
 
   private static final String CLIENT_NAME = "test";
 
+  private Vertx vertx;
+
+  @Before
+  public void before() {
+    vertx = Vertx.vertx();
+  }
+
+  @After
+  public void after() throws Exception {
+    vertx.close().await(20, TimeUnit.SECONDS);
+  }
+
   @Test
-  public void testMapCleaned() {
+  public void testMapCleaned() throws Exception {
     LocalMap<String, SessionHolder> holders = vertx.sharedData().getLocalMap(CassandraClientImpl.HOLDERS_LOCAL_MAP_NAME);
     int instances = 5;
-    vertx.deployVerticle(() -> new SampleVerticle(), new DeploymentOptions().setInstances(instances)).onComplete(onSuccess(id -> {
-      assertEquals(instances, holders.get(CLIENT_NAME).refCount());
-      vertx.undeploy(id).onComplete(onSuccess(v -> {
-        assertEquals(0, holders.size());
-        testComplete();
-      }));
-    }));
-    await();
+    String id = vertx.deployVerticle(SampleVerticle::new, new DeploymentOptions().setInstances(instances))
+      .await(20, TimeUnit.SECONDS);
+    assertEquals(instances, holders.get(CLIENT_NAME).refCount());
+    vertx.undeploy(id).await(20, TimeUnit.SECONDS);
+    assertEquals(0, holders.size());
   }
 
   private static class SampleVerticle extends AbstractVerticle {
@@ -48,7 +66,7 @@ public class SessionHolderMapCleaningTest extends VertxTestBase {
     CassandraClient shared;
 
     @Override
-    public void start() throws Exception {
+    public void start() {
       shared = CassandraClient.createShared(vertx, CLIENT_NAME);
     }
   }
