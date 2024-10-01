@@ -14,8 +14,10 @@
  * under the License.
  */
 
-package io.vertx.cassandra;
+package io.vertx.cassandra.tests;
 
+import io.vertx.cassandra.CassandraClient;
+import io.vertx.cassandra.CassandraClientOptions;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 

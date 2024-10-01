@@ -14,8 +14,9 @@
  * under the License.
  */
 
-package io.vertx.cassandra;
+package io.vertx.cassandra.tests;
 
+import io.vertx.cassandra.CassandraClientOptions;
 import io.vertx.cassandra.impl.tracing.QueryRequest;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -23,7 +24,6 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.spi.tracing.VertxTracer;
-import io.vertx.core.tracing.TracingOptions;
 import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;

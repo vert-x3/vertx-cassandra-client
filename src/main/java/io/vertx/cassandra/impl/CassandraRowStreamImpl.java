@@ -21,8 +21,14 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.streams.impl.InboundBuffer;
+import io.vertx.core.internal.ContextInternal;
+import io.vertx.core.internal.EventExecutor;
+import io.vertx.core.internal.concurrent.InboundMessageQueue;
+
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Pavel Drankou
@@ -30,186 +36,189 @@ import io.vertx.core.streams.impl.InboundBuffer;
  */
 public class CassandraRowStreamImpl implements CassandraRowStream {
 
-  private enum State {
-    IDLE, STARTED, EXHAUSTED, STOPPED
-  }
+  private static final Object DONE = new Object();
 
-  private final Context context;
-  private final ResultSet resultSet;
-  private final InboundBuffer<StreamItem> internalQueue;
+  private final ContextInternal context;
+  private final Queue internalQueue;
 
-  private State state;
-  private int inFlight;
-  private Handler<Row> handler;
+  private Handler<Row> rowHandler;
   private Handler<Throwable> exceptionHandler;
   private Handler<Void> endHandler;
-  private StreamItem currentItem;
 
-  public CassandraRowStreamImpl(Context context, ResultSet resultSet) {
-    this.context = context;
-    this.resultSet = resultSet;
-    internalQueue = new InboundBuffer<StreamItem>(context)
-      .exceptionHandler(this::handleException)
-      .drainHandler(v -> fetchRow());
-    state = State.IDLE;
+  private ExecutionInfo executionInfo;
+  private ColumnDefinitions columnDefinitions;
+
+  public CassandraRowStreamImpl(Context context) {
+
+    Queue queue = new Queue((ContextInternal) context);
+    queue.pause();
+
+    this.context = (ContextInternal) context;
+    this.internalQueue = queue;
+  }
+
+  void init(ResultSet resultSet) {
+    executionInfo = resultSet.getExecutionInfo();
+    columnDefinitions = resultSet.getColumnDefinitions();
+    internalQueue.init(resultSet);
   }
 
   @Override
   public synchronized CassandraRowStream exceptionHandler(Handler<Throwable> handler) {
-    if (state != State.STOPPED) {
-      exceptionHandler = handler;
-    }
+    exceptionHandler = handler;
     return this;
   }
 
   @Override
-  public synchronized CassandraRowStream handler(Handler<Row> handler) {
-    if (state == State.STOPPED) {
-      return this;
+  public CassandraRowStream handler(Handler<Row> handler) {
+    synchronized (this) {
+      rowHandler = handler;
     }
     if (handler == null) {
-      stop();
-      context.runOnContext(v -> handleEnd());
+      pause();
     } else {
-      this.handler = handler;
-      internalQueue.handler(this::handleRow);
-      if (state == State.IDLE) {
-        state = State.STARTED;
-        context.runOnContext(v -> fetchRow());
-      }
-    }
-    return this;
-  }
-
-  @Override
-  public synchronized CassandraRowStream pause() {
-    if (state != State.STOPPED) {
-      internalQueue.pause();
-    }
-    return this;
-  }
-
-  @Override
-  public synchronized CassandraRowStream resume() {
-    if (state != State.STOPPED) {
-      internalQueue.resume();
+      resume();
     }
     return this;
   }
 
   @Override
   public synchronized CassandraRowStream endHandler(Handler<Void> handler) {
-    if (state != State.STOPPED) {
-      endHandler = handler;
-    }
+    endHandler = handler;
     return this;
   }
 
   @Override
-  public synchronized CassandraRowStream fetch(long l) {
-    if (state != State.STOPPED) {
-      internalQueue.fetch(l);
-    }
+  public CassandraRowStream pause() {
+    internalQueue.pause();
     return this;
   }
 
   @Override
-  public synchronized ExecutionInfo executionInfo() {
-    return currentItem == null ? resultSet.getExecutionInfo() : currentItem.executionInfo;
+  public CassandraRowStream resume() {
+    return fetch(Long.MAX_VALUE);
   }
 
   @Override
-  public synchronized ColumnDefinitions columnDefinitions() {
-    return currentItem == null ? resultSet.getColumnDefinitions() : currentItem.columnDefinitions;
+  public CassandraRowStream fetch(long l) {
+    internalQueue.fetch(l);
+    return this;
   }
 
-  private synchronized void fetchRow() {
-    if (state == State.STOPPED) {
-      return;
+  @Override
+  public ExecutionInfo executionInfo() {
+    return executionInfo;
+  }
+
+  @Override
+  public ColumnDefinitions columnDefinitions() {
+    return columnDefinitions;
+  }
+
+  private final Lock lock = new ReentrantLock();
+  private final EventExecutor executor = new EventExecutor() {
+    @Override
+    public boolean inThread() {
+      return true;
+    }
+    @Override
+    public void execute(Runnable command) {
+      lock.lock();
+      try {
+        command.run();
+      } finally {
+        lock.unlock();
+      }
+    }
+  };
+
+  private class Queue extends InboundMessageQueue<Object> {
+
+    private ResultSet resultSet;
+    private boolean paused;
+
+    public Queue(ContextInternal context) {
+      super(executor, context.executor());
     }
 
-    if (resultSet.remaining() > 0) {
-      handleFetched(resultSet.one());
-    } else {
-      if (resultSet.hasMorePages()) {
-        resultSet.fetchNextPage().map(rs -> resultSet.one())
-          .onComplete(event -> {
-            if (event.succeeded()) {
-              handleFetched(event.result());
-            } else {
-              handleException(event.cause());
+    void init(ResultSet rs) {
+      transfer(rs);
+    }
+
+    private void transfer(ResultSet rs) {
+      Iterable<Row> page = rs.currentPage();
+      lock.lock();
+      try {
+        for (Row row : page) {
+          write(new StreamItem(rs, row));
+        }
+      } finally {
+        lock.unlock();
+      }
+      if (rs.hasMorePages()) {
+        Future<ResultSet> next = rs.fetchNextPage();
+        next.onComplete((res, err) -> {
+          if (err == null) {
+            resultSet = res;
+            if (!paused) {
+              transfer(res);
             }
-          });
+          } else {
+            write(err);
+          }
+        });
       } else {
-        // last row
-        handleFetched(null);
+        write(DONE);
       }
     }
-  }
 
-  private synchronized void handleFetched(Row row) {
-    if (state == State.STOPPED) {
-      return;
-    }
-    if (row != null) {
-      inFlight++;
-      if (internalQueue.write(new StreamItem(resultSet, row))) {
-        context.runOnContext(v -> fetchRow());
-      }
-    } else {
-      state = State.EXHAUSTED;
-      if (inFlight == 0) {
-        stop();
-        handleEnd();
+    @Override
+    protected void handleResume() {
+      paused = false;
+      ResultSet rs = resultSet;
+      resultSet = null;
+      if (rs != null) {
+        transfer(rs);
       }
     }
-  }
 
-  private void handleRow(StreamItem streamItem) {
-    synchronized (this) {
-      if (state == State.STOPPED) {
-        return;
-      }
-      inFlight--;
-      currentItem = streamItem;
+    @Override
+    protected void handlePause() {
+      paused = true;
     }
-    handler.handle(streamItem.row);
-    synchronized (this) {
-      if (state == State.EXHAUSTED && inFlight == 0) {
-        stop();
-        handleEnd();
-      }
-    }
-  }
 
-  private void handleException(Throwable cause) {
-    Handler<Throwable> h;
-    synchronized (this) {
-      if (state != State.STOPPED) {
-        stop();
-        h = exceptionHandler;
-      } else {
-        h = null;
+    @Override
+    protected void handleMessage(Object msg) {
+      if (msg == DONE) {
+        Handler<Void> handler;
+        synchronized (CassandraRowStreamImpl.this) {
+          handler = endHandler;
+        }
+        if (handler != null) {
+          context.emit(null, handler);
+        }
+      } else if (msg instanceof StreamItem) {
+        StreamItem item = (StreamItem) msg;
+        Handler<Row> handler;
+        synchronized (CassandraRowStreamImpl.this) {
+          handler = rowHandler;
+        }
+        executionInfo = item.executionInfo;
+        columnDefinitions = item.columnDefinitions;
+        if (handler != null) {
+          context.emit(item.row, handler);
+        }
+      } else if (msg instanceof Throwable) {
+        Throwable err = (Throwable) msg;
+        Handler<Throwable> handler;
+        synchronized (CassandraRowStreamImpl.this) {
+          handler = exceptionHandler;
+        }
+        if (handler != null) {
+          context.emit(err, handler);
+        }
       }
     }
-    if (h != null) {
-      h.handle(cause);
-    }
-  }
-
-  private synchronized void handleEnd() {
-    Handler<Void> h;
-    synchronized (this) {
-      h = endHandler;
-    }
-    if (h != null) {
-      h.handle(null);
-    }
-  }
-
-  private synchronized void stop() {
-    state = State.STOPPED;
-    internalQueue.handler(null).drainHandler(null);
   }
 
   private static class StreamItem {

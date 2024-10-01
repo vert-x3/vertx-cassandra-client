@@ -13,10 +13,12 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.vertx.cassandra;
+package io.vertx.cassandra.tests;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Row;
+import io.vertx.cassandra.CassandraClient;
+import io.vertx.cassandra.CassandraClientOptions;
 import io.vertx.core.*;
 import io.vertx.core.internal.VertxInternal;
 import io.vertx.ext.unit.Async;

@@ -25,7 +25,7 @@ import java.util.Objects;
 /**
  * @author Thomas Segismont
  */
-class SessionHolder implements Shareable {
+public final class SessionHolder implements Shareable {
 
   final TaskQueue connectionQueue;
   final CqlSession session;
@@ -35,6 +35,10 @@ class SessionHolder implements Shareable {
     connectionQueue = new TaskQueue();
     session = null;
     refCount = 1;
+  }
+
+  public int refCount() {
+    return refCount;
   }
 
   private SessionHolder(TaskQueue connectionQueue, CqlSession session, int refCount) {
