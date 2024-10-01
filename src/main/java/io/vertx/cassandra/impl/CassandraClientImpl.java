@@ -186,7 +186,9 @@ public class CassandraClientImpl implements CassandraClient {
     return executeInternal(statement)
       .map(rs -> {
         ResultSet resultSet = new ResultSetImpl(rs, vertx);
-        return new CassandraRowStreamImpl(vertx.getContext(), resultSet);
+        CassandraRowStreamImpl stream = new CassandraRowStreamImpl(vertx.getContext());
+        stream.init(resultSet);
+        return stream;
       });
   }
 
