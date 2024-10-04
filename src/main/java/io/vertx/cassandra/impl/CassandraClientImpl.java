@@ -235,7 +235,7 @@ public class CassandraClientImpl implements CassandraClient {
     if (holder.session != null) {
       return context.succeededFuture(holder.session);
     }
-    return context.executeBlocking(this::connect, holder.connectionQueue);
+    return context.executeBlocking(this::connect);
   }
 
   private CqlSession connect() {

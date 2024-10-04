@@ -17,7 +17,6 @@
 package io.vertx.cassandra.impl;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import io.vertx.core.impl.TaskQueue;
 import io.vertx.core.shareddata.Shareable;
 
 import java.util.Objects;
@@ -27,12 +26,10 @@ import java.util.Objects;
  */
 public final class SessionHolder implements Shareable {
 
-  final TaskQueue connectionQueue;
   final CqlSession session;
   final int refCount;
 
   SessionHolder() {
-    connectionQueue = new TaskQueue();
     session = null;
     refCount = 1;
   }
@@ -41,8 +38,7 @@ public final class SessionHolder implements Shareable {
     return refCount;
   }
 
-  private SessionHolder(TaskQueue connectionQueue, CqlSession session, int refCount) {
-    this.connectionQueue = connectionQueue;
+  private SessionHolder(CqlSession session, int refCount) {
     this.session = session;
     this.refCount = refCount;
   }
@@ -52,17 +48,17 @@ public final class SessionHolder implements Shareable {
     if (this.session != null) {
       throw new IllegalStateException();
     }
-    return new SessionHolder(connectionQueue, session, refCount);
+    return new SessionHolder(session, refCount);
   }
 
   SessionHolder increment() {
-    return new SessionHolder(connectionQueue, session, refCount + 1);
+    return new SessionHolder(session, refCount + 1);
   }
 
   SessionHolder decrement() {
     if (refCount < 1) {
       throw new IllegalArgumentException();
     }
-    return new SessionHolder(connectionQueue, session, refCount - 1);
+    return new SessionHolder(session, refCount - 1);
   }
 }
