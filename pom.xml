@@ -26,7 +26,6 @@
     <testcontainers.version>1.20.1</testcontainers.version>
     <logback.version>1.3.12</logback.version>
 
-    <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
     <vertx.surefire.useModulePath>false</vertx.surefire.useModulePath>
   </properties>
 
