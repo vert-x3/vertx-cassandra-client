@@ -178,6 +178,12 @@
                 </annotationProcessorPaths>
               </configuration>
             </execution>
+            <execution>
+              <id>default-testCompile</id>
+              <configuration>
+                <useModulePath>false</useModulePath>
+              </configuration>
+            </execution>
           </executions>
         </plugin>
       </plugins>
