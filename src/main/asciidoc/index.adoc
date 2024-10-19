@@ -169,7 +169,3 @@ For example, you can set {@link io.vertx.core.tracing.TracingPolicy#ALWAYS} to a
 ----
 {@link examples.CassandraClientExamples#tracing}
 ----
-
-ifeval::["$lang" == "java"]
-include::override/rxjava3.adoc[]
-endif::[]
