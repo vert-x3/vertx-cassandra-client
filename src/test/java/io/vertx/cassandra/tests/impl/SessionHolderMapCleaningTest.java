@@ -19,9 +19,7 @@ package io.vertx.cassandra.tests.impl;
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.impl.CassandraClientImpl;
 import io.vertx.cassandra.impl.SessionHolder;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
@@ -61,13 +59,14 @@ public class SessionHolderMapCleaningTest {
     assertEquals(0, holders.size());
   }
 
-  private static class SampleVerticle extends AbstractVerticle {
+  private static class SampleVerticle extends VerticleBase {
 
     CassandraClient shared;
 
     @Override
-    public void start() {
+    public Future<?> start() throws Exception {
       shared = CassandraClient.createShared(vertx, CLIENT_NAME);
+      return super.start();
     }
   }
 }

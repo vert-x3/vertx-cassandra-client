@@ -18,10 +18,10 @@ package io.vertx.cassandra.tests;
 
 import io.vertx.cassandra.CassandraClient;
 import io.vertx.cassandra.CassandraClientOptions;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Promise;
+import io.vertx.core.Future;
+import io.vertx.core.VerticleBase;
 
-public class VerticleWithCassandraClient extends AbstractVerticle {
+public class VerticleWithCassandraClient extends VerticleBase {
 
   private final CassandraClientOptions options;
   private final String clientName;
@@ -38,27 +38,21 @@ public class VerticleWithCassandraClient extends AbstractVerticle {
   }
 
   @Override
-  public void start(Promise<Void> startFuture) {
+  public Future<?> start() throws Exception {
     client = CassandraClient.createShared(vertx, clientName, options);
     if (executeRequestOnStart) {
-      CassandraClientTestBase.getCassandraReleaseVersion(client, ar -> {
-        if (ar.succeeded()) {
-          startFuture.complete();
-        } else {
-          startFuture.fail(ar.cause());
-        }
-      });
+      return CassandraClientTestBase.getCassandraReleaseVersion(client);
     } else {
-      startFuture.complete();
+      return super.start();
     }
   }
 
   @Override
-  public void stop(Promise<Void> stopFuture) {
+  public Future<?> stop() throws Exception {
     if (closeOnStop && client != null) {
-      client.close().onComplete(stopFuture);
+      return client.close();
     } else {
-      stopFuture.complete();
+      return super.stop();
     }
   }
 }

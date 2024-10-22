@@ -144,6 +144,11 @@ public abstract class CassandraClientTestBase {
     });
   }
 
+  protected static Future<String> getCassandraReleaseVersion(CassandraClient client) {
+    return client.executeWithFullFetch("select release_version from system.local")
+      .map(result -> result.iterator().next().getString("release_version"));
+  }
+
   protected static String randomClientName() {
     return CassandraClient.class.getSimpleName() + "-" + UUID.randomUUID();
   }
