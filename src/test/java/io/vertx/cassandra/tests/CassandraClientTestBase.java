@@ -116,7 +116,7 @@ public abstract class CassandraClientTestBase {
         String statement = String.format("INSERT INTO random_strings.random_string_by_first_letter (first_letter, random_string) VALUES ('%s', '%s%s')", c, c, randomString);
         CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
           CQL_SESSION.execute(statement);
-        }, vertx.getWorkerPool().executor());
+        }, vertx.workerPool().executor());
         futures.add(future);
       }
     }
