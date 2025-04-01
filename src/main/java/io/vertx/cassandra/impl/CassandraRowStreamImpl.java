@@ -25,7 +25,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.EventExecutor;
-import io.vertx.core.internal.concurrent.InboundMessageChannel;
+import io.vertx.core.internal.concurrent.InboundMessageQueue;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -132,7 +132,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
     }
   };
 
-  private class Queue extends InboundMessageChannel<Object> {
+  private class Queue extends InboundMessageQueue<Object> {
 
     private ResultSet resultSet;
     private boolean paused;
