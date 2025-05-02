@@ -12,7 +12,6 @@
   <version>4.5.15-SNAPSHOT</version>
 
   <properties>
-    <stack.version>4.5.15-SNAPSHOT</stack.version>
     <!--
     Update these properties in the vertx-lang-* modules too
      -->
@@ -29,7 +28,7 @@
       <dependency>
         <groupId>io.vertx</groupId>
         <artifactId>vertx-dependencies</artifactId>
-        <version>${stack.version}</version>
+        <version>${project.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -119,7 +118,7 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-unit</artifactId>
-      <version>${stack.version}</version>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
