@@ -69,12 +69,7 @@ public class CassandraClientImpl implements CassandraClient {
     this.creatingContext = ((VertxInternal) vertx).getOrCreateContext();
     holders = vertx.sharedData().getLocalMap(HOLDERS_LOCAL_MAP_NAME);
     SessionHolder current = holders.compute(clientName, (k, h) -> h == null ? new SessionHolder() : h.increment());
-    creatingContext.addCloseHook(new Closeable() {
-      @Override
-      public void close(Promise<Void> completion) {
-        CassandraClientImpl.this.close().onComplete(completion);
-      }
-    });
+    creatingContext.addCloseHook(completion -> CassandraClientImpl.this.close().onComplete(completion));
   }
 
   @Override
