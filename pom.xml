@@ -9,6 +9,7 @@
   </parent>
 
   <artifactId>vertx-cassandra-client</artifactId>
+  <name>Vert.x Cassandra Client</name>
   <version>4.5.16-SNAPSHOT</version>
 
   <scm>
