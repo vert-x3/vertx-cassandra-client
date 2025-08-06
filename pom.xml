@@ -10,7 +10,7 @@
 
   <artifactId>vertx-cassandra-client</artifactId>
   <name>Vert.x Cassandra Client</name>
-  <version>4.518-SNAPSHOT</version>
+  <version>4.5.18-SNAPSHOT</version>
 
   <scm>
     <connection>scm:git:git@github.com:vert-x3/vertx-cassandra-client.git</connection>
