@@ -20,7 +20,6 @@ import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.Row;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.core.*;
-import io.vertx.core.internal.ContextInternal;
 
 import java.util.ArrayList;
 import java.util.Collections;
