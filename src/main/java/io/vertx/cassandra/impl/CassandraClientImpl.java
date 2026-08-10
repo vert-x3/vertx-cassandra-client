@@ -26,8 +26,10 @@ import io.vertx.cassandra.CassandraRowStream;
 import io.vertx.cassandra.ResultSet;
 import io.vertx.cassandra.impl.tracing.QueryRequest;
 import io.vertx.core.*;
+import io.vertx.core.internal.Closeable;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.VertxInternal;
+import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.spi.tracing.VertxTracer;
@@ -55,21 +57,52 @@ public class CassandraClientImpl implements CassandraClient {
   private final CassandraClientOptions options;
   private final Map<String, SessionHolder> holders;
   private final ContextInternal creatingContext;
+  private final Closeable close;
 
   private boolean closed;
 
   public CassandraClientImpl(Vertx vertx, String clientName, CassandraClientOptions options) {
+    this((VertxInternal)vertx, clientName, options);
+  }
+
+  public CassandraClientImpl(VertxInternal vertx, String clientName, CassandraClientOptions options) {
+
+
+
     Objects.requireNonNull(vertx, "vertx");
     Objects.requireNonNull(clientName, "clientName");
     Objects.requireNonNull(options, "options");
-    this.vertx = (VertxInternal) vertx;
-    this.tracer = ((VertxInternal) vertx).tracer();
+
+    LocalMap<String, SessionHolder> holders = vertx.sharedData().getLocalMap(HOLDERS_LOCAL_MAP_NAME);
+    SessionHolder current = holders.compute(clientName, (k, h) -> h == null ? new SessionHolder() : h.increment());
+
+    this.vertx = vertx;
+    this.tracer = vertx.tracer();
     this.clientName = clientName;
     this.options = options;
-    this.creatingContext = ((VertxInternal) vertx).getOrCreateContext();
-    holders = vertx.sharedData().getLocalMap(HOLDERS_LOCAL_MAP_NAME);
-    SessionHolder current = holders.compute(clientName, (k, h) -> h == null ? new SessionHolder() : h.increment());
-    creatingContext.addCloseHook(completion -> CassandraClientImpl.this.close().onComplete(completion));
+    this.creatingContext = vertx.getOrCreateContext();
+    this.holders = holders;
+    this.close = creatingContext.registerResource(timeout -> {
+      ContextInternal context = vertx.getOrCreateContext();
+      if (raiseCloseFlag()) {
+        do {
+          SessionHolder current1 = this.holders.get(clientName);
+          SessionHolder next = current1.decrement();
+          if (next.refCount == 0) {
+            if (this.holders.remove(clientName, current1)) {
+              if (current1.session != null) {
+                return Future.fromCompletionStage(current1.session.closeAsync(), context);
+              } else {
+                break;
+              }
+            }
+          } else if (this.holders.replace(clientName, current1, next)) {
+            break;
+          }
+        } while (true);
+      }
+      return context.succeededFuture();
+    });
   }
 
   @Override
@@ -189,24 +222,7 @@ public class CassandraClientImpl implements CassandraClient {
 
   @Override
   public Future<Void> close() {
-    ContextInternal context = vertx.getOrCreateContext();
-    if (raiseCloseFlag()) {
-      do {
-        SessionHolder current = holders.get(clientName);
-        SessionHolder next = current.decrement();
-        if (next.refCount == 0) {
-          if (holders.remove(clientName, current)) {
-            if (current.session != null) {
-              return Future.fromCompletionStage(current.session.closeAsync(), context);
-            }
-            break;
-          }
-        } else if (holders.replace(clientName, current, next)) {
-          break;
-        }
-      } while (true);
-    }
-    return context.succeededFuture();
+    return close.close();
   }
 
   @Override
@@ -214,7 +230,7 @@ public class CassandraClientImpl implements CassandraClient {
     return getSession(vertx.getOrCreateContext()).map(Session::getMetadata);
   }
 
-  private synchronized boolean raiseCloseFlag() {
+  synchronized boolean raiseCloseFlag() {
     if (!closed) {
       closed = true;
       return true;
