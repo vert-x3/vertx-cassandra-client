@@ -16,6 +16,8 @@
 package io.vertx.cassandra;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.cql.Row;
 import io.vertx.core.*;
 import io.vertx.core.impl.VertxInternal;
@@ -29,6 +31,7 @@ import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -60,6 +63,9 @@ public abstract class CassandraClientTestBase {
     CQL_SESSION = CqlSession.builder()
       .addContactPoint(new InetSocketAddress(CASSANDRA_CONTAINER.getHost(), CASSANDRA_PORT))
       .withLocalDatacenter("datacenter1")
+      .withConfigLoader(DriverConfigLoader.programmaticBuilder()
+        .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(30))
+        .build())
       .build();
   }
 
