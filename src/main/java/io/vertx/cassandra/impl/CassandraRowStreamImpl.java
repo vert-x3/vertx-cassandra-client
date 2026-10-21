@@ -150,7 +150,7 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
       lock.lock();
       try {
         for (Row row : page) {
-          write(new StreamItem(rs, row));
+          add(new StreamItem(rs, row));
         }
       } finally {
         lock.unlock();
@@ -164,11 +164,11 @@ public class CassandraRowStreamImpl implements CassandraRowStream {
               transfer(res);
             }
           } else {
-            write(err);
+            add(err);
           }
         });
       } else {
-        write(DONE);
+        add(DONE);
       }
     }
 
